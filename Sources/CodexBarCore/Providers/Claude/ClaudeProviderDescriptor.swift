@@ -371,8 +371,9 @@ public enum ClaudeProviderDescriptor {
     private static func makePlanningInput(context: ProviderFetchContext) -> ClaudeSourcePlanningInput {
         let webExtrasEnabled = context.settings?.claude?.webExtrasEnabled ?? false
         let hasWebSession = Self.hasPlausibleWebSession(context: context)
-        let shouldAttemptOAuth = context.runtime == .app &&
-            (context.sourceMode == .auto || context.sourceMode == .oauth)
+        let shouldAttemptOAuth = (context.runtime == .app &&
+            (context.sourceMode == .auto || context.sourceMode == .oauth))
+            || Self.shouldAttemptCLIAutoOAuth(context: context)
 
         return ClaudeSourcePlanningInput(
             runtime: context.runtime,
@@ -383,6 +384,15 @@ public enum ClaudeProviderDescriptor {
             // App Auto and explicit OAuth perform one real, noninteractive OAuth attempt. Do not preflight here:
             // a preflight can mutate cache state and make the real fetch misclassify a typed error.
             hasOAuthCredentials: shouldAttemptOAuth)
+    }
+
+    /// CLI Auto tries OAuth before the Claude CLI PTY only off macOS; macOS CLI Auto keeps its web → cli plan.
+    static func shouldAttemptCLIAutoOAuth(context: ProviderFetchContext) -> Bool {
+        #if os(macOS)
+        false
+        #else
+        context.runtime == .cli && context.sourceMode == .auto
+        #endif
     }
 
     private static func hasPlausibleWebSession(context: ProviderFetchContext) -> Bool {
@@ -525,8 +535,11 @@ private struct ClaudePlannedFetchStrategy: ProviderFetchStrategy {
             return await self.base.isAvailable(context)
         }
         guard self.plannedStep.isPlausiblyAvailable else { return false }
+        // CLI Auto OAuth uses the same noninteractive credential check as explicit sources, so a
+        // logged-out user still gets `noAvailableStrategy` rather than an OAuth credential error.
         if self.plannedStep.dataSource == .cli ||
-            (context.runtime == .app && self.plannedStep.dataSource == .web)
+            (context.runtime == .app && self.plannedStep.dataSource == .web) ||
+            (context.runtime == .cli && self.plannedStep.dataSource == .oauth)
         {
             return await self.base.isAvailable(context)
         }
@@ -788,6 +801,9 @@ struct ClaudeOAuthFetchStrategy: ProviderFetchStrategy {
         }
         // In Auto mode, fall back to the next strategy (cli/web) when safe credentials are absent or OAuth fails.
         // Cancellation itself is always terminal.
+        if ClaudeProviderDescriptor.shouldAttemptCLIAutoOAuth(context: context) {
+            return true
+        }
         return context.runtime == .app && context.sourceMode == .auto
     }
 
