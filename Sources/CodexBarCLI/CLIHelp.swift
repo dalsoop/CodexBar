@@ -96,7 +96,8 @@ extension CodexBarCLI {
           - Codex: OpenAI web dashboard (usage limits, credits remaining, code review remaining, usage breakdown).
             Auto falls back to Codex CLI only when cookies are missing.
           - Claude: claude.ai API.
-            Auto falls back to Claude CLI only when cookies are missing.
+            Auto tries Web, then CLI; on Linux, it tries OAuth before CLI.
+            Unavailable or failed sources fall back to the next strategy.
           - Kilo: app.kilo.ai API.
             Auto falls back to Kilo CLI when API credentials are missing or unauthorized.
           Token accounts are loaded from the resolved CodexBar config file.
