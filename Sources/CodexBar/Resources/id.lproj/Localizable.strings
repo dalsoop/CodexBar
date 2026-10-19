@@ -2719,6 +2719,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "Hub sedang mengganti akun…";
 "The hub switched to %@." = "Hub telah beralih ke %@.";
+"The hub has since switched to %@." = "Hub sejak itu beralih ke %@.";
 "The hub refused the switch: %@" = "Hub menolak penggantian: %@";
 "The hub could not switch: %@" = "Hub tidak dapat beralih: %@";
 "The hub did not pick up the switch request in time." = "Hub tidak mengambil permintaan penggantian tepat waktu.";

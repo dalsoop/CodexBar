@@ -2685,6 +2685,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "허브가 전환하는 중…";
 "The hub switched to %@." = "허브가 %@(으)로 전환했습니다.";
+"The hub has since switched to %@." = "허브가 다시 %@(으)로 바꿨습니다.";
 "The hub refused the switch: %@" = "허브가 전환을 거절했습니다: %@";
 "The hub could not switch: %@" = "허브가 전환하지 못했습니다: %@";
 "The hub did not pick up the switch request in time." = "허브가 제때 전환 요청을 처리하지 않았습니다.";

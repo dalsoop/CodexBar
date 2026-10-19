@@ -2720,6 +2720,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "Merkez hesabı değiştiriyor…";
 "The hub switched to %@." = "Merkez %@ hesabına geçti.";
+"The hub has since switched to %@." = "Merkez o zamandan beri %@ hesabına geçti.";
 "The hub refused the switch: %@" = "Merkez geçişi reddetti: %@";
 "The hub could not switch: %@" = "Merkez geçiş yapamadı: %@";
 "The hub did not pick up the switch request in time." = "Merkez geçiş isteğini zamanında almadı.";

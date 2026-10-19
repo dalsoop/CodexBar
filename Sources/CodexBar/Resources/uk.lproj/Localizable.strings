@@ -2717,6 +2717,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "Хаб перемикає обліковий запис…";
 "The hub switched to %@." = "Хаб перемкнувся на %@.";
+"The hub has since switched to %@." = "Відтоді хаб перемкнувся на %@.";
 "The hub refused the switch: %@" = "Хаб відхилив перемикання: %@";
 "The hub could not switch: %@" = "Хабу не вдалося перемкнутися: %@";
 "The hub did not pick up the switch request in time." = "Хаб не прийняв запит на перемикання вчасно.";

@@ -2718,6 +2718,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "Máy chủ trung tâm đang chuyển tài khoản…";
 "The hub switched to %@." = "Máy chủ trung tâm đã chuyển sang %@.";
+"The hub has since switched to %@." = "Sau đó máy chủ trung tâm đã chuyển sang %@.";
 "The hub refused the switch: %@" = "Máy chủ trung tâm đã từ chối chuyển: %@";
 "The hub could not switch: %@" = "Máy chủ trung tâm không thể chuyển: %@";
 "The hub did not pick up the switch request in time." = "Máy chủ trung tâm không nhận yêu cầu chuyển kịp thời.";

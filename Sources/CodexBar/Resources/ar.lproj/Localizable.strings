@@ -2721,6 +2721,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "يبدّل المركز الحساب…";
 "The hub switched to %@." = "بدّل المركز إلى %@.";
+"The hub has since switched to %@." = "انتقل المركز منذ ذلك الحين إلى %@.";
 "The hub refused the switch: %@" = "رفض المركز التبديل: %@";
 "The hub could not switch: %@" = "تعذّر على المركز التبديل: %@";
 "The hub did not pick up the switch request in time." = "لم يستلم المركز طلب التبديل في الوقت المناسب.";
