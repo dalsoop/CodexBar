@@ -98,6 +98,43 @@ struct CodexBarAppStateMirrorTests {
     }
 
     @Test
+    func `a tenant state root gets the mirror and the home keeps a copy`() throws {
+        let home = FileManager.default.temporaryDirectory
+            .appendingPathComponent("codexbar-app-state-home-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let tenant = ["TENANT_ID": "tenant:personal"]
+        #expect(CodexBarAppStateMirror.fileURLs(environment: tenant, homeDirectory: "/Users/me").map(\.path) == [
+            "/Users/me/.tenants/personal/.swift-app-state/codexbar.json",
+            "/Users/me/.swift-app-state/codexbar.json",
+        ])
+        #expect(CodexBarAppStateMirror.fileURLs(
+            environment: ["SWIFT_APP_STATE_ROOT": "/state/root"],
+            homeDirectory: "/Users/me").map(\.path) == [
+            "/state/root/.swift-app-state/codexbar.json",
+            "/Users/me/.swift-app-state/codexbar.json",
+        ])
+        #expect(CodexBarAppStateMirror.fileURLs(environment: ["TENANT_ID": "../escape"], homeDirectory: "/Users/me")
+            .map(\.path) == ["/Users/me/.swift-app-state/codexbar.json"])
+
+        // The tenant context file the fleet's tenant manager keeps.
+        let context = home.appendingPathComponent(".agent-tenant-isolation-manager/current-context.json")
+        try FileManager.default.createDirectory(
+            at: context.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try #"{"setAt": "2026-09-02T19:46:35Z", "tenantID": "tenant:personal"}"#
+            .write(to: context, atomically: true, encoding: .utf8)
+        let urls = CodexBarAppStateMirror.fileURLs(environment: [:], homeDirectory: home.path)
+        #expect(urls.map(\.path) == [
+            home.appendingPathComponent(".tenants/personal/.swift-app-state/codexbar.json").path,
+            home.appendingPathComponent(".swift-app-state/codexbar.json").path,
+        ])
+        #expect(CodexBarAppStateMirror.existingFileURL(environment: [:], homeDirectory: home.path) == nil)
+        try CodexBarAppStateMirror.write(Self.state([]), to: urls[1])
+        #expect(CodexBarAppStateMirror.existingFileURL(environment: [:], homeDirectory: home.path)?.path
+            == urls[1].path)
+    }
+
+    @Test
     func `the file goes to the state directory override and reads back`() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("codexbar-app-state-\(UUID().uuidString)", isDirectory: true)
@@ -105,8 +142,8 @@ struct CodexBarAppStateMirrorTests {
         let environment = [CodexBarAppStateMirror.directoryOverrideKey: root.appendingPathComponent("state").path]
         let url = CodexBarAppStateMirror.fileURL(environment: environment, homeDirectory: "/nonexistent")
         #expect(url.path == root.appendingPathComponent("state/codexbar.json").path)
-        #expect(CodexBarAppStateMirror.fileURL(environment: [:], homeDirectory: "/Users/me").path
-            == "/Users/me/.swift-app-state/codexbar.json")
+        #expect(CodexBarAppStateMirror.fileURLs(environment: [:], homeDirectory: "/nonexistent/me").map(\.path)
+            == ["/nonexistent/me/.swift-app-state/codexbar.json"])
 
         let accounts = [
             CodexBarAppStateMirror.Account(

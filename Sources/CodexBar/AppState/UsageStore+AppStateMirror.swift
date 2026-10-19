@@ -7,7 +7,7 @@ struct AppStateMirrorRecorder {
     var refreshFinishedAt: [ProviderInstanceID: Date] = [:]
     var lastWrittenState: CodexBarAppStateMirror.State?
     var lastWrittenAt: Date?
-    /// Tests point the mirror here; the app writes `CodexBarAppStateMirror.fileURL()`.
+    /// Tests point the mirror here; the app writes `CodexBarAppStateMirror.fileURLs()`.
     var fileURLOverride: URL?
 
     /// An unchanged state is rewritten at most once a minute so `updatedAt` still shows the app is alive.
@@ -21,15 +21,15 @@ extension UsageStore {
         self.publishAppStateMirror(now: now)
     }
 
-    /// Writes `~/.swift-app-state/codexbar.json` when the state changed (or a minute passed). Test processes write
-    /// only to an injected URL.
+    /// Writes `.swift-app-state/codexbar.json` under the fleet state root (and the home copy when that root is a
+    /// tenant root) when the state changed or a minute passed. Test processes write only to an injected URL.
     func publishAppStateMirror(now: Date = Date()) {
-        let url: URL
+        let urls: [URL]
         if let override = self.appStateMirrorRecorder.fileURLOverride {
-            url = override
+            urls = [override]
         } else {
             guard !SettingsStore.isRunningTests else { return }
-            url = CodexBarAppStateMirror.fileURL()
+            urls = CodexBarAppStateMirror.fileURLs()
         }
         let state = self.appStateMirrorState(now: now)
         if state == self.appStateMirrorRecorder.lastWrittenState,
@@ -38,12 +38,11 @@ extension UsageStore {
         {
             return
         }
-        do {
-            try CodexBarAppStateMirror.write(state, to: url, now: now)
+        // The mirror is observability only; a failed write must not disturb the menu.
+        let written = urls.filter { (try? CodexBarAppStateMirror.write(state, to: $0, now: now)) != nil }
+        if !written.isEmpty {
             self.appStateMirrorRecorder.lastWrittenState = state
             self.appStateMirrorRecorder.lastWrittenAt = now
-        } catch {
-            // The mirror is observability only; a failed write must not disturb the menu.
         }
     }
 

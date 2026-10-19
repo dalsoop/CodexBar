@@ -141,25 +141,94 @@ public enum CodexBarAppStateMirror {
 
     // MARK: - File
 
-    public static func directoryURL(
+    /// The fleet's state root (StateMirror convention): `SWIFT_APP_STATE_ROOT`, else the tenant named by
+    /// `ROOM_TENANT`, `AGENT_TENANT`, `TENANT_ID` or `~/.agent-tenant-isolation-manager/current-context.json`
+    /// (`~/.tenants/<slug>`), else the home directory.
+    public static func stateRoot(
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        homeDirectory: String = NSHomeDirectory()) -> URL
+        homeDirectory: String = NSHomeDirectory()) -> String
     {
-        if let override = environment[self.directoryOverrideKey]?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !override.isEmpty
-        {
-            return URL(fileURLWithPath: (override as NSString).expandingTildeInPath, isDirectory: true)
+        if let override = self.cleaned(environment[self.stateRootOverrideKey]) {
+            return (override as NSString).standardizingPath
         }
-        return URL(fileURLWithPath: homeDirectory, isDirectory: true)
-            .appendingPathComponent(".swift-app-state", isDirectory: true)
+        guard let slug = self.tenantSlug(environment: environment, homeDirectory: homeDirectory) else {
+            return homeDirectory
+        }
+        let home = homeDirectory as NSString
+        let parent = (home.deletingLastPathComponent as NSString).lastPathComponent
+        if home.lastPathComponent == slug, parent == ".tenants" {
+            return homeDirectory
+        }
+        return (homeDirectory as NSString).appendingPathComponent(".tenants/\(slug)")
+    }
+
+    /// Where the mirror is written, most specific first: the state directory override alone, or the fleet state
+    /// root's `.swift-app-state/codexbar.json` and, when that is a tenant root, the home copy as well.
+    public static func fileURLs(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        homeDirectory: String = NSHomeDirectory()) -> [URL]
+    {
+        let name = "\(self.appSlug).json"
+        if let override = self.cleaned(environment[self.directoryOverrideKey]) {
+            return [URL(fileURLWithPath: (override as NSString).expandingTildeInPath, isDirectory: true)
+                .appendingPathComponent(name)]
+        }
+        let roots = [self.stateRoot(environment: environment, homeDirectory: homeDirectory), homeDirectory]
+        var urls: [URL] = []
+        for root in roots {
+            let url = URL(fileURLWithPath: root, isDirectory: true)
+                .appendingPathComponent(".swift-app-state", isDirectory: true)
+                .appendingPathComponent(name)
+            if !urls.contains(where: { $0.standardizedFileURL.path == url.standardizedFileURL.path }) {
+                urls.append(url)
+            }
+        }
+        return urls
     }
 
     public static func fileURL(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         homeDirectory: String = NSHomeDirectory()) -> URL
     {
-        self.directoryURL(environment: environment, homeDirectory: homeDirectory)
-            .appendingPathComponent("\(self.appSlug).json")
+        self.fileURLs(environment: environment, homeDirectory: homeDirectory)[0]
+    }
+
+    /// The first mirror file that exists, in `fileURLs` order.
+    public static func existingFileURL(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        homeDirectory: String = NSHomeDirectory()) -> URL?
+    {
+        self.fileURLs(environment: environment, homeDirectory: homeDirectory)
+            .first { FileManager.default.fileExists(atPath: $0.path) }
+    }
+
+    static let stateRootOverrideKey = "SWIFT_APP_STATE_ROOT"
+
+    static func tenantSlug(environment: [String: String], homeDirectory: String) -> String? {
+        var tenant = self.cleaned(environment["ROOM_TENANT"])
+            ?? self.cleaned(environment["AGENT_TENANT"])
+            ?? self.cleaned(environment["TENANT_ID"])
+        if tenant == nil {
+            let context = (homeDirectory as NSString)
+                .appendingPathComponent(".agent-tenant-isolation-manager/current-context.json")
+            if let data = FileManager.default.contents(atPath: context),
+               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            {
+                tenant = self.cleaned(object["tenantID"] as? String)
+            }
+        }
+        guard var slug = tenant else { return nil }
+        if slug.hasPrefix("tenant:") { slug.removeFirst("tenant:".count) }
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "._-"))
+        guard !slug.isEmpty, !slug.hasPrefix("."), slug.unicodeScalars.allSatisfy(allowed.contains) else {
+            return nil
+        }
+        return slug
+    }
+
+    private static func cleaned(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
+        return value
     }
 
     public static func encode(_ state: State, now: Date = Date()) throws -> Data {

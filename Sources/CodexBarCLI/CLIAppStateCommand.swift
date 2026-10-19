@@ -13,10 +13,11 @@ extension CodexBarCLI {
     }
 
     /// `codexbar app-state [--json]`: prints the state mirror the running app keeps
-    /// (`~/.swift-app-state/codexbar.json`). Read-only; it starts no provider fetch.
+    /// (`.swift-app-state/codexbar.json` under the fleet state root, else the home copy). Read-only; it starts no
+    /// provider fetch.
     static func runAppState(_ values: ParsedValues) {
         let output = CLIOutputPreferences.from(values: values)
-        let url = CodexBarAppStateMirror.fileURL()
+        let url = CodexBarAppStateMirror.existingFileURL() ?? CodexBarAppStateMirror.fileURL()
         let envelope: CodexBarAppStateMirror.Envelope
         do {
             envelope = try CodexBarAppStateMirror.read(from: url)

@@ -8,7 +8,11 @@ read_when:
 # App state mirror
 
 The menu is not readable from SSH or by agents, so the app also writes what it shows to
-`~/.swift-app-state/codexbar.json` (`SWIFT_APP_STATE_DIRECTORY` replaces the directory). The file is rewritten
+`.swift-app-state/codexbar.json` under the fleet state root, the StateMirror convention other apps and
+`agent-ui-monitor state CodexBar` use: `SWIFT_APP_STATE_ROOT`, else the tenant root `~/.tenants/<slug>` named by
+`ROOM_TENANT`, `AGENT_TENANT`, `TENANT_ID` or `~/.agent-tenant-isolation-manager/current-context.json`, else the home
+directory. Under a tenant root the app also keeps the same file at `~/.swift-app-state/codexbar.json`.
+`SWIFT_APP_STATE_DIRECTORY` replaces both with one directory. The file is rewritten
 atomically after each provider refresh, after each account adapter refresh and whenever the widget snapshot is saved;
 an unchanged state is rewritten at most once a minute, so `updatedAt` also shows that the app is running.
 
@@ -17,7 +21,8 @@ codexbar app-state          # summary
 codexbar app-state --json   # the file as JSON
 ```
 
-`codexbar app-state` only reads the file; it starts no provider fetch. It exits 1 when the file is missing.
+`codexbar app-state` only reads the file (the state root's, else the home copy); it starts no provider fetch. It
+exits 1 when neither file exists.
 
 ## Format
 
