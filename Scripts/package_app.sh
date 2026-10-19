@@ -282,6 +282,12 @@ fi
 BUNDLE_ID="${CODEXBAR_BUNDLE_ID:-com.steipete.codexbar}"
 FEED_URL="${CODEXBAR_FEED_URL:-https://raw.githubusercontent.com/steipete/CodexBar/main/appcast.xml}"
 SPARKLE_PUBLIC_KEY="${CODEXBAR_SPARKLE_PUBLIC_KEY:-AGCY8w5vHirVfGGDGc8Szc5iuOqupZSh9pMj/Qs67XI=}"
+# Fleet build: read the opencodex hub's account snapshot by default. Set the variable to an empty value to
+# ship the upstream defaults (opencodex source off until configured).
+# The tilde stays literal: the app expands it for the user who runs it, not the build machine.
+DEFAULT_OPENCODEX_HUB_SNAPSHOT_PATH='~/.swift-app-state/opencodex-hub-accounts.json'
+OPENCODEX_HUB_SNAPSHOT_PATH="${CODEXBAR_OPENCODEX_HUB_SNAPSHOT_PATH-$DEFAULT_OPENCODEX_HUB_SNAPSHOT_PATH}"
+OPENCODEX_HUB_NAME="${CODEXBAR_OPENCODEX_HUB_NAME-m5m1}"
 APP_GROUP_BASE="com.steipete.codexbar"
 AUTO_CHECKS=true
 if [[ "$LOWER_CONF" == "debug" ]]; then
@@ -389,6 +395,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CodexBuildTimestamp</key><string>${BUILD_TIMESTAMP}</string>
     <key>CodexGitCommit</key><string>${GIT_COMMIT}</string>
     <key>CodexBarTeamID</key><string>${APP_TEAM_ID}</string>
+    <key>CodexBarOpenCodexHubSnapshotPath</key><string>${OPENCODEX_HUB_SNAPSHOT_PATH}</string>
+    <key>CodexBarOpenCodexHubName</key><string>${OPENCODEX_HUB_NAME}</string>
     <key>UTExportedTypeDeclarations</key>
     <array>
         <dict>
