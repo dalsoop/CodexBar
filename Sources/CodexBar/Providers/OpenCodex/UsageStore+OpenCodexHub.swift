@@ -22,6 +22,24 @@ extension UsageStore {
         self.settings.openCodexHubEnabled(for: provider) && !self.openCodexHubNativeFallbacks.contains(provider)
     }
 
+    /// Codex's own account bookkeeping (usage owner reconciliation, credits, the OpenAI web dashboard) only
+    /// knows the native sources. While the Codex card reads the hub, that bookkeeping neither runs nor clears
+    /// the hub card: the hub's snapshot has no local Codex owner, so the owner check would always discard it,
+    /// and the native credits read behind an opencodex proxy only fails ("configured for a custom provider").
+    var codexCardReadsOpenCodexHub: Bool {
+        self.usesOpenCodexHub(for: .codex)
+    }
+
+    func dropCodexNativeCreditsForOpenCodexHub() {
+        self.credits = nil
+        self.lastCreditsError = nil
+        self.lastCreditsSnapshot = nil
+        self.lastCreditsSnapshotAccountKey = nil
+        self.lastCreditsSnapshotOwnerGuard = nil
+        self.lastCreditsSource = .none
+        self.creditsFailureStreak = 0
+    }
+
     func openCodexHubCardState(for provider: UsageProvider) -> OpenCodexHubCardState? {
         guard self.usesOpenCodexHub(for: provider) else { return nil }
         return self.openCodexHubCardStates[provider]
