@@ -10,6 +10,21 @@ struct GrokProviderImplementation: ProviderImplementation {
         _ = settings.grokUsageDataSource
         _ = settings.grokCookieSource
         _ = settings.grokCookieHeader
+        _ = settings.grokOpenCodexHubEnabled
+        _ = settings.grokOpenCodexHubExecutablePath
+        _ = settings.grokOpenCodexHubSnapshotPath
+    }
+
+    @MainActor
+    func settingsToggles(context: ProviderSettingsContext) -> [ProviderSettingsToggleDescriptor] {
+        [
+            OpenCodexHubSettingsDescriptors.toggle(
+                provider: .grok,
+                enabled: \.grokOpenCodexHubEnabled,
+                executablePath: \.grokOpenCodexHubExecutablePath,
+                snapshotPath: \.grokOpenCodexHubSnapshotPath,
+                context: context),
+        ]
     }
 
     @MainActor

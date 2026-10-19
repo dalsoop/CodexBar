@@ -677,24 +677,15 @@ extension StatusItemController {
             spend: spend)
     }
 
-    private func addOverviewEmptyState(to menu: NSMenu, enabledProviders: [UsageProvider]) {
-        let resolvedProviders = self.settings.resolvedMergedOverviewProviders(
-            activeProviders: self.overviewProviderIDs(enabledProviders: enabledProviders),
-            maxVisibleProviders: Self.maxOverviewProviders)
-        let message = resolvedProviders.isEmpty
-            ? L("No providers selected for Overview.")
-            : L("No overview data available.")
-        let item = NSMenuItem(title: message, action: nil, keyEquivalent: "")
-        item.isEnabled = false
-        item.representedObject = "overviewEmptyState"
-        menu.addItem(item)
-    }
-
     private func addMenuCards(to menu: NSMenu, context: MenuCardContext, captureMenu: NSMenu? = nil) -> Bool {
         let fleetProjection = self.fleetAccountProjection(for: context.currentProvider)
         if self.addFleetFallback(fleetProjection, to: menu, context: context) {
             return false
         }
+
+        // A Codex or Grok card that reads an opencodex hub pool lists the hub's accounts above the active
+        // account's card; its own account rows are off (see `codexAccountMenuDisplay(for:)`).
+        self.addOpenCodexHubMenuItemsIfNeeded(provider: context.currentProvider, to: menu)
 
         if let codexAccountDisplay = context.codexAccountDisplay, codexAccountDisplay.showAll {
             self.addCodexAccountMenuCards(

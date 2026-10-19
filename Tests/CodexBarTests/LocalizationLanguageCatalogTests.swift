@@ -838,7 +838,7 @@ struct LocalizationLanguageCatalogTests {
             "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
             "~/.local/bin/cswap",
             "~/Library/Application Support/JetBrains/IntelliJIdea2024.3",
-            "~/opencodex-hub-accounts.json",
+            "~/.swift-app-state/opencodex-hub-accounts.json",
             // Measurement units and numeric formats are shared with English.
             "spend_performance_percent",
             "spend_performance_rate",

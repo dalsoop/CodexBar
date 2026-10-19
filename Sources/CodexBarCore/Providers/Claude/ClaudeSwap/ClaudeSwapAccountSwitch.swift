@@ -7,12 +7,22 @@ public struct ClaudeSwapAccountSwitchResult: Equatable, Sendable {
     public let fromAccountNumber: Int?
     public let toAccountNumber: Int
     public let reason: String
+    /// Set when the switch was left to an opencodex hub as a request (`reason == "requested"`); the
+    /// hub's next snapshot reports the result.
+    public let hubRequest: OpenCodexHubSwitchRequest?
 
-    public init(switched: Bool, fromAccountNumber: Int?, toAccountNumber: Int, reason: String) {
+    public init(
+        switched: Bool,
+        fromAccountNumber: Int?,
+        toAccountNumber: Int,
+        reason: String,
+        hubRequest: OpenCodexHubSwitchRequest? = nil)
+    {
         self.switched = switched
         self.fromAccountNumber = fromAccountNumber
         self.toAccountNumber = toAccountNumber
         self.reason = reason
+        self.hubRequest = hubRequest
     }
 }
 

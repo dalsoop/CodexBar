@@ -147,7 +147,7 @@ struct DashboardSnapshotProducer: Sendable {
                 // Provider-specific by design: Claude uses its opt-in subprocess adapter.
                 guard provider == .claude, CodexBarCLI.dashboardClaudeSwapIsEligible(config: config) else { return nil }
                 let path = config.providerConfig(for: .claude)?.sanitizedClaudeSwapExecutablePath ?? ""
-                let source = config.providerConfig(for: .claude)?.resolvedClaudeSwapSource ?? .claudeSwap
+                let source = config.providerConfig(for: .claude)?.resolvedClaudeSwapSource ?? .defaultSource
                 let timeout = min(
                     ClaudeSwapAccountReader.defaultTimeout,
                     context.usage.providerTimeout ?? ClaudeSwapAccountReader.defaultTimeout)
@@ -155,7 +155,7 @@ struct DashboardSnapshotProducer: Sendable {
                     let list = try await ClaudeSwapAccountReader.readAccountList(
                         executablePath: path,
                         source: source,
-                        openCodexSnapshotPath: config.providerConfig(for: .claude)?.sanitizedOpenCodexHubSnapshotPath,
+                        openCodexSnapshotPath: config.providerConfig(for: .claude)?.resolvedOpenCodexHubSnapshotPath,
                         timeout: timeout)
                     let accounts = ClaudeSwapAccountProjection.accountSnapshots(
                         from: list,

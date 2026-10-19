@@ -16,6 +16,15 @@ for capture-age semantics and the existing history retention/privacy behavior.
 Codex reads account usage through PAT, OAuth, CLI RPC, or an explicitly selected web dashboard source.
 Local token/cost history is scanned separately; the CLI PTY parser is a manual diagnostic tool.
 
+## opencodex hub accounts
+
+With "Read accounts from an opencodex hub" on (config key `openCodexHubEnabled`), the card skips the Codex sources
+below and reads the `openai` pool of an [opencodex](https://github.com/lidge-jun/opencodex) hub instead: on the hub
+through `ocx account list openai --quota --json`, elsewhere from the hub's snapshot file. The menu lists the pool's
+accounts with their weekly and monthly limits and the active account's card. Switch runs `ocx account use openai <id> --json`
+on the hub and writes a switch request elsewhere; a pool the hub marks `switchable: false` shows why instead. See
+[opencodex hub snapshot](configuration.md#opencodex-hub-snapshot).
+
 ## Data sources + fallback order
 
 ### Auto selection (app and CLI `--source auto`)

@@ -19,6 +19,9 @@ struct CodexProviderImplementation: ProviderImplementation {
         _ = settings.codexCookieSource
         _ = settings.codexCookieHeader
         _ = settings.codexExternalOAuthSourcesAllowed
+        _ = settings.codexOpenCodexHubEnabled
+        _ = settings.codexOpenCodexHubExecutablePath
+        _ = settings.codexOpenCodexHubSnapshotPath
     }
 
     @MainActor
@@ -78,6 +81,12 @@ struct CodexProviderImplementation: ProviderImplementation {
         ].joined(separator: " ")
 
         return [
+            OpenCodexHubSettingsDescriptors.toggle(
+                provider: .codex,
+                enabled: \.codexOpenCodexHubEnabled,
+                executablePath: \.codexOpenCodexHubExecutablePath,
+                snapshotPath: \.codexOpenCodexHubSnapshotPath,
+                context: context),
             ProviderSettingsToggleDescriptor(
                 id: "codex-local-session-cost-ledger",
                 title: "Local session cost estimates",

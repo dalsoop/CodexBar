@@ -4,7 +4,8 @@
 
 ### Added
 
-- Claude: an opencodex account source lists an opencodex hub's Anthropic pool accounts with their 5-hour, weekly and model-scoped quotas, switches the hub's active account after a confirmation, and shows a read-only hub snapshot on Macs linked to the hub.
+- Claude: an opencodex account source lists an opencodex hub's Anthropic pool accounts with their 5-hour, weekly and model-scoped quotas and switches the hub's active account after a confirmation. Macs linked to the hub read the hub's snapshot file (schema 1 or 2) and ask the hub to switch with a request file.
+- Codex and Grok: an opt-in opencodex hub source shows the hub's OpenAI and xAI pools (weekly and monthly limits) instead of the provider's own sources, which behind an opencodex proxy report "configured for a custom provider". The menu lists the pool's accounts, switches them on the hub through `ocx` or by request elsewhere, says when the hub keeps a pool to itself, and flags a snapshot older than five minutes.
 
 ### Fixed
 

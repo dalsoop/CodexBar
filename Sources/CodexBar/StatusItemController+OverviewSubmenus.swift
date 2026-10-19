@@ -63,4 +63,17 @@ extension StatusItemController {
         // menuWillOpen then renders the saved provider without doing structural work inside the action.
         self.requestProviderSwitcherMenuRebuild(menu, provider: provider.firstPartyProvider)
     }
+
+    func addOverviewEmptyState(to menu: NSMenu, enabledProviders: [UsageProvider]) {
+        let resolvedProviders = self.settings.resolvedMergedOverviewProviders(
+            activeProviders: self.overviewProviderIDs(enabledProviders: enabledProviders),
+            maxVisibleProviders: SettingsStore.mergedOverviewProviderLimit)
+        let message = resolvedProviders.isEmpty
+            ? L("No providers selected for Overview.")
+            : L("No overview data available.")
+        let item = NSMenuItem(title: message, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        item.representedObject = "overviewEmptyState"
+        menu.addItem(item)
+    }
 }
