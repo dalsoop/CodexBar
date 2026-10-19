@@ -26,9 +26,11 @@ The grok.com billing gRPC-web endpoint remains a best-effort fallback.
 
 With "Read accounts from an opencodex hub" on (config key `openCodexHubEnabled`), the card skips the Grok sources
 below and reads the `xai` pool of an [opencodex](https://github.com/lidge-jun/opencodex) hub instead: on the hub
-through `ocx account list xai --quota --json`, elsewhere from the hub's snapshot file. The menu lists the pool's
-accounts with their weekly limits and the active account's card. Switch runs `ocx account use xai <id> --json`
-on the hub and writes a switch request elsewhere; a pool the hub marks `switchable: false` shows why instead. See
+through `ocx account list xai --quota --json`, elsewhere from the hub's snapshot file. A pool with several accounts
+follows the multi-account menu layout: stacked shows every account's card with its weekly limit and the active one
+marked; segmented shows account tabs above the active account's card, and another tab previews that account. Switch
+(on a card, after a confirmation) runs `ocx account use xai <id> --json` on the hub and writes a switch request
+elsewhere; a pool the hub marks `switchable: false` shows why instead. See
 [opencodex hub snapshot](configuration.md#opencodex-hub-snapshot).
 
 ## Data sources + fallback order

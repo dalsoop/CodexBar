@@ -196,13 +196,18 @@ to it. CodexBar reads only the fields below; the file never contains tokens or f
 - `quota` carries the windows a provider has: `fiveHourPercent/ResetAt`, `weeklyPercent/ResetAt`,
   `monthlyPercent/ResetAt` and `customWindows` (`[{label, percent, resetAt}]`), with times in epoch milliseconds or
   ISO 8601. Schema 1 (`state.accounts`, Anthropic only) is read as a read-only Claude pool.
+- On the hub, an account id is passed to `ocx account use` as one argument when it is printable ASCII without
+  whitespace, at most 128 characters and does not start with `-` (opencodex lists the Codex App's own login as
+  `__main__`). A row with any other id, or a repeated id, is listed without a switch instead of failing the pool.
 - A pool with `switchable: false` lists its accounts but disables Switch and shows `switchReason`. A snapshot whose
   `updatedAt` is more than five minutes old is shown as out of date.
 - A switch request is `opencodex-hub-requests/<requestId>.json` next to the snapshot, written to a dot-prefixed
   temporary file and renamed into place:
   `{"schemaVersion": 1, "requestId": "<[A-Za-z0-9-]{1,64}>", "provider": "openai", "targetIdSuffix": "1a2b",
   "targetEmail": "a***e@example.com", "requestedAt": "2026-10-19T03:15:45Z"}`. The menu shows that the hub is
-  switching until a newer snapshot has a `lastRequests` entry for the request or lists the target as active.
+  switching until a newer snapshot has a `lastRequests` entry for the request or lists the target as active. The
+  result stays only while the hub keeps the account it named active; once the hub moves on, the menu names the
+  account the hub uses now.
   Switching to an account at or above 80% of a limit is allowed; the confirmation warns that the hub may switch away
   again or requests may stop.
 
