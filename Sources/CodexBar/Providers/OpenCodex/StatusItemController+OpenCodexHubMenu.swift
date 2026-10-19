@@ -43,7 +43,9 @@ extension StatusItemController {
         for line in state.switchStatus.menuLines(hidePersonalInfo: self.settings.hidePersonalInfo) {
             self.addOpenCodexHubNotice(line, to: menu)
         }
-        guard !pool.accounts.isEmpty else { return }
+        // Several accounts render as account cards or tabs (`addOpenCodexHubAccountCards`), which carry the
+        // switch action; the submenu remains for a single-account pool.
+        guard pool.accounts.count == 1 else { return }
 
         let canSwitchNow = pool.switchable && !state.isSwitching && !state.switchStatus.isPending
         let switcher = NSMenuItem(
@@ -80,14 +82,20 @@ extension StatusItemController {
     }
 
     @objc func selectOpenCodexHubAccount(_ sender: NSMenuItem) {
-        guard let selection = sender.representedObject as? OpenCodexHubMenuSelection,
-              let state = self.store.openCodexHubCardState(for: selection.provider),
+        guard let selection = sender.representedObject as? OpenCodexHubMenuSelection else { return }
+        sender.menu?.supermenu?.cancelTracking()
+        self.confirmOpenCodexHubSwitch(selection, menu: sender.menu)
+    }
+
+    /// Confirms and starts a hub switch picked from the account submenu or an account card.
+    func confirmOpenCodexHubSwitch(_ selection: OpenCodexHubMenuSelection, menu: NSMenu?) {
+        guard let state = self.store.openCodexHubCardState(for: selection.provider),
               let pool = state.pool,
+              !state.isSwitching, !state.switchStatus.isPending,
               pool.canSwitch(to: selection.account)
         else { return }
         // A hub switch moves every Mac that uses the hub, so it is confirmed outside the open menu first.
-        sender.menu?.supermenu?.cancelTracking()
-        sender.menu?.cancelTracking()
+        menu?.cancelTracking()
         let isHubLocal = pool.isHubLocal
         let details = OpenCodexHubPresentation.confirmationDetails(
             account: selection.account,

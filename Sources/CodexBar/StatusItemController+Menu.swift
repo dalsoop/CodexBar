@@ -177,6 +177,7 @@ extension StatusItemController {
         if self.openMenus.isEmpty {
             self.cancelMergedSwitcherSiblingWarmup()
             self.resetClaudeSwapAccountInspection()
+            self.resetOpenCodexHubAccountInspection()
         }
         self.resetCompactAccountMenuExpansionStateIfIdle()
     }
@@ -676,9 +677,19 @@ extension StatusItemController {
             return false
         }
 
-        // A Codex or Grok card that reads an opencodex hub pool lists the hub's accounts above the active
-        // account's card; its own account rows are off (see `codexAccountMenuDisplay(for:)`).
+        // A Codex or Grok card that reads an opencodex hub pool shows the hub's notices and accounts; its own
+        // account rows are off (see `codexAccountMenuDisplay(for:)`). Several hub accounts follow the
+        // multi-account layout; otherwise the active account's card renders below as usual.
         self.addOpenCodexHubMenuItemsIfNeeded(provider: context.currentProvider, to: menu)
+        if self.addOpenCodexHubAccountCards(
+            provider: context.currentProvider,
+            to: menu,
+            captureMenu: captureMenu ?? menu,
+            context: context)
+        {
+            self.addFleetAccountMenuCards(fleetProjection.additionalAccounts, to: menu, context: context)
+            return false
+        }
 
         if let codexAccountDisplay = context.codexAccountDisplay, codexAccountDisplay.showAll {
             self.addCodexAccountMenuCards(
