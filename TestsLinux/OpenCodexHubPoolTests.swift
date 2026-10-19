@@ -78,9 +78,8 @@ struct OpenCodexHubPoolTests {
         }
         let url = directory.appendingPathComponent("ocx")
         let script = """
-        #!/bin/sh
         DIR='\(directory.path)'
-        printf '%s\\n' "$*" >> "$0.calls"
+        printf '%s\\n' "$*" >> "$DIR/ocx.calls"
         \(body ?? #"""
         case "$1 $2" in
           "account list") cat "$DIR/list-$3.json" ;;
@@ -89,8 +88,7 @@ struct OpenCodexHubPoolTests {
         esac
         """#)
         """
-        try script.write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try FakeExecutable.install(script, at: url)
         return url.path
     }
 

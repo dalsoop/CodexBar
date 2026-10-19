@@ -50,13 +50,11 @@ struct OpenCodexAccountListTests {
         try Self.liveList.write(to: listFile, atomically: true, encoding: .utf8)
         let url = directory.appendingPathComponent("ocx")
         let script = """
-        #!/bin/sh
         LIST='\(listFile.path)'
-        printf '%s\\n' "$*" >> "$0.calls"
+        printf '%s\\n' "$*" >> '\(url.path).calls'
         \(body)
         """
-        try script.write(to: url, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        try FakeExecutable.install(script, at: url)
         return url.path
     }
 
@@ -238,14 +236,16 @@ struct OpenCodexAccountListTests {
 
     @Test
     func `the executable directory leads PATH so a node launcher finds its interpreter`() async throws {
-        let ocx = try self.makeFakeOCX("exit 64")
-        let directory = URL(fileURLWithPath: ocx).deletingLastPathComponent()
-        let interpreter = directory.appendingPathComponent("fake-node")
-        try "#!/bin/sh\ncat \"$(dirname \"$0\")/list.json\"\n".write(to: interpreter, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: interpreter.path)
-        try "#!/usr/bin/env fake-node\n".write(toFile: ocx, atomically: true, encoding: .utf8)
-        // An atomic write replaces the file; on Linux the replacement loses the executable bit.
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: ocx)
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("opencodex-tests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Self.liveList.write(to: directory.appendingPathComponent("list.json"), atomically: true, encoding: .utf8)
+        // `fake-node` is found only through PATH, like `#!/usr/bin/env node` in the real launcher.
+        try FakeExecutable.install(
+            "cat '\(directory.appendingPathComponent("list.json").path)'\n",
+            at: directory.appendingPathComponent("fake-node"))
+        let ocx = directory.appendingPathComponent("ocx").path
+        try FakeExecutable.install("exec fake-node \"$@\"\n", at: URL(fileURLWithPath: ocx))
 
         #expect(OpenCodexAccountReader.environment(for: ocx, base: ["PATH": "/usr/bin:/bin"])["PATH"]
             == directory.path + ":/usr/bin:/bin")
