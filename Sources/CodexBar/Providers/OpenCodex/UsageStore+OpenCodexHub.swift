@@ -19,7 +19,7 @@ extension UsageStore {
     /// True when the Codex or Grok card reads its accounts from the opencodex hub instead of the
     /// provider's own sources (which, behind an opencodex proxy, cannot report ChatGPT or Grok limits).
     func usesOpenCodexHub(for provider: UsageProvider) -> Bool {
-        self.settings.openCodexHubEnabled(for: provider)
+        self.settings.openCodexHubEnabled(for: provider) && !self.openCodexHubNativeFallbacks.contains(provider)
     }
 
     func openCodexHubCardState(for provider: UsageProvider) -> OpenCodexHubCardState? {
@@ -34,9 +34,11 @@ extension UsageStore {
     }
 
     /// One refresh pass for a hub-backed card: read the pool, resolve a pending switch and publish the
-    /// active account's quota as the provider snapshot.
-    func refreshOpenCodexHubCard(_ provider: UsageProvider, generation: UInt64?) async {
-        guard let hubProvider = OpenCodexHubProvider(usageProvider: provider) else { return }
+    /// active account's quota as the provider snapshot. Returns false when this Mac has no hub source (no
+    /// opencodex role and no snapshot), so the caller reads the provider's own sources instead of an error.
+    @discardableResult
+    func refreshOpenCodexHubCard(_ provider: UsageProvider, generation: UInt64?) async -> Bool {
+        guard let hubProvider = OpenCodexHubProvider(usageProvider: provider) else { return false }
         let executablePath = self.settings.openCodexHubExecutablePath(for: provider)
         let snapshotPath = self.settings.openCodexHubSnapshotPath(for: provider)
         let result: Result<OpenCodexHubPool, Error>
@@ -46,15 +48,25 @@ extension UsageStore {
                 executablePath: executablePath,
                 snapshotPath: snapshotPath))
         } catch is CancellationError {
-            return
+            return true
         } catch {
             result = .failure(error)
         }
         guard self.isCurrentProviderRefreshGeneration(provider, generation: generation),
-              self.usesOpenCodexHub(for: provider),
+              self.settings.openCodexHubEnabled(for: provider),
               self.settings.openCodexHubExecutablePath(for: provider) == executablePath,
               self.settings.openCodexHubSnapshotPath(for: provider) == snapshotPath
-        else { return }
+        else { return true }
+        if case let .failure(error) = result, case .noHubSource = error as? OpenCodexHubReaderError {
+            if !self.openCodexHubNativeFallbacks.contains(provider) {
+                self.openCodexHubNativeFallbacks.insert(provider)
+                self.clearOpenCodexHubCardState(provider)
+                self.snapshots.removeValue(forKey: provider.instanceID)
+                self.errors[provider.instanceID] = nil
+            }
+            return false
+        }
+        self.openCodexHubNativeFallbacks.remove(provider)
         switch result {
         case let .success(pool):
             self.applyOpenCodexHubPool(pool, provider: provider)
@@ -68,6 +80,7 @@ extension UsageStore {
             }
             self.errors[provider.instanceID] = message
         }
+        return true
     }
 
     func applyOpenCodexHubPool(_ pool: OpenCodexHubPool, provider: UsageProvider, now: Date = Date()) {

@@ -24,6 +24,8 @@ public enum OpenCodexAccountListError: LocalizedError, Equatable, Sendable {
     /// The live list is not available on this Mac (for example a client linked to a hub).
     case hubAccountsUnavailable(String)
     case snapshotUnreadable(String)
+    /// This Mac is not the hub and has no current hub snapshot to ask for a switch through.
+    case snapshotNotCurrent
     case accountNotFound(slot: Int)
     case accountChanged(slot: Int)
     case switchNotAllowed(String?)
@@ -41,6 +43,8 @@ public enum OpenCodexAccountListError: LocalizedError, Equatable, Sendable {
                 "Accounts are managed on the hub; set a hub snapshot file to view them here."
         case let .snapshotUnreadable(details):
             "The opencodex hub snapshot could not be read: \(details)"
+        case .snapshotNotCurrent:
+            OpenCodexHubReaderError.snapshotNotCurrent.errorDescription
         case let .accountNotFound(slot):
             "opencodex no longer lists Claude account \(slot); refresh and try again."
         case let .accountChanged(slot):
@@ -66,7 +70,9 @@ public enum OpenCodexAccountListError: LocalizedError, Equatable, Sendable {
     init(_ error: OpenCodexHubReaderError, slot: Int = 0) {
         switch error {
         case let .hubAccountsUnavailable(details): self = .hubAccountsUnavailable(details)
+        case let .noHubSource(details): self = .hubAccountsUnavailable(details)
         case let .snapshotUnreadable(details): self = .snapshotUnreadable(details)
+        case .snapshotNotCurrent: self = .snapshotNotCurrent
         case .accountNotFound: self = .accountNotFound(slot: slot)
         case let .switchNotAllowed(reason): self = .switchNotAllowed(reason)
         case let .switchFailed(details): self = .switchFailed(details)
@@ -86,12 +92,34 @@ public enum OpenCodexAccountListParser {
 
     /// Parses a live hub list (`{accounts, notes}`).
     public static func parseLiveList(_ data: Data) throws -> OpenCodexAccountListResult {
-        let live: OpenCodexHubLivePool
         do {
-            live = try OpenCodexHubPoolParser.parseLiveList(data, provider: .anthropic)
+            return try self.result(fromLive: OpenCodexHubPoolParser.parseLiveList(data, provider: .anthropic))
         } catch let error as OpenCodexHubPoolError {
             throw OpenCodexAccountListError(error)
         }
+    }
+
+    /// Parses the hub snapshot: schema 2 (`state.providers.anthropic`) or schema 1 (`state.accounts`),
+    /// or the bare list shape with optional `fetchedAt` and `hub`. Snapshot lists switch by request
+    /// when the hub marks the pool switchable for this Mac.
+    public static func parseSnapshot(_ data: Data) throws -> OpenCodexAccountListResult {
+        do {
+            return try self.result(fromSnapshot: OpenCodexHubPoolParser.parseSnapshot(data, provider: .anthropic))
+        } catch let error as OpenCodexHubPoolError {
+            throw OpenCodexAccountListError(error)
+        }
+    }
+
+    /// The shared list model for an Anthropic pool however it was read.
+    public static func result(from read: OpenCodexHubPoolRead) -> OpenCodexAccountListResult {
+        switch read {
+        case let .live(live): self.result(fromLive: live)
+        case let .snapshot(snapshot): self.result(fromSnapshot: snapshot)
+        case let .linkedCopy(pool): self.result(fromLinkedCopy: pool)
+        }
+    }
+
+    static func result(fromLive live: OpenCodexHubLivePool) -> OpenCodexAccountListResult {
         var accountIDs: [Int: String] = [:]
         for (index, id) in live.accountIDs.enumerated() {
             guard let id else { continue }
@@ -103,16 +131,7 @@ public enum OpenCodexAccountListParser {
             pool: live.pool)
     }
 
-    /// Parses the hub snapshot: schema 2 (`state.providers.anthropic`) or schema 1 (`state.accounts`),
-    /// or the bare list shape with optional `fetchedAt` and `hub`. Snapshot lists switch by request
-    /// when the hub marks the pool switchable for this Mac.
-    public static func parseSnapshot(_ data: Data) throws -> OpenCodexAccountListResult {
-        let snapshot: OpenCodexHubSnapshotPool
-        do {
-            snapshot = try OpenCodexHubPoolParser.parseSnapshot(data, provider: .anthropic)
-        } catch let error as OpenCodexHubPoolError {
-            throw OpenCodexAccountListError(error)
-        }
+    static func result(fromSnapshot snapshot: OpenCodexHubSnapshotPool) -> OpenCodexAccountListResult {
         let fetchedAt = snapshot.fetchedAt ?? snapshot.pool.snapshotUpdatedAt
         let remoteCopy = ClaudeSwapRemoteCopy(
             managerName: snapshot.pool.hubName ?? OpenCodexHubDefaults.hubName,
@@ -122,6 +141,18 @@ public enum OpenCodexAccountListParser {
             list: self.list(from: snapshot.pool, defaultFetchedAt: fetchedAt, remoteCopy: remoteCopy),
             accountIDs: [:],
             pool: snapshot.pool)
+    }
+
+    /// A linked Mac's own read-only list: shown like a hub copy, never switched from here.
+    static func result(fromLinkedCopy pool: OpenCodexHubPool) -> OpenCodexAccountListResult {
+        let remoteCopy = ClaudeSwapRemoteCopy(
+            managerName: pool.hubName ?? OpenCodexHubDefaults.hubName,
+            fetchedAt: nil,
+            pool: pool)
+        return OpenCodexAccountListResult(
+            list: self.list(from: pool, defaultFetchedAt: nil, remoteCopy: remoteCopy),
+            accountIDs: [:],
+            pool: pool)
     }
 
     public static func parseSwitchReceipt(_ data: Data) throws -> String {

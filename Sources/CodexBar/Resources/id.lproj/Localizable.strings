@@ -2713,6 +2713,7 @@
 "The hub list is out of date." = "Daftar hub sudah usang.";
 "Accounts in this pool are switched only on %@." = "Akun di kumpulan ini hanya diganti di %@.";
 "Accounts in this pool are switched only on the hub." = "Akun di kumpulan ini hanya diganti di hub.";
+"Switching is off until the hub writes a current snapshot to this Mac." = "Penggantian nonaktif sampai hub menulis snapshot terbaru ke Mac ini.";
 "Quota: %@" = "Kuota: %@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "Akun ini telah memakai %@ atau lebih dari suatu batas. Hub mungkin segera beralih lagi, atau permintaan dapat berhenti sampai batas direset.";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "Mac ini meminta hub untuk beralih; hasilnya muncul setelah pembaruan hub berikutnya.";

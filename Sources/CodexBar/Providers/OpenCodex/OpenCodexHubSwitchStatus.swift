@@ -182,7 +182,10 @@ enum OpenCodexHubPresentation {
                 }
             }
         }
-        if !pool.switchable {
+        if pool.isLinkedCopy {
+            // This Mac's own read-only copy: switching goes through the hub's snapshot, which is not current.
+            lines.append(L("Switching is off until the hub writes a current snapshot to this Mac."))
+        } else if !pool.switchable {
             lines.append(pool.switchReason ?? self.defaultSwitchReason(hubName: pool.hubName))
         }
         return lines

@@ -3,7 +3,11 @@ import Foundation
 public enum OpenCodexHubReaderError: LocalizedError, Equatable, Sendable {
     /// This Mac cannot list the hub's accounts (for example a client linked to a hub) and has no snapshot.
     case hubAccountsUnavailable(String)
+    /// Neither an opencodex that reports its role nor a hub snapshot is available on this Mac.
+    case noHubSource(String)
     case snapshotUnreadable(String)
+    /// This Mac is not the hub and has no current hub snapshot to ask for a switch through.
+    case snapshotNotCurrent
     case accountNotFound
     case switchNotAllowed(String?)
     case switchFailed(String)
@@ -14,8 +18,14 @@ public enum OpenCodexHubReaderError: LocalizedError, Equatable, Sendable {
         case let .hubAccountsUnavailable(details):
             "This Mac cannot list the opencodex hub's accounts (\(details)). " +
                 "Accounts are managed on the hub; set a hub snapshot file to view them here."
+        case let .noHubSource(details):
+            "No opencodex hub source is available on this Mac (\(details)). " +
+                "Install opencodex or set a hub snapshot file to read the hub's accounts."
         case let .snapshotUnreadable(details):
             "The opencodex hub snapshot could not be read: \(details)"
+        case .snapshotNotCurrent:
+            "This Mac asks the opencodex hub to switch through the hub's snapshot, " +
+                "and the hub has not written a current one; try again after the hub's next update."
         case .accountNotFound:
             "The hub no longer lists this account; refresh and try again."
         case let .switchNotAllowed(reason):
@@ -35,13 +45,47 @@ public enum OpenCodexHubSwitchOutcome: Equatable, Sendable {
     case requested(OpenCodexHubSwitchRequest)
 }
 
+/// A pool as read on this Mac, by where it came from.
+public enum OpenCodexHubPoolRead: Equatable, Sendable {
+    /// The hub's (or a standalone install's) own `ocx account list`; switched with `ocx account use`.
+    case live(OpenCodexHubLivePool)
+    /// The snapshot file the hub writes for the Macs linked to it; switched by a request file.
+    case snapshot(OpenCodexHubSnapshotPool)
+    /// A linked Mac's own read-only `ocx account list`, used while no current snapshot is available.
+    case linkedCopy(OpenCodexHubPool)
+
+    public var pool: OpenCodexHubPool {
+        switch self {
+        case let .live(live): live.pool
+        case let .snapshot(snapshot): snapshot.pool
+        case let .linkedCopy(pool): pool
+        }
+    }
+}
+
+/// How a switch reaches the hub from this Mac.
+public enum OpenCodexHubSwitchRoute: Equatable, Sendable {
+    /// This Mac is the hub: `ocx account use` with the id from this fresh live list.
+    case hub(OpenCodexHubLivePool, binary: String)
+    /// Any other Mac: a request file next to the snapshot, checked against this snapshot.
+    case request(OpenCodexHubSnapshotPool, requestsDirectory: URL)
+}
+
 /// Bounded adapter over the opencodex hub's account pools.
 ///
-/// On the hub, `ocx account list <provider> --quota --json` lists a pool and
-/// `ocx account use <provider> <id> --json` switches it; only those fixed argument arrays run, never a
-/// shell. A Mac linked to a hub cannot list the hub's accounts: it reads the snapshot file the hub
-/// writes and asks for a switch by writing a request file next to it. opencodex keeps the credentials
-/// on the hub; CodexBar never reads or stores them, and full account ids stay in memory.
+/// The role opencodex reports (`ocx status --json`, cached per executable by `OpenCodexRuntimeRoleCache`)
+/// decides the path; a list coming back is not proof of being the hub, because a Mac linked to a hub also
+/// answers `ocx account list` from the hub's cache while it refuses `ocx account use`.
+///
+/// - Hub or standalone: `ocx account list <provider> --quota --json` lists a pool and
+///   `ocx account use <provider> <id> --json` switches it.
+/// - Client (linked to a hub): the snapshot file the hub writes is read, and a switch is asked for by writing a
+///   request file next to it. Without a current snapshot the Mac's own list is shown read-only.
+///   `ocx account use` never runs on a client.
+/// - Unknown role (no `ocx`, or it did not say): the snapshot only.
+///
+/// Only those fixed argument arrays run, never a shell. opencodex keeps the credentials on the hub; CodexBar
+/// never reads or stores them, and full account ids stay in memory.
 public enum OpenCodexHubReader {
     public static let defaultTimeout: TimeInterval = 30
     public static let maxOutputBytes = 262_144
@@ -66,39 +110,55 @@ public enum OpenCodexHubReader {
             .first { fileManager.isExecutableFile(atPath: $0) }
     }
 
-    /// Reads a pool: the live list when this Mac is the hub, otherwise the snapshot file.
+    /// Reads a pool from the source this Mac's opencodex role allows (see the type documentation).
     public static func readPool(
         provider: OpenCodexHubProvider,
         executablePath: String?,
         snapshotPath: String?,
+        roleCache: OpenCodexRuntimeRoleCache = .shared,
+        now: Date = Date(),
         timeout: TimeInterval = OpenCodexHubReader.defaultTimeout) async throws -> OpenCodexHubPool
     {
-        let liveFailure: String
-        if let binary = self.resolvedExecutablePath(executablePath) {
-            do {
-                return try await self.readLivePool(provider: provider, binary: binary, timeout: timeout).pool
-            } catch let error as OpenCodexHubReaderError {
-                guard case let .hubAccountsUnavailable(details) = error else { throw error }
-                liveFailure = details
-            } catch is CancellationError {
-                throw CancellationError()
-            } catch let error as OpenCodexHubPoolError {
-                // A hub that answers with a malformed list is a real error, not a client.
-                throw error
-            } catch {
-                liveFailure = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            }
-        } else {
-            liveFailure = "no ocx executable"
-        }
-        guard let snapshotPath = SettingsValue.cleaned(snapshotPath) else {
-            throw OpenCodexHubReaderError.hubAccountsUnavailable(liveFailure)
-        }
-        return try self.readSnapshot(provider: provider, path: snapshotPath).pool
+        try await self.read(
+            provider: provider,
+            executablePath: executablePath,
+            snapshotPath: snapshotPath,
+            roleCache: roleCache,
+            now: now,
+            timeout: timeout).pool
     }
 
-    /// Reads the live hub list. Throws `.hubAccountsUnavailable` when opencodex answers without a list
-    /// (for example `Error: not_found` on a linked client).
+    /// Reads a pool and says where it came from.
+    public static func read(
+        provider: OpenCodexHubProvider,
+        executablePath: String?,
+        snapshotPath: String?,
+        roleCache: OpenCodexRuntimeRoleCache = .shared,
+        now: Date = Date(),
+        timeout: TimeInterval = OpenCodexHubReader.defaultTimeout) async throws -> OpenCodexHubPoolRead
+    {
+        let binary = self.resolvedExecutablePath(executablePath)
+        let snapshotPath = SettingsValue.cleaned(snapshotPath)
+        let role = await roleCache.role(forBinary: binary, now: now)
+        try Task.checkCancellation()
+        switch (role, binary) {
+        case let (.hub, .some(binary)), let (.standalone, .some(binary)):
+            return try await self.readOnHub(
+                provider: provider, binary: binary, snapshotPath: snapshotPath, timeout: timeout)
+        case let (.client, .some(binary)):
+            return try await self.readOnClient(
+                provider: provider, binary: binary, snapshotPath: snapshotPath, now: now, timeout: timeout)
+        default:
+            guard let snapshotPath,
+                  let snapshot = try self.readSnapshotIfPresent(provider: provider, path: snapshotPath)
+            else {
+                throw OpenCodexHubReaderError.noHubSource(self.noSourceDetails(binary: binary))
+            }
+            return .snapshot(snapshot)
+        }
+    }
+
+    /// Reads the live hub list. Throws `.hubAccountsUnavailable` when opencodex answers without a list.
     public static func readLivePool(
         provider: OpenCodexHubProvider,
         binary: String,
@@ -136,6 +196,16 @@ public enum OpenCodexHubReader {
         return try OpenCodexHubPoolParser.parseSnapshot(data, provider: provider)
     }
 
+    /// The snapshot, or nil when no file exists at `path` (a configured but absent snapshot is no source).
+    static func readSnapshotIfPresent(
+        provider: OpenCodexHubProvider,
+        path: String) throws -> OpenCodexHubSnapshotPool?
+    {
+        let expanded = (path as NSString).expandingTildeInPath
+        guard FileManager.default.fileExists(atPath: expanded) else { return nil }
+        return try self.readSnapshot(provider: provider, path: path)
+    }
+
     /// Switches `provider`'s pool to the account with this id suffix and masked email.
     ///
     /// On the hub the live list is read again so the account is resolved against what the hub lists now,
@@ -147,36 +217,70 @@ public enum OpenCodexHubReader {
         email: String,
         executablePath: String?,
         snapshotPath: String?,
+        roleCache: OpenCodexRuntimeRoleCache = .shared,
         now: Date = Date(),
         timeout: TimeInterval = OpenCodexHubReader.defaultTimeout) async throws -> OpenCodexHubSwitchOutcome
     {
-        if let binary = self.resolvedExecutablePath(executablePath) {
-            let live: OpenCodexHubLivePool?
+        let route = try await self.switchRoute(
+            provider: provider,
+            executablePath: executablePath,
+            snapshotPath: snapshotPath,
+            roleCache: roleCache,
+            now: now,
+            timeout: timeout)
+        switch route {
+        case let .hub(live, binary):
+            return try await self.switchOnHub(live, idSuffix: idSuffix, email: email, binary: binary)
+        case let .request(snapshot, requestsDirectory):
+            return try self.requestSwitch(
+                pool: snapshot.pool,
+                idSuffix: idSuffix,
+                email: email,
+                requestsDirectory: requestsDirectory,
+                now: now)
+        }
+    }
+
+    /// Decides how a switch reaches the hub. Only a Mac whose opencodex owns the pools (hub or standalone) runs
+    /// `ocx account use`; every other Mac asks through a current snapshot.
+    public static func switchRoute(
+        provider: OpenCodexHubProvider,
+        executablePath: String?,
+        snapshotPath: String?,
+        roleCache: OpenCodexRuntimeRoleCache = .shared,
+        now: Date = Date(),
+        timeout: TimeInterval = OpenCodexHubReader.defaultTimeout) async throws -> OpenCodexHubSwitchRoute
+    {
+        let binary = self.resolvedExecutablePath(executablePath)
+        let snapshotPath = SettingsValue.cleaned(snapshotPath)
+        let role = await roleCache.role(forBinary: binary, now: now)
+        try Task.checkCancellation()
+        if role.ownsAccounts, let binary {
             do {
-                live = try await self.readLivePool(provider: provider, binary: binary, timeout: timeout)
+                let live = try await self.readLivePool(provider: provider, binary: binary, timeout: timeout)
+                return .hub(live, binary: binary)
             } catch let error as OpenCodexHubPoolError {
                 throw error
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
-                // Not the hub (or ocx unusable here): fall back to a request when a snapshot is configured.
-                guard SettingsValue.cleaned(snapshotPath) != nil else { throw error }
-                live = nil
-            }
-            if let live {
-                return try await self.switchOnHub(live, idSuffix: idSuffix, email: email, binary: binary)
+                // The hub's own list failed: a request through its snapshot still reaches it.
+                guard let snapshotPath else { throw error }
+                let snapshot = try self.readSnapshot(provider: provider, path: snapshotPath)
+                let directory = OpenCodexHubSwitchRequestWriter.requestsDirectory(forSnapshotPath: snapshotPath)
+                return .request(snapshot, requestsDirectory: directory)
             }
         }
-        guard let snapshotPath = SettingsValue.cleaned(snapshotPath) else {
-            throw OpenCodexHubReaderError.hubAccountsUnavailable("no ocx executable")
+        guard let snapshotPath,
+              let snapshot = try self.readSnapshotIfPresent(provider: provider, path: snapshotPath)
+        else {
+            if role == .client { throw OpenCodexHubReaderError.snapshotNotCurrent }
+            throw OpenCodexHubReaderError.noHubSource(self.noSourceDetails(binary: binary))
         }
-        let pool = try self.readSnapshot(provider: provider, path: snapshotPath).pool
-        return try self.requestSwitch(
-            pool: pool,
-            idSuffix: idSuffix,
-            email: email,
-            requestsDirectory: OpenCodexHubSwitchRequestWriter.requestsDirectory(forSnapshotPath: snapshotPath),
-            now: now)
+        guard !snapshot.pool.isStale(now: now) else { throw OpenCodexHubReaderError.snapshotNotCurrent }
+        return .request(
+            snapshot,
+            requestsDirectory: OpenCodexHubSwitchRequestWriter.requestsDirectory(forSnapshotPath: snapshotPath))
     }
 
     /// Writes a switch request for the hub after checking the target against `pool`.
@@ -233,6 +337,66 @@ public enum OpenCodexHubReader {
         }
         guard activeID == accountID else { throw OpenCodexHubReaderError.mismatchedTarget }
         return .switched
+    }
+
+    private static func readOnHub(
+        provider: OpenCodexHubProvider,
+        binary: String,
+        snapshotPath: String?,
+        timeout: TimeInterval) async throws -> OpenCodexHubPoolRead
+    {
+        let liveFailure: String
+        do {
+            return try await .live(self.readLivePool(provider: provider, binary: binary, timeout: timeout))
+        } catch let error as OpenCodexHubReaderError {
+            guard case let .hubAccountsUnavailable(details) = error else { throw error }
+            liveFailure = details
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as OpenCodexHubPoolError {
+            // A hub that answers with a malformed list is a real error.
+            throw error
+        } catch {
+            liveFailure = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+        guard let snapshotPath else {
+            throw OpenCodexHubReaderError.hubAccountsUnavailable(liveFailure)
+        }
+        return try .snapshot(self.readSnapshot(provider: provider, path: snapshotPath))
+    }
+
+    /// A linked Mac: the hub's current snapshot first (it carries switchability and the hub's request results);
+    /// otherwise this Mac's own list, read-only; otherwise an out-of-date snapshot, shown as such.
+    private static func readOnClient(
+        provider: OpenCodexHubProvider,
+        binary: String,
+        snapshotPath: String?,
+        now: Date,
+        timeout: TimeInterval) async throws -> OpenCodexHubPoolRead
+    {
+        // An absent, unreadable or out-of-date snapshot falls back to the linked list below.
+        let snapshot = snapshotPath.flatMap { try? self.readSnapshotIfPresent(provider: provider, path: $0) }
+        if let snapshot, !snapshot.pool.isStale(now: now) {
+            return .snapshot(snapshot)
+        }
+        do {
+            let live = try await self.readLivePool(provider: provider, binary: binary, timeout: timeout)
+            return .linkedCopy(OpenCodexHubPool(
+                provider: provider,
+                accounts: live.pool.accounts,
+                switchable: false,
+                origin: .linkedCopy(hubName: snapshot?.pool.hubName),
+                lastRequests: snapshot?.pool.lastRequests ?? []))
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            if let snapshot { return .snapshot(snapshot) }
+            throw error
+        }
+    }
+
+    private static func noSourceDetails(binary: String?) -> String {
+        binary == nil ? "no ocx executable" : "opencodex did not report this Mac's role"
     }
 
     /// `ocx` is a Node launcher (`#!/usr/bin/env node`). A menu bar app inherits launchd's short PATH, so

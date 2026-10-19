@@ -8,7 +8,14 @@ import Testing
 /// Mac that is not the hub.
 @MainActor
 struct OpenCodexHubCardTests {
-    private static let snapshot = #"""
+    /// The hub snapshot as just written (a switch is asked for only through a current snapshot).
+    private static var snapshot: String {
+        self.snapshotTemplate.replacingOccurrences(
+            of: #""updatedAt": "2026-10-19T03:15:00Z""#,
+            with: #""updatedAt": "\#(ISO8601DateFormatter().string(from: Date()))""#)
+    }
+
+    private static let snapshotTemplate = #"""
     {"app": "opencodex-hub-accounts", "updatedAt": "2026-10-19T03:15:00Z", "state": {
       "schemaVersion": 2, "hub": "hub-mac", "fetchedAt": "2026-10-19T03:14:58Z",
       "accounts": [],
@@ -46,9 +53,17 @@ struct OpenCodexHubCardTests {
         let fixture = try CodexWorkspacesNavigationFixture(userDefaults: InMemoryUserDefaults())
         let snapshotURL = fixture.files.root.appendingPathComponent("opencodex-hub-accounts.json")
         try Self.snapshot.write(to: snapshotURL, atomically: true, encoding: .utf8)
-        // A linked client: ocx answers without a list.
+        // A linked client: ocx reports the client role and refuses everything else here.
         let executable = fixture.files.root.appendingPathComponent("ocx")
-        try "#!/bin/sh\necho 'Error: not_found' >&2\n".write(to: executable, atomically: true, encoding: .utf8)
+        let script = """
+        #!/bin/sh
+        printf '%s\\n' "$*" >> "$0.calls"
+        case "$1 $2" in
+          "status --json") echo '{"schemaVersion":1,"runtimeRole":"client"}' ;;
+          *) echo 'Error: not_found' >&2; exit 1 ;;
+        esac
+        """
+        try script.write(to: executable, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
         return (fixture, executable.path, snapshotURL.path)
     }
@@ -69,6 +84,43 @@ struct OpenCodexHubCardTests {
         #expect(fixture.store.usesOpenCodexHub(for: .codex))
         #expect(!fixture.store.usesOpenCodexHub(for: .grok))
         #expect(!fixture.store.usesOpenCodexHub(for: .claude))
+    }
+
+    @Test
+    func `a Mac with no hub source reads the card's own sources until a snapshot appears`() async throws {
+        let (fixture, _, snapshotPath) = try self.makeFixture()
+        defer { fixture.cleanup() }
+        try FileManager.default.removeItem(atPath: snapshotPath)
+        fixture.settings.codexOpenCodexHubEnabled = true
+        fixture.settings.codexOpenCodexHubExecutablePath = fixture.files.root.appendingPathComponent("no-ocx").path
+        fixture.settings.codexOpenCodexHubSnapshotPath = snapshotPath
+
+        let handled = await fixture.store.refreshOpenCodexHubCard(.codex, generation: nil)
+        #expect(!handled)
+        #expect(!fixture.store.usesOpenCodexHub(for: .codex))
+        #expect(fixture.store.openCodexHubCardState(for: .codex) == nil)
+        #expect(fixture.store.errors[UsageProvider.codex.instanceID] == nil)
+
+        try Self.snapshot.write(toFile: snapshotPath, atomically: true, encoding: .utf8)
+        let handledAgain = await fixture.store.refreshOpenCodexHubCard(.codex, generation: nil)
+        #expect(handledAgain)
+        #expect(fixture.store.usesOpenCodexHub(for: .codex))
+        #expect(fixture.store.openCodexHubCardState(for: .codex)?.pool?.accounts.count == 2)
+    }
+
+    @Test
+    func `a linked copy names the hub and says why switching is off`() {
+        let pool = OpenCodexHubPool(
+            provider: .openai,
+            accounts: [
+                OpenCodexHubAccount(idSuffix: "aaaa", label: nil, email: "a***a@example.invalid", isActive: true),
+            ],
+            switchable: false,
+            origin: .linkedCopy(hubName: "hub-mac"))
+        #expect(OpenCodexHubPresentation.poolNotices(pool, now: .distantFuture) == [
+            L("Accounts are managed on the hub %@.", "hub-mac"),
+            L("Switching is off until the hub writes a current snapshot to this Mac."),
+        ])
     }
 
     @Test
@@ -99,6 +151,8 @@ struct OpenCodexHubCardTests {
         fixture.store.switchOpenCodexHubAccount(target, provider: .codex, label: "b")
         #expect(fixture.store.openCodexHubCardState(for: .codex)?.isSwitching == false)
         #expect(self.requestFiles(fixture).isEmpty)
+        let calls = (try? String(contentsOfFile: executable + ".calls", encoding: .utf8)) ?? ""
+        #expect(!calls.contains("account use"))
     }
 
     @Test

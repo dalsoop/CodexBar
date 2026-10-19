@@ -182,11 +182,15 @@ public struct OpenCodexHubRequestResult: Equatable, Sendable {
     }
 }
 
-/// Where a pool was read: the live `ocx` list on the hub itself, or the hub's snapshot file.
+/// Where a pool was read: the live `ocx` list on the hub itself, the hub's snapshot file, or the read-only
+/// list a Mac linked to the hub gets from its own `ocx` when no current snapshot is available.
 public enum OpenCodexHubPoolOrigin: Equatable, Sendable {
     case hubLocal
     /// `hubName` is the managing machine when the snapshot names it; `updatedAt` is when the hub wrote it.
     case snapshot(hubName: String?, updatedAt: Date?)
+    /// opencodex on a linked Mac answers `ocx account list` from the hub's cache but refuses
+    /// `ocx account use`; the pool is shown for reading only. `hubName` comes from an older snapshot, if any.
+    case linkedCopy(hubName: String?)
 }
 
 /// One provider pool of an opencodex hub.
@@ -230,8 +234,17 @@ public struct OpenCodexHubPool: Equatable, Sendable {
     }
 
     public var hubName: String? {
-        if case let .snapshot(hubName, _) = self.origin { return hubName }
-        return nil
+        switch self.origin {
+        case .hubLocal: nil
+        case let .snapshot(hubName, _): hubName
+        case let .linkedCopy(hubName): hubName
+        }
+    }
+
+    /// A read-only list from a linked Mac's own `ocx`: switching needs a current hub snapshot.
+    public var isLinkedCopy: Bool {
+        if case .linkedCopy = self.origin { return true }
+        return false
     }
 
     public var snapshotUpdatedAt: Date? {

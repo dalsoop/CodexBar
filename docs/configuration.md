@@ -165,9 +165,8 @@ All provider fields are optional unless noted.
 - `claudeSwapSource`: `"claude-swap"` (default), `"tcr"` or `"opencodex"`; selects the list command
   (`cswap --list --json`, `tcr list --json` or `ocx account list anthropic --quota --json`), the card label and the
   `<source>:<slot>` identity. Machine-local like the executable path.
-- `openCodexHubSnapshotPath`: Claude (opencodex source), Codex and Grok; the opencodex hub snapshot file a Mac linked
-  to the hub reads when `ocx` cannot list the hub's accounts. Switch requests are written to
-  `opencodex-hub-requests/` next to it. Machine-local.
+- `openCodexHubSnapshotPath`: Claude (opencodex source), Codex and Grok; the opencodex hub snapshot file a Mac that
+  is not the hub reads. Switch requests are written to `opencodex-hub-requests/` next to it. Machine-local.
 - `openCodexHubEnabled`: Codex and Grok; read the provider's accounts and limits from an opencodex hub (`openai` and
   `xai` pools) instead of the provider's own sources. Defaults to `false`.
 - `openCodexHubExecutablePath`: Codex and Grok; the `ocx` executable on the hub. Empty looks in `/opt/homebrew/bin`,
@@ -177,10 +176,21 @@ All provider fields are optional unless noted.
 
 ### opencodex hub snapshot
 
-On the [opencodex](https://github.com/lidge-jun/opencodex) hub itself CodexBar runs
-`ocx account list <anthropic|openai|xai> --quota --json` and `ocx account use <provider> <id> --json`. Other Macs read
-a snapshot file the hub keeps up to date (how it gets there is up to the hub's tooling) and leave switch requests next
-to it. CodexBar reads only the fields below; the file never contains tokens or full account ids.
+CodexBar asks opencodex which role this Mac has (`runtimeRole` in `ocx status --json`, read-only; no other field is
+kept) once per executable and keeps the answer for five minutes (one minute when there is no answer), so a refresh of
+several pools starts one `ocx status`. A list coming back is not proof of the hub: since opencodex 2.84 a Mac linked
+to a hub also answers `ocx account list` from the hub's cache, while it refuses `ocx account use`.
+
+- `hub` or `standalone`: CodexBar runs `ocx account list <anthropic|openai|xai> --quota --json` and
+  `ocx account use <provider> <id> --json` (the [opencodex](https://github.com/lidge-jun/opencodex) hub itself).
+- `client` (linked to a hub): CodexBar reads the snapshot file the hub keeps up to date (how it gets there is up to
+  the hub's tooling) and leaves switch requests next to it. While the snapshot is missing or more than five minutes
+  old, the card shows this Mac's own `ocx account list` read-only and says that switching waits for a current
+  snapshot. `ocx account use` never runs on a client.
+- No `ocx` or no role reported: the snapshot only. Without a snapshot either, the Codex and Grok cards read their own
+  sources as if the hub source were off, and the Claude adapter says where the accounts are managed.
+
+CodexBar reads only the fields below; the file never contains tokens or full account ids.
 
 ```json
 {"app": "opencodex-hub-accounts", "updatedAt": "2026-10-19T03:15:00Z", "state": {
@@ -200,7 +210,7 @@ to it. CodexBar reads only the fields below; the file never contains tokens or f
   whitespace, at most 128 characters and does not start with `-` (opencodex lists the Codex App's own login as
   `__main__`). A row with any other id, or a repeated id, is listed without a switch instead of failing the pool.
 - A pool with `switchable: false` lists its accounts but disables Switch and shows `switchReason`. A snapshot whose
-  `updatedAt` is more than five minutes old is shown as out of date.
+  `updatedAt` is more than five minutes old is shown as out of date, and no switch request is written from it.
 - A switch request is `opencodex-hub-requests/<requestId>.json` next to the snapshot, written to a dot-prefixed
   temporary file and renamed into place:
   `{"schemaVersion": 1, "requestId": "<[A-Za-z0-9-]{1,64}>", "provider": "openai", "targetIdSuffix": "1a2b",

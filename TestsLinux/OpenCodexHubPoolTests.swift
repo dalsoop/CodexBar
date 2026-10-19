@@ -68,7 +68,8 @@ struct OpenCodexHubPoolTests {
         return url.path
     }
 
-    /// A fake `ocx` that prints `list-<provider>.json` for `account list` and a receipt for `account use`.
+    /// A fake `ocx` that reports the hub role, prints `list-<provider>.json` for `account list` and a receipt for
+    /// `account use`.
     private func makeFakeOCX(in directory: URL, lists: [String: String], body: String? = nil) throws -> String {
         for (provider, list) in lists {
             try list.write(
@@ -82,6 +83,7 @@ struct OpenCodexHubPoolTests {
         printf '%s\\n' "$*" >> "$DIR/ocx.calls"
         \(body ?? #"""
         case "$1 $2" in
+          "status --json") echo '{"schemaVersion":1,"runtimeRole":"hub"}' ;;
           "account list") cat "$DIR/list-$3.json" ;;
           "account use") printf '{"ok":true,"provider":"%s","type":"oauth","activeId":"%s"}\n' "$3" "$4" ;;
           *) exit 64 ;;
@@ -347,6 +349,7 @@ struct OpenCodexHubPoolTests {
             snapshotPath: nil)
         #expect(openaiOutcome == .switched)
         #expect(self.calls(ocx) == [
+            "status --json",
             "account list openai --quota --json",
             "account list xai --quota --json",
             "account use xai 000000000000000000000000000x9999 --json",
@@ -387,7 +390,11 @@ struct OpenCodexHubPoolTests {
             executablePath: ocx,
             snapshotPath: nil)
         #expect(outcome == .switched)
-        #expect(self.calls(ocx) == ["account list openai --quota --json", "account use openai __main__ --json"])
+        #expect(self.calls(ocx) == [
+            "status --json",
+            "account list openai --quota --json",
+            "account use openai __main__ --json",
+        ])
     }
 
     @Test(arguments: [
@@ -434,12 +441,15 @@ struct OpenCodexHubPoolTests {
     }
 
     @Test
-    func `off the hub the pool comes from the snapshot and a switch leaves a request`() async throws {
+    func `without a reported role the pool comes from the snapshot and a switch leaves a request`() async throws {
         let directory = try self.makeDirectory()
+        // An opencodex that answers nothing useful (no role, no list) is not treated as the hub.
         let ocx = try self.makeFakeOCX(in: directory, lists: [:], body: #"echo "Error: not_found" >&2"#)
         let snapshotPath = try self.writeSnapshot(in: directory)
+        let now = Self.updatedAt.addingTimeInterval(60)
 
-        let xai = try await OpenCodexHubReader.readPool(provider: .xai, executablePath: ocx, snapshotPath: snapshotPath)
+        let xai = try await OpenCodexHubReader.readPool(
+            provider: .xai, executablePath: ocx, snapshotPath: snapshotPath, now: now)
         #expect(!xai.isHubLocal)
         #expect(xai.hubName == "hub-mac")
 
@@ -448,14 +458,16 @@ struct OpenCodexHubPoolTests {
             idSuffix: "9999",
             email: "b***b@example.com",
             executablePath: ocx,
-            snapshotPath: snapshotPath)
+            snapshotPath: snapshotPath,
+            now: now)
         guard case let .requested(request) = outcome else {
             Issue.record("expected a request, got \(outcome)")
             return
         }
         let requests = directory.appendingPathComponent("opencodex-hub-requests")
         #expect(try FileManager.default.contentsOfDirectory(atPath: requests.path) == ["\(request.requestID).json"])
-        #expect(self.calls(ocx) == ["account list xai --quota --json", "account list xai --quota --json"])
+        // The role is asked once and cached; no list and no `account use` run off the hub.
+        #expect(self.calls(ocx) == ["status --json"])
 
         await #expect(throws: OpenCodexHubReaderError.switchNotAllowed("Automation on hub-mac uses this pool.")) {
             _ = try await OpenCodexHubReader.switchAccount(
@@ -463,9 +475,19 @@ struct OpenCodexHubPoolTests {
                 idSuffix: "0f0f",
                 email: "b***b@example.com",
                 executablePath: ocx,
-                snapshotPath: snapshotPath)
+                snapshotPath: snapshotPath,
+                now: now)
         }
-        await #expect(throws: OpenCodexHubReaderError.hubAccountsUnavailable("Error: not_found")) {
+        await #expect(throws: OpenCodexHubReaderError.snapshotNotCurrent) {
+            _ = try await OpenCodexHubReader.switchAccount(
+                provider: .xai,
+                idSuffix: "9999",
+                email: "b***b@example.com",
+                executablePath: ocx,
+                snapshotPath: snapshotPath,
+                now: now.addingTimeInterval(OpenCodexHubPool.staleInterval))
+        }
+        await #expect(throws: OpenCodexHubReaderError.noHubSource("opencodex did not report this Mac's role")) {
             _ = try await OpenCodexHubReader.readPool(provider: .xai, executablePath: ocx, snapshotPath: nil)
         }
     }
@@ -473,14 +495,20 @@ struct OpenCodexHubPoolTests {
     @Test
     func `the Claude adapter asks the hub to switch from a linked Mac`() async throws {
         let directory = try self.makeDirectory()
-        let ocx = try self.makeFakeOCX(in: directory, lists: [:], body: #"echo "Error: not_found" >&2"#)
+        let ocx = try self.makeFakeOCX(in: directory, lists: [:], body: #"""
+        case "$1 $2" in
+          "status --json") echo '{"schemaVersion":1,"runtimeRole":"client"}' ;;
+          *) echo "Error: not_found" >&2; exit 1 ;;
+        esac
+        """#)
         let snapshotPath = try self.writeSnapshot(in: directory)
-        let result = try await ClaudeSwapAccountReader.switchAccount(
+        let now = Self.updatedAt.addingTimeInterval(60)
+        let result = try await OpenCodexAccountReader.switchAccount(
             executablePath: ocx,
             accountNumber: 2,
-            source: .openCodex,
             expectedEmail: "b***b@example.com",
-            openCodexSnapshotPath: snapshotPath)
+            snapshotPath: snapshotPath,
+            now: now)
         #expect(result.reason == "requested")
         #expect(!result.switched)
         let request = try #require(result.hubRequest)
@@ -490,13 +518,14 @@ struct OpenCodexHubPoolTests {
         #expect(FileManager.default.fileExists(atPath: requests.appendingPathComponent(request.fileName).path))
 
         await #expect(throws: OpenCodexAccountListError.accountChanged(slot: 2)) {
-            _ = try await ClaudeSwapAccountReader.switchAccount(
+            _ = try await OpenCodexAccountReader.switchAccount(
                 executablePath: ocx,
                 accountNumber: 2,
-                source: .openCodex,
                 expectedEmail: "someone@else.example",
-                openCodexSnapshotPath: snapshotPath)
+                snapshotPath: snapshotPath,
+                now: now)
         }
+        #expect(self.calls(ocx) == ["status --json"])
     }
 
     @Test
