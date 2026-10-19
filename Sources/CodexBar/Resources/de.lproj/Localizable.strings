@@ -2681,3 +2681,19 @@
 /* Munito provider credentials */
 "Key with Read account data (Admin API) permission. Or set MUNITO_API_KEY." = "Schlüssel mit Berechtigung Kontodaten lesen (Admin API). Oder MUNITO_API_KEY setzen.";
 "Munito reports Admin API spend and limits, not local token cost history." = "Munito meldet Ausgaben und Limits der Admin API, nicht den lokalen Token-Kostenverlauf.";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "opencodex-Programmdatei";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "Pfad zur ocx-Programmdatei (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "Zeigt die Claude-Konten eines opencodex-Hubs. Auf dem Hub kannst du das aktive Konto des Pools über `ocx` wechseln; andere Macs zeigen einen schreibgeschützten Schnappschuss. Die Anmeldedaten bleiben auf dem Hub; CodexBar liest sie nie.";
+"Set the ocx executable path below." = "Lege unten den Pfad zur ocx-Programmdatei fest.";
+"Hub snapshot file" = "Hub-Schnappschussdatei";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "Optional. Auf einem Mac, der nicht der Hub ist, werden die Hub-Konten schreibgeschützt aus dieser JSON-Kopie von `ocx account list anthropic --quota --json` angezeigt.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "Die Konten werden auf dem Hub %@ verwaltet.";
+"Accounts are managed on the opencodex hub." = "Die Konten werden auf dem opencodex-Hub verwaltet.";
+"Switch opencodex hub account" = "opencodex-Hub-Konto wechseln";
+"Claude accounts on the opencodex hub" = "Claude-Konten auf dem opencodex-Hub";
+"Switch the opencodex hub to %@?" = "opencodex-Hub zu %@ wechseln?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "Jeder Mac, der diesen Hub nutzt, wechselt bei seiner nächsten Anfrage zu diesem Claude-Konto.";

@@ -2685,3 +2685,19 @@
 /* Munito provider credentials */
 "Key with Read account data (Admin API) permission. Or set MUNITO_API_KEY." = "Kunci dengan izin Baca data akun (Admin API). Atau setel MUNITO_API_KEY.";
 "Munito reports Admin API spend and limits, not local token cost history." = "Munito melaporkan pengeluaran dan batasan Admin API, bukan riwayat biaya token lokal.";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "File eksekusi opencodex";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "Path ke file eksekusi ocx (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "Menampilkan akun Claude dari hub opencodex. Di hub, Anda dapat mengganti akun aktif pool melalui `ocx`; Mac lain menampilkan snapshot hanya-baca. Kredensial tetap di hub; CodexBar tidak pernah membacanya.";
+"Set the ocx executable path below." = "Atur path file eksekusi ocx di bawah.";
+"Hub snapshot file" = "File snapshot hub";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "Opsional. Di Mac yang bukan hub, tampilkan akun hub hanya-baca dari salinan JSON `ocx account list anthropic --quota --json` ini.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "Akun dikelola di hub %@.";
+"Accounts are managed on the opencodex hub." = "Akun dikelola di hub opencodex.";
+"Switch opencodex hub account" = "Ganti akun hub opencodex";
+"Claude accounts on the opencodex hub" = "Akun Claude di hub opencodex";
+"Switch the opencodex hub to %@?" = "Ganti hub opencodex ke %@?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "Setiap Mac yang memakai hub ini akan beralih ke akun Claude ini pada permintaan berikutnya.";

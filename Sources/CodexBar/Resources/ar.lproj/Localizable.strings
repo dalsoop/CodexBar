@@ -2687,3 +2687,19 @@
 /* Munito provider credentials */
 "Key with Read account data (Admin API) permission. Or set MUNITO_API_KEY." = "مفتاح بصلاحية قراءة بيانات الحساب (Admin API). أو اضبط MUNITO_API_KEY.";
 "Munito reports Admin API spend and limits, not local token cost history." = "تُبلغ Munito عن الإنفاق والحدود عبر Admin API، لا عن سجل تكاليف الرموز المحلي.";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "ملف opencodex التنفيذي";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "مسار ملف ocx التنفيذي (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "يعرض حسابات Claude في مركز opencodex. على المركز يمكنك تبديل الحساب النشط في المجموعة عبر `ocx`؛ وتعرض أجهزة Mac الأخرى لقطة للقراءة فقط. تبقى بيانات الاعتماد على المركز؛ ولا يقرأها CodexBar أبدًا.";
+"Set the ocx executable path below." = "عيّن مسار ملف ocx التنفيذي أدناه.";
+"Hub snapshot file" = "ملف لقطة المركز";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "اختياري. على جهاز Mac ليس هو المركز، تُعرض حسابات المركز للقراءة فقط من نسخة JSON هذه من `ocx account list anthropic --quota --json`.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "تُدار الحسابات على المركز %@.";
+"Accounts are managed on the opencodex hub." = "تُدار الحسابات على مركز opencodex.";
+"Switch opencodex hub account" = "تبديل حساب مركز opencodex";
+"Claude accounts on the opencodex hub" = "حسابات Claude على مركز opencodex";
+"Switch the opencodex hub to %@?" = "هل تريد تبديل مركز opencodex إلى %@؟";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "سينتقل كل جهاز Mac يستخدم هذا المركز إلى حساب Claude هذا في طلبه التالي.";

@@ -2675,3 +2675,19 @@
 /* Munito provider credentials */
 "Key with Read account data (Admin API) permission. Or set MUNITO_API_KEY." = "具有读取账户数据（Admin API）权限的密钥。或设置 MUNITO_API_KEY。";
 "Munito reports Admin API spend and limits, not local token cost history." = "Munito 报告 Admin API 的支出和限额，而非本地 token 成本历史。";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "opencodex 可执行文件";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "ocx 可执行文件的路径(github.com/lidge-jun/opencodex)。";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "显示 opencodex 中枢的 Claude 账户。在中枢上可以通过 `ocx` 切换账户池的当前账户;其他 Mac 显示只读快照。凭据保留在中枢上;CodexBar 从不读取它们。";
+"Set the ocx executable path below." = "请在下方设置 ocx 可执行文件路径。";
+"Hub snapshot file" = "中枢快照文件";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "可选。在不是中枢的 Mac 上,从这个 `ocx account list anthropic --quota --json` 的 JSON 副本以只读方式显示中枢的账户。";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "账户由中枢 %@ 管理。";
+"Accounts are managed on the opencodex hub." = "账户由 opencodex 中枢管理。";
+"Switch opencodex hub account" = "切换 opencodex 中枢账户";
+"Claude accounts on the opencodex hub" = "opencodex 中枢上的 Claude 账户";
+"Switch the opencodex hub to %@?" = "将 opencodex 中枢切换到 %@?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "使用此中枢的每台 Mac 都会在下一个请求时改用此 Claude 账户。";

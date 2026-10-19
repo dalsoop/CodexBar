@@ -13,15 +13,33 @@ public struct ClaudeSwapAccountList: Equatable, Sendable {
     public let accounts: [ClaudeSwapAccountRow]
     /// Additive adapter capability. Defaults to true for claude-swap schema-v1 compatibility.
     public let supportsAccountSwitching: Bool
+    /// Set when the list is a read-only copy of a pool another machine manages
+    /// (an opencodex hub snapshot read on a linked Mac). Nil for live lists.
+    public let remoteCopy: ClaudeSwapRemoteCopy?
 
     public init(
         activeAccountNumber: Int?,
         accounts: [ClaudeSwapAccountRow],
-        supportsAccountSwitching: Bool = true)
+        supportsAccountSwitching: Bool = true,
+        remoteCopy: ClaudeSwapRemoteCopy? = nil)
     {
         self.activeAccountNumber = activeAccountNumber
         self.accounts = accounts
         self.supportsAccountSwitching = supportsAccountSwitching
+        self.remoteCopy = remoteCopy
+    }
+}
+
+/// Where a read-only account list came from. Display-only: never identity.
+public struct ClaudeSwapRemoteCopy: Equatable, Sendable {
+    /// Display name of the machine that manages the accounts, when the copy names one.
+    public let managerName: String?
+    /// When the copy was taken on the managing machine.
+    public let fetchedAt: Date?
+
+    public init(managerName: String?, fetchedAt: Date?) {
+        self.managerName = managerName
+        self.fetchedAt = fetchedAt
     }
 }
 

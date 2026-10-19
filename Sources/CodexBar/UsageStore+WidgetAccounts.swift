@@ -183,6 +183,7 @@ extension UsageStore {
         let namespace = switch source {
         case .claudeSwap: "swap"
         case .tcr: "tcr"
+        case .openCodex: "opencodex"
         }
         return "claude/\(namespace):\(account.id.opaqueID):\(owner)"
     }

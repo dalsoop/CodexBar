@@ -731,6 +731,7 @@ struct LocalizationLanguageCatalogTests {
         // Brands, protocol examples, pure format strings and accepted Italian cognates.
         let intentionallyUnchanged: Set = [
             "/Applications/TcrBar.app/Contents/MacOS/tcr",
+            "/opt/homebrew/bin/ocx",
             "<1%% %@",
             "%.0f%% %@",
             "%@ %@",
@@ -837,6 +838,7 @@ struct LocalizationLanguageCatalogTests {
             "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
             "~/.local/bin/cswap",
             "~/Library/Application Support/JetBrains/IntelliJIdea2024.3",
+            "~/opencodex-hub-accounts.json",
             // Measurement units and numeric formats are shared with English.
             "spend_performance_percent",
             "spend_performance_rate",

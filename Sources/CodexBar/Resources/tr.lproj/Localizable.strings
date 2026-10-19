@@ -2686,3 +2686,19 @@
 /* Munito provider credentials */
 "Key with Read account data (Admin API) permission. Or set MUNITO_API_KEY." = "Hesap verilerini okuma (Admin API) iznine sahip anahtar. Ya da MUNITO_API_KEY ayarlayın.";
 "Munito reports Admin API spend and limits, not local token cost history." = "Munito, Admin API harcamalarını ve limitlerini raporlar; yerel token maliyet geçmişini raporlamaz.";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "opencodex yürütülebilir dosyası";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "ocx yürütülebilir dosyasının yolu (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "Bir opencodex merkezinin Claude hesaplarını gösterir. Merkezde havuzun etkin hesabını `ocx` ile değiştirebilirsiniz; diğer Mac'ler salt okunur bir anlık görüntü gösterir. Kimlik bilgileri merkezde kalır; CodexBar bunları asla okumaz.";
+"Set the ocx executable path below." = "ocx yürütülebilir dosya yolunu aşağıda ayarlayın.";
+"Hub snapshot file" = "Merkez anlık görüntü dosyası";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "İsteğe bağlı. Merkez olmayan bir Mac'te, merkezin hesaplarını `ocx account list anthropic --quota --json` çıktısının bu JSON kopyasından salt okunur gösterir.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "Hesaplar %@ merkezinde yönetilir.";
+"Accounts are managed on the opencodex hub." = "Hesaplar opencodex merkezinde yönetilir.";
+"Switch opencodex hub account" = "opencodex merkezi hesabını değiştir";
+"Claude accounts on the opencodex hub" = "opencodex merkezindeki Claude hesapları";
+"Switch the opencodex hub to %@?" = "opencodex merkezi %@ hesabına geçirilsin mi?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "Bu merkezi kullanan her Mac, bir sonraki isteğinde bu Claude hesabına geçer.";

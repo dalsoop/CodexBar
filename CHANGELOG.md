@@ -2,6 +2,10 @@
 
 ## 0.77.1 — Unreleased
 
+### Added
+
+- Claude: an opencodex account source lists an opencodex hub's Anthropic pool accounts with their 5-hour, weekly and model-scoped quotas, switches the hub's active account after a confirmation, and shows a read-only hub snapshot on Macs linked to the hub.
+
 ### Fixed
 
 - Claude: try readable OAuth credentials before starting the CLI in Linux Auto mode, avoiding unnecessary interactive startup while preserving explicit source selection (#4613, #4615). Thanks @yeseoLee!

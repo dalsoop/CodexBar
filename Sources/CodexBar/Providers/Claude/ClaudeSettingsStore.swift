@@ -97,6 +97,19 @@ extension SettingsStore {
             self.logProviderModeChange(provider: .claude, field: "claudeSwapSource", value: newValue.rawValue)
         }
     }
+
+    var claudeSwapOpenCodexSnapshotPath: String {
+        get { self.configSnapshot.providerConfig(for: .claude)?.sanitizedOpenCodexHubSnapshotPath ?? "" }
+        set {
+            self.updateProviderConfig(provider: .claude) { entry in
+                entry.openCodexHubSnapshotPath = self.normalizedConfigValue(newValue)
+            }
+            self.logProviderModeChange(
+                provider: .claude,
+                field: "openCodexHubSnapshotPath",
+                value: newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "cleared" : "set")
+        }
+    }
 }
 
 extension SettingsStore {

@@ -29,8 +29,15 @@ public enum ClaudeSwapAccountReader {
     public static func readAccountList(
         executablePath: String,
         source: ClaudeSwapAccountSource = .claudeSwap,
+        openCodexSnapshotPath: String? = nil,
         timeout: TimeInterval = ClaudeSwapAccountReader.defaultTimeout) async throws -> ClaudeSwapAccountList
     {
+        if source == .openCodex {
+            return try await OpenCodexAccountReader.readAccountList(
+                executablePath: executablePath,
+                snapshotPath: openCodexSnapshotPath,
+                timeout: timeout)
+        }
         // Handled claude-swap failures print a schema-v1 error envelope to stdout
         // and exit non-zero, so non-zero exits still parse; the parser surfaces
         // the envelope as `ClaudeSwapListParserError.reportedError`.
@@ -43,15 +50,30 @@ public enum ClaudeSwapAccountReader {
         return try ClaudeSwapListParser.parse(Data(result.utf8))
     }
 
-    /// Activates one source-issued numeric slot through claude-swap.
+    /// Activates one source-issued numeric slot through claude-swap or opencodex.
     ///
     /// The external tool owns the credential transaction. CodexBar supplies no
-    /// credentials and accepts no config-defined arguments.
+    /// credentials and accepts no config-defined arguments. opencodex resolves the
+    /// slot against a fresh live list and, given `expectedEmail`, refuses a slot
+    /// that now holds a different account.
     public static func switchAccount(
         executablePath: String,
-        accountNumber: Int) async throws
+        accountNumber: Int,
+        source: ClaudeSwapAccountSource = .claudeSwap,
+        expectedEmail: String? = nil) async throws
         -> ClaudeSwapAccountSwitchResult
     {
+        switch source {
+        case .claudeSwap:
+            break
+        case .openCodex:
+            return try await OpenCodexAccountReader.switchAccount(
+                executablePath: executablePath,
+                accountNumber: accountNumber,
+                expectedEmail: expectedEmail)
+        case .tcr:
+            throw ClaudeSwapSwitchParserError.malformedShape("tcr does not switch accounts")
+        }
         guard accountNumber > 0 else {
             throw ClaudeSwapSwitchParserError.malformedShape("requested account slot must be positive")
         }
@@ -70,7 +92,7 @@ public enum ClaudeSwapAccountReader {
     }
 
     /// Best-effort version probe (`cswap --version` prints `cswap <version>`,
-    /// `tcr --version` prints `tcr <version>`).
+    /// `tcr --version` prints `tcr <version>`, `ocx --version` prints `opencodex <version>`).
     public static func readVersion(
         executablePath: String,
         source: ClaudeSwapAccountSource = .claudeSwap,

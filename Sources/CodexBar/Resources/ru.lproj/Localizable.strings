@@ -2684,3 +2684,19 @@
 /* Munito provider credentials */
 "Key with Read account data (Admin API) permission. Or set MUNITO_API_KEY." = "Ключ с правом чтения данных аккаунта (Admin API). Или задайте MUNITO_API_KEY.";
 "Munito reports Admin API spend and limits, not local token cost history." = "Munito сообщает о расходах и лимитах Admin API, а не о локальной истории затрат на токены.";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "Исполняемый файл opencodex";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "Путь к исполняемому файлу ocx (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "Показывает аккаунты Claude хаба opencodex. На хабе можно переключить активный аккаунт пула через `ocx`; другие Mac показывают снимок только для чтения. Учётные данные остаются на хабе; CodexBar никогда их не читает.";
+"Set the ocx executable path below." = "Укажите ниже путь к исполняемому файлу ocx.";
+"Hub snapshot file" = "Файл снимка хаба";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "Необязательно. На Mac, который не является хабом, аккаунты хаба показываются только для чтения из этой JSON-копии `ocx account list anthropic --quota --json`.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "Аккаунтами управляет хаб %@.";
+"Accounts are managed on the opencodex hub." = "Аккаунтами управляет хаб opencodex.";
+"Switch opencodex hub account" = "Переключить аккаунт хаба opencodex";
+"Claude accounts on the opencodex hub" = "Аккаунты Claude на хабе opencodex";
+"Switch the opencodex hub to %@?" = "Переключить хаб opencodex на %@?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "Каждый Mac, использующий этот хаб, перейдёт на этот аккаунт Claude при следующем запросе.";

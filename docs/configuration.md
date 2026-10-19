@@ -160,9 +160,13 @@ All provider fields are optional unless noted.
   Example: `"modelRateLimits": [{"model": "gpt-5", "tokensPerMinute": 40000000, "requestsPerMinute": 15000}]`.
 - `tokenAccounts`: multi-account tokens for providers in `TokenAccountSupportCatalog`.
 - `claudeSwapEnabled`: allow the Claude provider to read account usage from claude-swap.
-- `claudeSwapExecutablePath`: path to the `cswap` executable, or to `tcr` when `claudeSwapSource` is `"tcr"`.
-- `claudeSwapSource`: `"claude-swap"` (default) or `"tcr"`; selects the list command (`cswap --list --json` or
-  `tcr list --json`), the card label and the `<source>:<slot>` identity. Machine-local like the executable path.
+- `claudeSwapExecutablePath`: path to the `cswap` executable, to `tcr` when `claudeSwapSource` is `"tcr"`, or to
+  `ocx` when it is `"opencodex"`.
+- `claudeSwapSource`: `"claude-swap"` (default), `"tcr"` or `"opencodex"`; selects the list command
+  (`cswap --list --json`, `tcr list --json` or `ocx account list anthropic --quota --json`), the card label and the
+  `<source>:<slot>` identity. Machine-local like the executable path.
+- `openCodexHubSnapshotPath`: opencodex only; a JSON copy of the hub's Anthropic account list that a Mac linked to the
+  hub shows read-only when `ocx` cannot list the hub's accounts. Machine-local.
 - `claudeSwapShowSingleAccount`: prefer a claude-swap card when exactly one account is available. Defaults to
   `false`; multiple claude-swap accounts retain their existing precedence.
 

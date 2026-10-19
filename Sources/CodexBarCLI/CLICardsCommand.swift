@@ -40,6 +40,7 @@ extension CodexBarCLI {
                 eligible: claudeSwapEligible,
                 executablePath: CLIClaudeSwapCards.executablePath(from: claudeConfig),
                 source: claudeConfig?.resolvedClaudeSwapSource ?? .claudeSwap,
+                openCodexSnapshotPath: claudeConfig?.sanitizedOpenCodexHubSnapshotPath,
                 showSingleAccount: claudeConfig?.claudeSwapShowSingleAccount == true,
                 renderOptions: CLIClaudeSwapCardsRenderOptions(
                     status: status,

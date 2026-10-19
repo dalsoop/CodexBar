@@ -18,7 +18,9 @@ struct ClaudeSwapSettingsPlacementTests {
             $0.id == "claude-swap-accounts"
         })
         let fields = toggle.inlineFields
-        #expect(fields.map(\.id) == ["claude-swap-executable-path"])
+        #expect(fields.map(\.id) == ["claude-swap-executable-path", "claude-swap-opencodex-snapshot-path"])
+        // The opencodex snapshot path only shows while opencodex is the selected source.
+        #expect(fields.filter { $0.isVisible?() ?? true }.map(\.id) == ["claude-swap-executable-path"])
         let field = try #require(fields.first)
         #expect(!toggle.binding.wrappedValue)
         #expect(field.subtitle == "Path to the cswap executable (github.com/realiti4/claude-swap).")
@@ -41,7 +43,7 @@ struct ClaudeSwapSettingsPlacementTests {
         let picker = try #require(implementation.settingsPickers(context: context).first {
             $0.id == "claude-swap-source"
         })
-        #expect(picker.options.map(\.id) == ["claude-swap", "tcr"])
+        #expect(picker.options.map(\.id) == ["claude-swap", "tcr", "opencodex"])
         #expect(picker.isVisible?() == false)
         #expect(picker.binding.wrappedValue == "claude-swap")
 
@@ -97,6 +99,31 @@ struct ClaudeSwapSettingsPlacementTests {
         #expect(toggle.statusText?() == "Set the tcr executable path below.")
         let setupText = [toggle.subtitle, field.title, field.subtitle, field.placeholder ?? "", toggle.statusText?()]
         #expect(!setupText.contains { $0?.contains("cswap") == true })
+    }
+
+    @Test
+    func `opencodex source names ocx and shows the hub snapshot field`() throws {
+        let fixture = try ProviderSettingsDescriptorTests()
+            .makeSettingsFixture(suite: "ProviderSettingsDescriptorTests-opencodex-setup-text")
+        fixture.settings.claudeSwapEnabled = true
+        fixture.settings.claudeSwapSource = .openCodex
+        let context = fixture.settingsContext(provider: .claude)
+        let toggle = try #require(ClaudeProviderImplementation().settingsToggles(context: context).first {
+            $0.id == "claude-swap-accounts"
+        })
+        let visible = toggle.inlineFields.filter { $0.isVisible?() ?? true }
+        #expect(visible.map(\.id) == ["claude-swap-executable-path", "claude-swap-opencodex-snapshot-path"])
+        let field = try #require(visible.first)
+        #expect(field.title == "opencodex executable")
+        #expect(field.placeholder == "/opt/homebrew/bin/ocx")
+        #expect(toggle.statusText?() == "Set the ocx executable path below.")
+
+        let snapshotField = try #require(visible.last)
+        snapshotField.binding.wrappedValue = "~/hub-accounts.json"
+        #expect(fixture.settings.claudeSwapOpenCodexSnapshotPath == "~/hub-accounts.json")
+        #expect(
+            fixture.settings.configSnapshot.providerConfig(for: .claude)?.openCodexHubSnapshotPath
+                == "~/hub-accounts.json")
     }
 
     @Test

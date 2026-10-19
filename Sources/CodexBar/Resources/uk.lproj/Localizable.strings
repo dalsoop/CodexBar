@@ -2683,3 +2683,19 @@
 /* Munito provider credentials */
 "Key with Read account data (Admin API) permission. Or set MUNITO_API_KEY." = "Ключ із правом читання даних облікового запису (Admin API). Або встановіть MUNITO_API_KEY.";
 "Munito reports Admin API spend and limits, not local token cost history." = "Munito звітує про витрати та ліміти Admin API, а не локальну історію витрат на токени.";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "Виконуваний файл opencodex";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "Шлях до виконуваного файлу ocx (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "Показує облікові записи Claude хабу opencodex. На хабі можна перемкнути активний обліковий запис пулу через `ocx`; інші Mac показують знімок лише для читання. Облікові дані залишаються на хабі; CodexBar ніколи їх не читає.";
+"Set the ocx executable path below." = "Укажіть нижче шлях до виконуваного файлу ocx.";
+"Hub snapshot file" = "Файл знімка хабу";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "Необов'язково. На Mac, який не є хабом, облікові записи хабу показуються лише для читання з цієї JSON-копії `ocx account list anthropic --quota --json`.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "Обліковими записами керує хаб %@.";
+"Accounts are managed on the opencodex hub." = "Обліковими записами керує хаб opencodex.";
+"Switch opencodex hub account" = "Перемкнути обліковий запис хабу opencodex";
+"Claude accounts on the opencodex hub" = "Облікові записи Claude на хабі opencodex";
+"Switch the opencodex hub to %@?" = "Перемкнути хаб opencodex на %@?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "Кожен Mac, що використовує цей хаб, перейде на цей обліковий запис Claude під час наступного запиту.";
