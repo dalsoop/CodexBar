@@ -2715,6 +2715,7 @@
 "The hub list is out of date." = "قائمة المركز قديمة.";
 "Accounts in this pool are switched only on %@." = "لا تُبدَّل حسابات هذه المجموعة إلا على %@.";
 "Accounts in this pool are switched only on the hub." = "لا تُبدَّل حسابات هذه المجموعة إلا على المركز.";
+"Switching is off until the hub writes a current snapshot to this Mac." = "التبديل متوقف حتى يكتب المركز لقطة حديثة على هذا الـ Mac.";
 "Quota: %@" = "الحصة: %@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "استخدم هذا الحساب %@ أو أكثر من أحد الحدود. قد يبدّل المركز مرة أخرى قريبًا، أو قد تتوقف الطلبات حتى يُعاد ضبط الحد.";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "يطلب جهاز Mac هذا من المركز التبديل؛ تظهر النتيجة بعد التحديث التالي للمركز.";

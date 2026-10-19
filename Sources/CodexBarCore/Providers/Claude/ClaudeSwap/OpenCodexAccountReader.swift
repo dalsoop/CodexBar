@@ -2,47 +2,41 @@ import Foundation
 
 /// The Claude account adapter's view of the opencodex hub's Anthropic pool.
 ///
-/// On the hub it runs `ocx account list anthropic --quota --json` and, for an explicit switch,
-/// `ocx account use anthropic <id> --json` (fixed argument arrays, never a shell; see
-/// `OpenCodexHubReader`). A Mac linked to a hub cannot list the hub's accounts: it reads the hub's
-/// snapshot file and asks for a switch with a request file next to it. opencodex keeps the
-/// credentials on the hub; CodexBar never reads or stores them, and full account ids stay in memory.
+/// The source follows the role opencodex reports for this Mac (see `OpenCodexHubReader`). On the hub it runs
+/// `ocx account list anthropic --quota --json` and, for an explicit switch, `ocx account use anthropic <id> --json`
+/// (fixed argument arrays, never a shell). A Mac linked to a hub reads the hub's snapshot file and asks for a
+/// switch with a request file next to it; it never runs `ocx account use`. opencodex keeps the credentials on
+/// the hub; CodexBar never reads or stores them, and full account ids stay in memory.
 public enum OpenCodexAccountReader {
     public static func readAccountList(
         executablePath: String,
         snapshotPath: String?,
+        roleCache: OpenCodexRuntimeRoleCache = .shared,
+        now: Date = Date(),
         timeout: TimeInterval = ClaudeSwapAccountReader.defaultTimeout) async throws -> ClaudeSwapAccountList
     {
-        let liveFailure: String
-        if let binary = OpenCodexHubReader.resolvedExecutablePath(executablePath) {
-            do {
-                return try await self.readLiveList(binary: binary, timeout: timeout).list
-            } catch let error as OpenCodexAccountListError {
-                // A hub that answers with a malformed list is a real error, not a client.
-                guard case let .hubAccountsUnavailable(details) = error else { throw error }
-                liveFailure = details
-            } catch is CancellationError {
-                throw CancellationError()
-            } catch {
-                liveFailure = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            }
-        } else {
-            liveFailure = "no ocx executable"
+        let read = try await self.mappingErrors {
+            try await OpenCodexHubReader.read(
+                provider: .anthropic,
+                executablePath: executablePath,
+                snapshotPath: snapshotPath,
+                roleCache: roleCache,
+                now: now,
+                timeout: timeout)
         }
-        guard let snapshotPath = SettingsValue.cleaned(snapshotPath) else {
-            throw OpenCodexAccountListError.hubAccountsUnavailable(liveFailure)
-        }
-        return try self.readSnapshot(path: snapshotPath).list
+        return OpenCodexAccountListParser.result(from: read).list
     }
 
-    /// Reads the live hub list. Throws `.hubAccountsUnavailable` when opencodex answers without a list
-    /// (for example `Error: not_found` on a linked client).
+    /// Reads the live hub list. Throws `.hubAccountsUnavailable` when opencodex answers without a list.
     public static func readLiveList(
         executablePath: String,
         timeout: TimeInterval = ClaudeSwapAccountReader.defaultTimeout) async throws -> OpenCodexAccountListResult
     {
         let binary = try ClaudeSwapAccountReader.resolvedExecutablePath(executablePath)
-        return try await self.readLiveList(binary: binary, timeout: timeout)
+        let live = try await self.mappingErrors {
+            try await OpenCodexHubReader.readLivePool(provider: .anthropic, binary: binary, timeout: timeout)
+        }
+        return OpenCodexAccountListParser.result(fromLive: live)
     }
 
     public static func readSnapshot(path: String) throws -> OpenCodexAccountListResult {
@@ -66,40 +60,42 @@ public enum OpenCodexAccountReader {
     ///
     /// On the hub the live list is read again so the slot is resolved against what the hub lists now;
     /// when `expectedEmail` is given the slot must still hold that (masked) account. Once launched,
-    /// `ocx account use` runs to its natural exit. On another Mac the snapshot is read again with the
+    /// `ocx account use` runs to its natural exit. On another Mac the current snapshot is read again with the
     /// same checks and a switch request is written for the hub (`reason == "requested"`).
     public static func switchAccount(
         executablePath: String,
         accountNumber: Int,
         expectedEmail: String?,
         snapshotPath: String? = nil,
+        roleCache: OpenCodexRuntimeRoleCache = .shared,
         now: Date = Date(),
         timeout: TimeInterval = ClaudeSwapAccountReader.defaultTimeout) async throws -> ClaudeSwapAccountSwitchResult
     {
         guard accountNumber > 0 else {
             throw OpenCodexAccountListError.accountNotFound(slot: accountNumber)
         }
-        let snapshotPath = SettingsValue.cleaned(snapshotPath)
-        if let binary = OpenCodexHubReader.resolvedExecutablePath(executablePath) {
-            let current: OpenCodexAccountListResult?
-            do {
-                current = try await self.readLiveList(binary: binary, timeout: timeout)
-            } catch let error as OpenCodexAccountListError {
-                guard case .hubAccountsUnavailable = error, snapshotPath != nil else { throw error }
-                current = nil
-            }
-            if let current {
-                return try await self.switchOnHub(
-                    current,
-                    accountNumber: accountNumber,
-                    expectedEmail: expectedEmail,
-                    binary: binary)
-            }
+        let route = try await self.mappingErrors(slot: accountNumber) {
+            try await OpenCodexHubReader.switchRoute(
+                provider: .anthropic,
+                executablePath: executablePath,
+                snapshotPath: snapshotPath,
+                roleCache: roleCache,
+                now: now,
+                timeout: timeout)
         }
-        guard let snapshotPath else {
-            throw OpenCodexAccountListError.hubAccountsUnavailable("no ocx executable")
+        let requestsDirectory: URL
+        let snapshot: OpenCodexAccountListResult
+        switch route {
+        case let .hub(live, binary):
+            return try await self.switchOnHub(
+                OpenCodexAccountListParser.result(fromLive: live),
+                accountNumber: accountNumber,
+                expectedEmail: expectedEmail,
+                binary: binary)
+        case let .request(pool, directory):
+            snapshot = OpenCodexAccountListParser.result(fromSnapshot: pool)
+            requestsDirectory = directory
         }
-        let snapshot = try self.readSnapshot(path: snapshotPath)
         let (row, account) = try self.resolve(snapshot, accountNumber: accountNumber, expectedEmail: expectedEmail)
         let previous = snapshot.list.activeAccountNumber
         if row.isActive {
@@ -115,7 +111,7 @@ public enum OpenCodexAccountReader {
                 pool: snapshot.pool,
                 idSuffix: idSuffix,
                 email: account.email,
-                requestsDirectory: OpenCodexHubSwitchRequestWriter.requestsDirectory(forSnapshotPath: snapshotPath),
+                requestsDirectory: requestsDirectory,
                 now: now)
         } catch let error as OpenCodexHubReaderError {
             throw OpenCodexAccountListError(error, slot: accountNumber)
@@ -134,20 +130,15 @@ public enum OpenCodexAccountReader {
 
     // MARK: - Private
 
-    private static func readLiveList(binary: String, timeout: TimeInterval) async throws -> OpenCodexAccountListResult {
-        try Task.checkCancellation()
-        let result = try await SubprocessRunner.run(
-            binary: binary,
-            arguments: OpenCodexAccountListParser.listArguments,
-            environment: self.environment(for: binary),
-            timeout: timeout,
-            acceptsNonZeroExit: true,
-            label: "opencodex list")
-        let data = try OpenCodexHubReader.boundedOutput(result.stdout)
-        guard OpenCodexHubPoolParser.looksLikeAccountList(data) else {
-            throw OpenCodexAccountListError.hubAccountsUnavailable(OpenCodexHubReader.diagnostic(result))
+    /// Runs a hub read and reports its failures in the Claude adapter's error type.
+    private static func mappingErrors<T>(slot: Int = 0, _ body: () async throws -> T) async throws -> T {
+        do {
+            return try await body()
+        } catch let error as OpenCodexHubReaderError {
+            throw OpenCodexAccountListError(error, slot: slot)
+        } catch let error as OpenCodexHubPoolError {
+            throw OpenCodexAccountListError(error)
         }
-        return try OpenCodexAccountListParser.parseLiveList(data)
     }
 
     private static func resolve(

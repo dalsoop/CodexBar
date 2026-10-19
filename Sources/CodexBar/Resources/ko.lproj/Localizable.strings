@@ -2679,6 +2679,7 @@
 "The hub list is out of date." = "허브 목록이 오래되었습니다.";
 "Accounts in this pool are switched only on %@." = "이 묶음의 계정은 %@에서만 바꿉니다.";
 "Accounts in this pool are switched only on the hub." = "이 묶음의 계정은 허브에서만 바꿉니다.";
+"Switching is off until the hub writes a current snapshot to this Mac." = "허브가 이 Mac에 최신 목록 파일을 쓸 때까지 계정을 바꿀 수 없습니다.";
 "Quota: %@" = "한도: %@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "이 계정은 한도의 %@ 이상을 썼습니다. 허브가 곧 다른 계정으로 다시 바꾸거나, 한도가 풀릴 때까지 요청이 멈출 수 있습니다.";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "이 Mac은 허브에 전환을 요청합니다. 결과는 허브의 다음 갱신 뒤에 보입니다.";

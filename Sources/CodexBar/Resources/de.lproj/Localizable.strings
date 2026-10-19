@@ -2709,6 +2709,7 @@
 "The hub list is out of date." = "Die Hub-Liste ist veraltet.";
 "Accounts in this pool are switched only on %@." = "Konten dieses Pools werden nur auf %@ gewechselt.";
 "Accounts in this pool are switched only on the hub." = "Konten dieses Pools werden nur auf dem Hub gewechselt.";
+"Switching is off until the hub writes a current snapshot to this Mac." = "Wechseln ist aus, bis der Hub einen aktuellen Snapshot auf diesen Mac schreibt.";
 "Quota: %@" = "Kontingent: %@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "Dieses Konto hat %@ oder mehr eines Limits verbraucht. Der Hub wechselt eventuell bald wieder weg, oder Anfragen stoppen, bis das Limit zurückgesetzt wird.";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "Dieser Mac bittet den Hub um den Wechsel; das Ergebnis erscheint nach der nächsten Aktualisierung des Hubs.";

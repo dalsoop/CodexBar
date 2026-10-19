@@ -175,6 +175,8 @@ final class UsageStore {
     @ObservationIgnored var claudeSwapHubPollTask: Task<Void, Never>?
     /// Codex and Grok cards that read an opencodex hub pool.
     var openCodexHubCardStates: [UsageProvider: OpenCodexHubCardState] = [:]
+    /// Hub-enabled Codex and Grok cards that read their own sources because this Mac has no hub source.
+    var openCodexHubNativeFallbacks: Set<UsageProvider> = []
     @ObservationIgnored var openCodexHubPollTasks: [UsageProvider: Task<Void, Never>] = [:]
     var claudeSwapRevision: UInt64 = 0
     @ObservationIgnored var claudeSwapRefreshTask: Task<Void, Never>?
