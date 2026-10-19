@@ -86,7 +86,7 @@ import tempfile
 from pathlib import Path
 
 source = Path(sys.argv[1]).read_text()
-start = source.index('BUNDLE_ID="com.steipete.codexbar"')
+start = source.index('BUNDLE_ID="${CODEXBAR_BUNDLE_ID:-com.steipete.codexbar}"')
 end = source.index('BUILD_TIMESTAMP=', start)
 generation = source[start:end]
 start = source.index('if [[ "$EMBED_PROVISIONING_PROFILE" == "1" ]]; then')
