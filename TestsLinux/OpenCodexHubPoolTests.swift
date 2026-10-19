@@ -355,6 +355,84 @@ struct OpenCodexHubPoolTests {
         ])
     }
 
+    /// `ocx account list openai` lists the Codex App's own login as `__main__` next to `chatgpt-<epoch ms>`
+    /// and 32-hex ids (opencodex on the hub, 2026-10-19).
+    static let liveOpenAIWithMainLogin = #"""
+    {"accounts": [
+      {"provider": "openai", "type": "codex", "id": "__main__", "label": "main", "email": "m***n@example.com",
+       "active": false, "needsReauth": false, "health": "Healthy", "paused": false,
+       "quota": {"weeklyPercent": 12}},
+      {"provider": "openai", "type": "codex", "id": "chatgpt-1791743623093", "label": "pro",
+       "email": "a***e@example.com", "active": true, "health": "Healthy", "paused": false,
+       "quota": {"weeklyPercent": 51}},
+      {"provider": "openai", "type": "codex", "id": "978bdedac54d52d7c63cff74d0904d1e",
+       "email": "c***c@example.com", "active": false, "health": "Healthy", "quota": {"weeklyPercent": 3}}
+    ], "notes": []}
+    """#
+
+    @Test
+    func `the Codex App login and opencodex id forms are switch targets on the hub`() async throws {
+        let directory = try self.makeDirectory()
+        let ocx = try self.makeFakeOCX(in: directory, lists: ["openai": Self.liveOpenAIWithMainLogin])
+
+        let live = try OpenCodexHubPoolParser.parseLiveList(Data(Self.liveOpenAIWithMainLogin.utf8), provider: .openai)
+        #expect(live.accountIDs == ["__main__", "chatgpt-1791743623093", "978bdedac54d52d7c63cff74d0904d1e"])
+        #expect(live.pool.accounts.map(\.idSuffix) == ["in__", "3093", "4d1e"])
+        #expect(live.pool.accounts.map { live.pool.canSwitch(to: $0) } == [true, false, true])
+
+        let outcome = try await OpenCodexHubReader.switchAccount(
+            provider: .openai,
+            idSuffix: "in__",
+            email: "m***n@example.com",
+            executablePath: ocx,
+            snapshotPath: nil)
+        #expect(outcome == .switched)
+        #expect(self.calls(ocx) == ["account list openai --quota --json", "account use openai __main__ --json"])
+    }
+
+    @Test(arguments: [
+        "--all", "-x", "has space", "tab\tid", "line\nbreak", "nul\u{0}id", "nön-ascii",
+        String(repeating: "a", count: 129), "",
+    ])
+    func `an id ocx account use cannot take keeps its row without a switch target`(id: String) throws {
+        let row: [String: Any] = ["provider": "openai", "id": id, "email": "b***b@example.com", "active": false]
+        let list: [String: Any] = ["accounts": [
+            row,
+            ["provider": "openai", "id": "__main__", "email": "a***e@example.com", "active": true],
+        ]]
+        let data = try JSONSerialization.data(withJSONObject: list)
+        let live = try OpenCodexHubPoolParser.parseLiveList(data, provider: .openai)
+        #expect(live.accountIDs == [nil, "__main__"])
+        #expect(live.pool.accounts.map(\.email) == ["b***b@example.com", "a***e@example.com"])
+        #expect(live.pool.accounts[0].idSuffix == nil)
+        #expect(!live.pool.canSwitch(to: live.pool.accounts[0]))
+        #expect(live.pool.activeAccount?.idSuffix == "in__")
+    }
+
+    @Test
+    func `a repeated id or a row without an id does not fail the pool`() throws {
+        let list = #"""
+        {"accounts": [
+          {"provider": "openai", "id": "chatgpt-1", "email": "a***e@example.com", "active": true},
+          {"provider": "openai", "id": "chatgpt-1", "email": "b***b@example.com", "active": false},
+          {"provider": "openai", "email": "c***c@example.com", "active": false},
+          {"provider": "openai", "id": 42, "email": "d***d@example.com", "active": false}
+        ]}
+        """#
+        let live = try OpenCodexHubPoolParser.parseLiveList(Data(list.utf8), provider: .openai)
+        #expect(live.accountIDs == ["chatgpt-1", nil, nil, nil])
+        #expect(live.pool.accounts.count == 4)
+        #expect(live.pool.accounts.filter { live.pool.canSwitch(to: $0) }.isEmpty)
+    }
+
+    @Test
+    func `snapshot suffixes of opencodex ids address requests`() throws {
+        #expect(OpenCodexHubPoolParser.isValidIDSuffix("in__"))
+        #expect(OpenCodexHubPoolParser.isValidIDSuffix("-123"))
+        #expect(!OpenCodexHubPoolParser.isValidIDSuffix("a b"))
+        #expect(!OpenCodexHubPoolParser.isValidIDSuffix(String(repeating: "a", count: 17)))
+    }
+
     @Test
     func `off the hub the pool comes from the snapshot and a switch leaves a request`() async throws {
         let directory = try self.makeDirectory()

@@ -124,10 +124,11 @@ struct OpenCodexAccountListTests {
         #expect(throws: OpenCodexAccountListError.self) {
             try OpenCodexAccountListParser.parseLiveList(Data(twoActive.utf8))
         }
-        let optionShapedID = #"{"accounts": [{"id": "--all", "active": false}]}"#
-        #expect(throws: OpenCodexAccountListError.self) {
-            try OpenCodexAccountListParser.parseLiveList(Data(optionShapedID.utf8))
-        }
+        // An id `ocx account use` cannot take keeps its row but gets no switch target.
+        let optionShapedID = #"{"accounts": [{"id": "--all", "active": false}, {"id": "__main__", "active": true}]}"#
+        let unusable = try OpenCodexAccountListParser.parseLiveList(Data(optionShapedID.utf8))
+        #expect(unusable.list.accounts.map(\.number) == [1, 2])
+        #expect(unusable.accountIDs == [2: "__main__"])
     }
 
     @Test
