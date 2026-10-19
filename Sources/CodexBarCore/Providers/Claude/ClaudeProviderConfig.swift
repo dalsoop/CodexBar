@@ -42,19 +42,9 @@ extension ProviderConfig {
         set { self.setExtensionValue(newValue, forKey: "claudeSwapSource") }
     }
 
-    /// An unset or unrecognised value reads as claude-swap, the source that predates the key.
+    /// An unset or unrecognised value reads as the default source (claude-swap, the source that predates the key).
     public var resolvedClaudeSwapSource: ClaudeSwapAccountSource {
-        SettingsValue.cleaned(self.claudeSwapSource).flatMap(ClaudeSwapAccountSource.init(rawValue:)) ?? .claudeSwap
-    }
-
-    /// opencodex source only: a JSON copy of the hub's Anthropic account list, read
-    /// (read-only) when this Mac cannot list the hub's accounts itself.
-    public var openCodexHubSnapshotPath: String? {
-        get { self.extensionValue(forKey: "openCodexHubSnapshotPath") }
-        set { self.setExtensionValue(newValue, forKey: "openCodexHubSnapshotPath") }
-    }
-
-    public var sanitizedOpenCodexHubSnapshotPath: String? {
-        SettingsValue.cleaned(self.openCodexHubSnapshotPath)
+        SettingsValue.cleaned(self.claudeSwapSource).flatMap(ClaudeSwapAccountSource.init(rawValue:))
+            ?? .defaultSource
     }
 }

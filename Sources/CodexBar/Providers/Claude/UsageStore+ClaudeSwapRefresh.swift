@@ -24,8 +24,13 @@ extension UsageStore {
     /// ambient Claude refresh. Listing is read-only; explicit account activation
     /// stays external-process-owned and never exposes credentials to CodexBar.
     func shouldFetchClaudeSwapAccounts() -> Bool {
-        self.isEnabled(.claude) && self.settings.claudeSwapEnabled &&
-            !self.settings.claudeSwapExecutablePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard self.isEnabled(.claude), self.settings.claudeSwapEnabled else { return false }
+        if !self.settings.claudeSwapExecutablePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        // With a hub snapshot file opencodex needs no executable path: it looks for `ocx` in the usual install
+        // locations (the hub) and otherwise reads the snapshot (a Mac linked to the hub).
+        return self.settings.claudeSwapSource == .openCodex && !self.settings.claudeSwapOpenCodexSnapshotPath.isEmpty
     }
 
     /// The active claude-swap account's usage snapshot when the adapter owns Claude
@@ -66,6 +71,9 @@ extension UsageStore {
         self.claudeSwapLastRefreshAt = nil
         self.claudeSwapLastError = nil
         self.claudeSwapRemoteCopy = nil
+        self.claudeSwapHubSwitchStatus = OpenCodexHubSwitchStatus()
+        self.claudeSwapHubPollTask?.cancel()
+        self.claudeSwapHubPollTask = nil
         self.claudeSwapTransientState = ClaudeSwapTransientState(
             task: self.claudeSwapTransientState.task,
             configurationGeneration: self.claudeSwapTransientState.configurationGeneration &+ 1,
@@ -118,6 +126,16 @@ extension UsageStore {
             ClaudeSwapRetainedUsageStore.save(snapshots)
             self.claudeSwapAccountSnapshots = snapshots
             self.claudeSwapRemoteCopy = list.remoteCopy
+            if let pool = list.remoteCopy?.pool {
+                self.claudeSwapHubSwitchStatus.reconcile(with: pool)
+            } else if source == .openCodex, self.claudeSwapHubSwitchStatus.isPending {
+                // Read on the hub itself now: the live list is authoritative, so stop waiting for a request.
+                self.claudeSwapHubSwitchStatus.finish(nil)
+            }
+            if !self.claudeSwapHubSwitchStatus.isPending {
+                self.claudeSwapHubPollTask?.cancel()
+                self.claudeSwapHubPollTask = nil
+            }
             self.claudeSwapLastRefreshAt = Date()
             self.claudeSwapLastError = nil
             self.claudeSwapRevision &+= 1
@@ -200,6 +218,9 @@ extension UsageStore {
         let executablePath = self.settings.claudeSwapExecutablePath
         let source = self.settings.claudeSwapSource
         let expectedEmail = account.accountEmail
+        let snapshotPath = self.settings.claudeSwapOpenCodexSnapshotPath
+        let accountLabel = account.displayLabel
+        guard !self.claudeSwapHubSwitchStatus.isPending else { return }
         let configurationGeneration = self.claudeSwapTransientState.configurationGeneration
         self.claudeSwapTransientState.switchingAccountID = accountID
         self.claudeSwapTransientState.switchPhase = .activating
@@ -209,18 +230,36 @@ extension UsageStore {
 
         self.claudeSwapTransientState.task = Task { @MainActor [weak self] in
             var switchError: String?
+            var hubRequest: OpenCodexHubSwitchRequest?
             do {
-                _ = try await ClaudeSwapAccountReader.switchAccount(
+                let result = try await ClaudeSwapAccountReader.switchAccount(
                     executablePath: executablePath,
                     accountNumber: accountNumber,
                     source: source,
-                    expectedEmail: expectedEmail)
+                    expectedEmail: expectedEmail,
+                    openCodexSnapshotPath: snapshotPath)
+                hubRequest = result.hubRequest
             } catch {
                 switchError = (error as? LocalizedError)?.errorDescription
                     ?? error.localizedDescription
             }
 
             guard let self else { return }
+            if let hubRequest, self.isCurrentClaudeSwapConfiguration(
+                executablePath: executablePath,
+                source: source,
+                configurationGeneration: configurationGeneration)
+            {
+                // The hub switches on its next pass; its snapshot reports the result.
+                self.claudeSwapHubSwitchStatus.begin(hubRequest, label: accountLabel)
+                self.startClaudeSwapHubPendingPoll()
+                self.claudeSwapTransientState.task = nil
+                self.claudeSwapTransientState.switchingAccountID = nil
+                self.claudeSwapTransientState.switchPhase = nil
+                self.claudeSwapRevision &+= 1
+                progressDidChange?()
+                return
+            }
             if self.isCurrentClaudeSwapConfiguration(
                 executablePath: executablePath,
                 source: source,
@@ -272,6 +311,19 @@ extension UsageStore {
             if isCurrent { progressDidChange?() }
         }
         progressDidChange?()
+    }
+
+    /// Re-reads the hub snapshot until a pending switch request resolves.
+    private func startClaudeSwapHubPendingPoll() {
+        self.claudeSwapHubPollTask?.cancel()
+        self.claudeSwapHubPollTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.openCodexHubPendingPollInterval)
+                guard !Task.isCancelled, let self, self.claudeSwapHubSwitchStatus.isPending else { return }
+                await self.refreshClaudeSwapAccounts()
+                self.claudeSwapRevision &+= 1
+            }
+        }
     }
 
     private func probeClaudeSwapVersionIfNeeded(executablePath: String, source: ClaudeSwapAccountSource) async {

@@ -133,7 +133,7 @@ struct OpenCodexAccountListTests {
     }
 
     @Test
-    func `snapshot is read only and names the hub and the time it was taken`() throws {
+    func `schema 1 snapshot is read only and names the hub and the time it was taken`() throws {
         let snapshot = #"""
         {"app": "opencodex-hub-accounts", "updatedAt": "2026-10-19T03:15:00Z", "state": {
           "schemaVersion": 1, "hub": "hub-mac", "fetchedAt": "2026-10-19T03:14:59Z",
@@ -148,7 +148,9 @@ struct OpenCodexAccountListTests {
         let fetchedAt = try #require(ISO8601DateFormatter().date(from: "2026-10-19T03:14:59Z"))
         #expect(result.accountIDs.isEmpty)
         #expect(!result.list.supportsAccountSwitching)
-        #expect(result.list.remoteCopy == ClaudeSwapRemoteCopy(managerName: "hub-mac", fetchedAt: fetchedAt))
+        #expect(result.list.remoteCopy?.managerName == "hub-mac")
+        #expect(result.list.remoteCopy?.fetchedAt == fetchedAt)
+        #expect(result.list.remoteCopy?.isSwitchable == false)
         #expect(result.list.accounts.map(\.email) == ["a***e@example.com", "b***b@example.com"])
         #expect(result.list.accounts.allSatisfy { $0.usageFetchedAt == fetchedAt })
 

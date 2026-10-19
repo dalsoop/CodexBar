@@ -41,6 +41,8 @@ extension StatusItemController {
 
     func tokenAccountMenuDisplay(for provider: UsageProvider) -> TokenAccountMenuDisplay? {
         guard TokenAccountSupportCatalog.support(for: provider) != nil else { return nil }
+        // A card that reads an opencodex hub pool lists the hub's accounts instead.
+        guard !self.store.usesOpenCodexHub(for: provider) else { return nil }
         // Retained Cursor manual accounts are dormant while Automatic browser discovery owns the live snapshot.
         guard self.settings.effectiveSelectedTokenAccount(for: provider) != nil else { return nil }
         // Eligible claude-swap rows are the selected Claude account source, so do not mix them
@@ -83,7 +85,7 @@ extension StatusItemController {
 
     func codexAccountMenuDisplay(for provider: UsageProvider) -> CodexAccountMenuDisplay? {
         // Provider-specific by design: managed Codex profiles use reconciled visible-account projection state.
-        guard provider == .codex else { return nil }
+        guard provider == .codex, !self.store.usesOpenCodexHub(for: provider) else { return nil }
         guard let projection = self.settings.codexVisibleAccountProjectionForMenuDisplay else { return nil }
         guard projection.visibleAccounts.count > 1 else { return nil }
         let showAll = self.settings.multiAccountMenuLayout == .stacked

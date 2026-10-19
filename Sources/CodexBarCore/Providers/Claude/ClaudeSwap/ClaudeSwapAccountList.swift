@@ -36,10 +36,18 @@ public struct ClaudeSwapRemoteCopy: Equatable, Sendable {
     public let managerName: String?
     /// When the copy was taken on the managing machine.
     public let fetchedAt: Date?
+    /// The opencodex hub pool behind the copy: switchability, staleness and the hub's request results.
+    public let pool: OpenCodexHubPool?
 
-    public init(managerName: String?, fetchedAt: Date?) {
+    public init(managerName: String?, fetchedAt: Date?, pool: OpenCodexHubPool? = nil) {
         self.managerName = managerName
         self.fetchedAt = fetchedAt
+        self.pool = pool
+    }
+
+    /// Whether accounts can be switched from this Mac (by asking the managing machine).
+    public var isSwitchable: Bool {
+        self.pool?.switchable ?? false
     }
 }
 

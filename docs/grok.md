@@ -22,6 +22,15 @@ The grok.com billing gRPC-web endpoint remains a best-effort fallback.
 - Token accounts classify at fetch time: bearer → OAuth, `Cookie:` / `name=value` → cookies, `xai-` management keys rejected.
 - Selecting a SuperGrok token account remaps Auto to OAuth or Web so it cannot hit an empty `.oauth` pipeline.
 
+## opencodex hub accounts
+
+With "Read accounts from an opencodex hub" on (config key `openCodexHubEnabled`), the card skips the Grok sources
+below and reads the `xai` pool of an [opencodex](https://github.com/lidge-jun/opencodex) hub instead: on the hub
+through `ocx account list xai --quota --json`, elsewhere from the hub's snapshot file. The menu lists the pool's
+accounts with their weekly limits and the active account's card. Switch runs `ocx account use xai <id> --json`
+on the hub and writes a switch request elsewhere; a pool the hub marks `switchable: false` shows why instead. See
+[opencodex hub snapshot](configuration.md#opencodex-hub-snapshot).
+
 ## Data sources + fallback order
 
 1) **`~/.grok/auth.json` (primary identity source)**

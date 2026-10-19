@@ -165,10 +165,46 @@ All provider fields are optional unless noted.
 - `claudeSwapSource`: `"claude-swap"` (default), `"tcr"` or `"opencodex"`; selects the list command
   (`cswap --list --json`, `tcr list --json` or `ocx account list anthropic --quota --json`), the card label and the
   `<source>:<slot>` identity. Machine-local like the executable path.
-- `openCodexHubSnapshotPath`: opencodex only; a JSON copy of the hub's Anthropic account list that a Mac linked to the
-  hub shows read-only when `ocx` cannot list the hub's accounts. Machine-local.
+- `openCodexHubSnapshotPath`: Claude (opencodex source), Codex and Grok; the opencodex hub snapshot file a Mac linked
+  to the hub reads when `ocx` cannot list the hub's accounts. Switch requests are written to
+  `opencodex-hub-requests/` next to it. Machine-local.
+- `openCodexHubEnabled`: Codex and Grok; read the provider's accounts and limits from an opencodex hub (`openai` and
+  `xai` pools) instead of the provider's own sources. Defaults to `false`.
+- `openCodexHubExecutablePath`: Codex and Grok; the `ocx` executable on the hub. Empty looks in `/opt/homebrew/bin`,
+  `/usr/local/bin` and `~/.local/bin`. Machine-local.
 - `claudeSwapShowSingleAccount`: prefer a claude-swap card when exactly one account is available. Defaults to
   `false`; multiple claude-swap accounts retain their existing precedence.
+
+### opencodex hub snapshot
+
+On the [opencodex](https://github.com/lidge-jun/opencodex) hub itself CodexBar runs
+`ocx account list <anthropic|openai|xai> --quota --json` and `ocx account use <provider> <id> --json`. Other Macs read
+a snapshot file the hub keeps up to date (how it gets there is up to the hub's tooling) and leave switch requests next
+to it. CodexBar reads only the fields below; the file never contains tokens or full account ids.
+
+```json
+{"app": "opencodex-hub-accounts", "updatedAt": "2026-10-19T03:15:00Z", "state": {
+  "schemaVersion": 2, "hub": "hub-mac", "fetchedAt": "2026-10-19T03:14:58Z",
+  "providers": {"openai": {"switchable": false, "switchReason": "…", "accounts": [
+    {"idSuffix": "1a2b", "label": "pro", "email": "a***e@example.com", "active": true, "paused": false,
+     "needsReauth": false, "health": "Healthy", "quotaUnavailable": false,
+     "quota": {"weeklyPercent": 51, "weeklyResetAt": 1792889538000, "updatedAt": 1792386000000}}]}},
+  "lastRequests": [{"requestId": "…", "provider": "xai", "result": "done|refused|failed", "code": "…",
+    "reason": "…", "at": "2026-10-19T03:16:00Z"}]}}
+```
+
+- `quota` carries the windows a provider has: `fiveHourPercent/ResetAt`, `weeklyPercent/ResetAt`,
+  `monthlyPercent/ResetAt` and `customWindows` (`[{label, percent, resetAt}]`), with times in epoch milliseconds or
+  ISO 8601. Schema 1 (`state.accounts`, Anthropic only) is read as a read-only Claude pool.
+- A pool with `switchable: false` lists its accounts but disables Switch and shows `switchReason`. A snapshot whose
+  `updatedAt` is more than five minutes old is shown as out of date.
+- A switch request is `opencodex-hub-requests/<requestId>.json` next to the snapshot, written to a dot-prefixed
+  temporary file and renamed into place:
+  `{"schemaVersion": 1, "requestId": "<[A-Za-z0-9-]{1,64}>", "provider": "openai", "targetIdSuffix": "1a2b",
+  "targetEmail": "a***e@example.com", "requestedAt": "2026-10-19T03:15:45Z"}`. The menu shows that the hub is
+  switching until a newer snapshot has a `lastRequests` entry for the request or lists the target as active.
+  Switching to an account at or above 80% of a limit is allowed; the confirmation warns that the hub may switch away
+  again or requests may stop.
 
 ## Manual cookies
 Use manual cookies when automatic browser import is unavailable, disabled, or too noisy for your setup.

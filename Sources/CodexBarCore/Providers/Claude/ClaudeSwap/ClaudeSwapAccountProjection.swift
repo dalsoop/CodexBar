@@ -52,7 +52,9 @@ public enum ClaudeSwapAccountProjection {
                 accountEmail: row.email.isEmpty ? nil : row.email,
                 historyAccountKey: self.historyAccountKey(for: row, source: source),
                 isActive: row.isActive,
-                canActivate: list.supportsAccountSwitching && self.canActivate(row),
+                // A copy of a pool another machine manages switches by request; that machine refuses paused accounts.
+                canActivate: list.supportsAccountSwitching && self.canActivate(row) &&
+                    !(list.remoteCopy != nil && row.isDisabled),
                 usesLastKnownUsage: projected.usesLastKnownUsage,
                 snapshot: projected.snapshot,
                 error: self.errorText(for: row, source: source, usage: projected, now: now),

@@ -170,6 +170,12 @@ final class UsageStore {
     var claudeSwapDetectedVersion: String?
     /// Set while the cards show a read-only copy of a pool another machine manages (opencodex hub snapshot).
     var claudeSwapRemoteCopy: ClaudeSwapRemoteCopy?
+    /// A Claude switch left to the opencodex hub as a request, and the hub's answer.
+    var claudeSwapHubSwitchStatus = OpenCodexHubSwitchStatus()
+    @ObservationIgnored var claudeSwapHubPollTask: Task<Void, Never>?
+    /// Codex and Grok cards that read an opencodex hub pool.
+    var openCodexHubCardStates: [UsageProvider: OpenCodexHubCardState] = [:]
+    @ObservationIgnored var openCodexHubPollTasks: [UsageProvider: Task<Void, Never>] = [:]
     var claudeSwapRevision: UInt64 = 0
     @ObservationIgnored var claudeSwapRefreshTask: Task<Void, Never>?
     @ObservationIgnored var claudeSwapTransientState = ClaudeSwapTransientState()

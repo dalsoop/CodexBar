@@ -55,12 +55,14 @@ public enum ClaudeSwapAccountReader {
     /// The external tool owns the credential transaction. CodexBar supplies no
     /// credentials and accepts no config-defined arguments. opencodex resolves the
     /// slot against a fresh live list and, given `expectedEmail`, refuses a slot
-    /// that now holds a different account.
+    /// that now holds a different account; off the hub it re-reads the snapshot
+    /// and writes a switch request for the hub instead.
     public static func switchAccount(
         executablePath: String,
         accountNumber: Int,
         source: ClaudeSwapAccountSource = .claudeSwap,
-        expectedEmail: String? = nil) async throws
+        expectedEmail: String? = nil,
+        openCodexSnapshotPath: String? = nil) async throws
         -> ClaudeSwapAccountSwitchResult
     {
         switch source {
@@ -70,7 +72,8 @@ public enum ClaudeSwapAccountReader {
             return try await OpenCodexAccountReader.switchAccount(
                 executablePath: executablePath,
                 accountNumber: accountNumber,
-                expectedEmail: expectedEmail)
+                expectedEmail: expectedEmail,
+                snapshotPath: openCodexSnapshotPath)
         case .tcr:
             throw ClaudeSwapSwitchParserError.malformedShape("tcr does not switch accounts")
         }

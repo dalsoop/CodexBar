@@ -24,16 +24,25 @@ extension StatusItemController {
         }
         let remoteCopy = readsFromOpenCodex ? self.store.claudeSwapRemoteCopy : nil
         if let remoteCopy {
-            let text = remoteCopy.managerName.map { L("Accounts are managed on the hub %@.", $0) }
-                ?? L("Accounts are managed on the opencodex hub.")
-            let notice = NSMenuItem(title: text, action: nil, keyEquivalent: "")
-            notice.isEnabled = false
-            menu.addItem(notice)
+            let lines = if let pool = remoteCopy.pool {
+                OpenCodexHubPresentation.poolNotices(pool)
+            } else {
+                [remoteCopy.managerName.map { L("Accounts are managed on the hub %@.", $0) }
+                    ?? L("Accounts are managed on the opencodex hub.")]
+            }
+            for line in lines {
+                self.addOpenCodexHubNotice(line, to: menu)
+            }
+        }
+        if readsFromOpenCodex {
+            for line in self.store.claudeSwapHubSwitchStatus.menuLines {
+                self.addOpenCodexHubNotice(line, to: menu)
+            }
         }
         if display.showsSwitcher {
             let headingTitle = if readsFromTcr {
                 L("Claude accounts in tcr")
-            } else if readsFromOpenCodex, remoteCopy != nil {
+            } else if readsFromOpenCodex, let remoteCopy, !remoteCopy.isSwitchable {
                 L("Claude accounts on the opencodex hub")
             } else if readsFromOpenCodex {
                 L("Switch opencodex hub account")
@@ -134,20 +143,54 @@ extension StatusItemController {
             self.beginClaudeSwapAccountSwitch(accountID, menu: menu)
             return
         }
+        guard !self.store.claudeSwapHubSwitchStatus.isPending else { return }
         // A hub switch moves every Mac that uses the hub, so it is confirmed outside the open menu first.
         let label = ClaudeSwapAccountMenuDisplay.label(for: account, hidePersonalInfo: self.settings.hidePersonalInfo)
+        let details = Self.openCodexHubSwitchDetails(for: account, remoteCopy: self.store.claudeSwapRemoteCopy)
         menu?.cancelTracking()
         Task { @MainActor [weak self] in
-            guard let self, Self.confirmOpenCodexHubSwitch(accountLabel: label) else { return }
+            guard let self, Self.confirmOpenCodexHubSwitch(accountLabel: label, details: details) else { return }
             self.beginClaudeSwapAccountSwitch(accountID, menu: nil)
         }
     }
 
-    private static func confirmOpenCodexHubSwitch(accountLabel: String) -> Bool {
+    /// The target's quota and the near-limit warning, from the hub account behind the card.
+    private static func openCodexHubSwitchDetails(
+        for account: ProviderAccountUsageSnapshot,
+        remoteCopy: ClaudeSwapRemoteCopy?) -> String
+    {
+        let everyMacMoves = L("Every Mac that uses this hub moves to this Claude account on its next request.")
+        // On the hub the card's windows are the live list's: 5-hour, weekly and model-scoped.
+        let snapshot = account.snapshot
+        let window = { (rate: RateWindow?) in
+            rate.map { OpenCodexHubQuotaWindow(usedPercent: $0.usedPercent, resetsAt: $0.resetsAt) }
+        }
+        let hubAccount = remoteCopy?.pool?.accounts.first { $0.email == account.accountEmail }
+            ?? OpenCodexHubAccount(
+                idSuffix: nil,
+                label: nil,
+                email: account.accountEmail ?? "",
+                isActive: false,
+                quota: OpenCodexHubQuota(
+                    fiveHour: window(snapshot?.primary),
+                    weekly: window(snapshot?.secondary),
+                    custom: (snapshot?.extraRateWindows ?? []).map {
+                        OpenCodexHubCustomWindow(
+                            label: $0.title,
+                            usedPercent: $0.window.usedPercent,
+                            resetsAt: $0.window.resetsAt)
+                    }))
+        return OpenCodexHubPresentation.confirmationDetails(
+            account: hubAccount,
+            isHubLocal: remoteCopy == nil,
+            everyMacMoves: everyMacMoves)
+    }
+
+    private static func confirmOpenCodexHubSwitch(accountLabel: String, details: String) -> Bool {
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = L("Switch the opencodex hub to %@?", accountLabel)
-        alert.informativeText = L("Every Mac that uses this hub moves to this Claude account on its next request.")
+        alert.informativeText = details
         alert.addButton(withTitle: L("Switch Account..."))
         let cancel = alert.addButton(withTitle: L("Cancel"))
         cancel.keyEquivalent = "\u{1B}"

@@ -17,9 +17,15 @@ public enum ClaudeSwapAccountSource: String, CaseIterable, Sendable {
     /// opencodex (`ocx account list anthropic --quota --json`), github.com/lidge-jun/opencodex.
     /// On the opencodex hub the list is the pool's Anthropic OAuth accounts and
     /// `ocx account use anthropic <id>` switches the pool's active account. A Mac
-    /// linked to a hub cannot read the hub's accounts and shows a read-only
-    /// snapshot file instead, when one is configured.
+    /// linked to a hub cannot read the hub's accounts: it reads the snapshot file
+    /// the hub writes and asks for a switch with a request file next to it.
     case openCodex = "opencodex"
+
+    /// The source used while none is configured: claude-swap, unless the build reads the opencodex hub by
+    /// default (`OpenCodexHubDefaults.sourceEnabledByDefault`).
+    public static var defaultSource: ClaudeSwapAccountSource {
+        OpenCodexHubDefaults.sourceEnabledByDefault ? .openCodex : .claudeSwap
+    }
 
     /// Identity prefix (`<source>:<slot>`) and card label.
     public var label: String {

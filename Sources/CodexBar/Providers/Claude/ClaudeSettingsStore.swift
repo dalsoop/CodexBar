@@ -53,7 +53,10 @@ extension SettingsStore {
     }
 
     var claudeSwapEnabled: Bool {
-        get { self.configSnapshot.providerConfig(for: .claude)?.claudeSwapEnabled ?? false }
+        get {
+            self.configSnapshot.providerConfig(for: .claude)?.claudeSwapEnabled
+                ?? OpenCodexHubDefaults.sourceEnabledByDefault
+        }
         set {
             self.updateProviderConfig(provider: .claude) { entry in
                 entry.claudeSwapEnabled = newValue
@@ -89,17 +92,20 @@ extension SettingsStore {
     }
 
     var claudeSwapSource: ClaudeSwapAccountSource {
-        get { self.configSnapshot.providerConfig(for: .claude)?.resolvedClaudeSwapSource ?? .claudeSwap }
+        get { self.configSnapshot.providerConfig(for: .claude)?.resolvedClaudeSwapSource ?? .defaultSource }
         set {
             self.updateProviderConfig(provider: .claude) { entry in
-                entry.claudeSwapSource = newValue == .claudeSwap ? nil : newValue.rawValue
+                entry.claudeSwapSource = newValue == .defaultSource ? nil : newValue.rawValue
             }
             self.logProviderModeChange(provider: .claude, field: "claudeSwapSource", value: newValue.rawValue)
         }
     }
 
     var claudeSwapOpenCodexSnapshotPath: String {
-        get { self.configSnapshot.providerConfig(for: .claude)?.sanitizedOpenCodexHubSnapshotPath ?? "" }
+        get {
+            self.configSnapshot.providerConfig(for: .claude)?.sanitizedOpenCodexHubSnapshotPath
+                ?? OpenCodexHubDefaults.snapshotPath ?? ""
+        }
         set {
             self.updateProviderConfig(provider: .claude) { entry in
                 entry.openCodexHubSnapshotPath = self.normalizedConfigValue(newValue)
