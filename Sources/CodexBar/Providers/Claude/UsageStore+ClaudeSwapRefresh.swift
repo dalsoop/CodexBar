@@ -59,12 +59,13 @@ extension UsageStore {
             self.claudeSwapTransientState.switchingAccountID != nil ||
             self.claudeSwapTransientState.switchPhase != nil ||
             self.claudeSwapTransientState.versionProbedPath != nil ||
-            self.claudeSwapDetectedVersion != nil
+            self.claudeSwapDetectedVersion != nil || self.claudeSwapRemoteCopy != nil
         self.claudeSwapRefreshTask?.cancel()
         self.claudeSwapRefreshTask = nil
         self.claudeSwapAccountSnapshots = []
         self.claudeSwapLastRefreshAt = nil
         self.claudeSwapLastError = nil
+        self.claudeSwapRemoteCopy = nil
         self.claudeSwapTransientState = ClaudeSwapTransientState(
             task: self.claudeSwapTransientState.task,
             configurationGeneration: self.claudeSwapTransientState.configurationGeneration &+ 1,
@@ -100,7 +101,8 @@ extension UsageStore {
         do {
             let list = try await ClaudeSwapAccountReader.readAccountList(
                 executablePath: executablePath,
-                source: source)
+                source: source,
+                openCodexSnapshotPath: self.settings.claudeSwapOpenCodexSnapshotPath)
             // Finish the pending history load before validating and publishing this source's response.
             if !self.planUtilizationHistoryLoaded {
                 _ = await self.planUtilizationHistoryLoadTask?.result
@@ -115,6 +117,7 @@ extension UsageStore {
                     inMemory: self.claudeSwapAccountSnapshots))
             ClaudeSwapRetainedUsageStore.save(snapshots)
             self.claudeSwapAccountSnapshots = snapshots
+            self.claudeSwapRemoteCopy = list.remoteCopy
             self.claudeSwapLastRefreshAt = Date()
             self.claudeSwapLastError = nil
             self.claudeSwapRevision &+= 1
@@ -175,7 +178,7 @@ extension UsageStore {
         return buckets.selection(for: accountKey)
     }
 
-    /// Activates one account through the configured claude-swap executable.
+    /// Activates one account through the configured claude-swap or opencodex executable.
     /// The numeric slot comes from the already validated list payload; requests
     /// are serialized so two credential transactions can never overlap.
     func switchClaudeSwapAccount(
@@ -184,8 +187,8 @@ extension UsageStore {
     {
         guard self.claudeSwapTransientState.task == nil,
               self.shouldFetchClaudeSwapAccounts(),
-              self.settings.claudeSwapSource == .claudeSwap,
-              accountID.source == ClaudeSwapAccountProjection.sourceName,
+              self.settings.claudeSwapSource.canSwitchAccounts,
+              accountID.source == self.settings.claudeSwapSource.label,
               let account = self.claudeSwapAccountSnapshots.first(where: { $0.id == accountID }),
               account.canActivate,
               let accountNumber = Int(accountID.opaqueID),
@@ -195,6 +198,8 @@ extension UsageStore {
         }
 
         let executablePath = self.settings.claudeSwapExecutablePath
+        let source = self.settings.claudeSwapSource
+        let expectedEmail = account.accountEmail
         let configurationGeneration = self.claudeSwapTransientState.configurationGeneration
         self.claudeSwapTransientState.switchingAccountID = accountID
         self.claudeSwapTransientState.switchPhase = .activating
@@ -207,7 +212,9 @@ extension UsageStore {
             do {
                 _ = try await ClaudeSwapAccountReader.switchAccount(
                     executablePath: executablePath,
-                    accountNumber: accountNumber)
+                    accountNumber: accountNumber,
+                    source: source,
+                    expectedEmail: expectedEmail)
             } catch {
                 switchError = (error as? LocalizedError)?.errorDescription
                     ?? error.localizedDescription
@@ -216,7 +223,7 @@ extension UsageStore {
             guard let self else { return }
             if self.isCurrentClaudeSwapConfiguration(
                 executablePath: executablePath,
-                source: .claudeSwap,
+                source: source,
                 configurationGeneration: configurationGeneration)
             {
                 self.claudeSwapTransientState.lastError = switchError
@@ -233,7 +240,7 @@ extension UsageStore {
                 if case .timedOut = await BoundedTaskJoin(sourceTask: waiter).value(joinGrace: .seconds(5)),
                    self.isCurrentClaudeSwapConfiguration(
                        executablePath: executablePath,
-                       source: .claudeSwap,
+                       source: source,
                        configurationGeneration: configurationGeneration),
                    self.claudeSwapRefreshTask == previousAdapterTask
                 {
@@ -243,7 +250,7 @@ extension UsageStore {
                 // The ambient refresh schedules this independent read; a replacement read still owns reconciliation.
                 while self.isCurrentClaudeSwapConfiguration(
                     executablePath: executablePath,
-                    source: .claudeSwap,
+                    source: source,
                     configurationGeneration: configurationGeneration),
                     let adapterTask = self.claudeSwapRefreshTask
                 {
@@ -253,7 +260,7 @@ extension UsageStore {
             }
             let isCurrent = self.isCurrentClaudeSwapConfiguration(
                 executablePath: executablePath,
-                source: .claudeSwap,
+                source: source,
                 configurationGeneration: configurationGeneration)
             let currentError = isCurrent ? switchError : nil
             self.claudeSwapTransientState.task = nil

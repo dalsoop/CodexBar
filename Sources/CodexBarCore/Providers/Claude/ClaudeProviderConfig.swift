@@ -36,7 +36,7 @@ extension ProviderConfig {
         SettingsValue.cleaned(self.claudeSwapExecutablePath)
     }
 
-    /// `"claude-swap"` (default) or `"tcr"`: which tool the executable path names.
+    /// `"claude-swap"` (default), `"tcr"` or `"opencodex"`: which tool the executable path names.
     public var claudeSwapSource: String? {
         get { self.extensionValue(forKey: "claudeSwapSource") }
         set { self.setExtensionValue(newValue, forKey: "claudeSwapSource") }
@@ -45,5 +45,16 @@ extension ProviderConfig {
     /// An unset or unrecognised value reads as claude-swap, the source that predates the key.
     public var resolvedClaudeSwapSource: ClaudeSwapAccountSource {
         SettingsValue.cleaned(self.claudeSwapSource).flatMap(ClaudeSwapAccountSource.init(rawValue:)) ?? .claudeSwap
+    }
+
+    /// opencodex source only: a JSON copy of the hub's Anthropic account list, read
+    /// (read-only) when this Mac cannot list the hub's accounts itself.
+    public var openCodexHubSnapshotPath: String? {
+        get { self.extensionValue(forKey: "openCodexHubSnapshotPath") }
+        set { self.setExtensionValue(newValue, forKey: "openCodexHubSnapshotPath") }
+    }
+
+    public var sanitizedOpenCodexHubSnapshotPath: String? {
+        SettingsValue.cleaned(self.openCodexHubSnapshotPath)
     }
 }

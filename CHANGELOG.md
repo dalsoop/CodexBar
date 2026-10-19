@@ -24,6 +24,10 @@
 - CLI: Claude Auto usage follows the active claude-swap account, matching cards and dashboard; explicit source/account selections retain their behavior, and adapter fallbacks identify their actual source and account (#4599). Thanks @postoso!
 - CI: move macOS app and CLI release jobs to `xcode-27`, retain macOS 14 support, and verify x86_64 artifacts under Rosetta.
 
+### Added
+
+- Claude: an opencodex account source lists an opencodex hub's Anthropic pool accounts with their 5-hour, weekly and model-scoped quotas, switches the hub's active account after a confirmation, and shows a read-only hub snapshot on Macs linked to the hub.
+
 ### Fixed
 
 - Agent Sessions: keep Tailscale discovery from launching the VPN app, and add a local-only mode that disables remote discovery and SSH polling (#4624, #4583).

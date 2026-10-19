@@ -2704,3 +2704,19 @@
 "Leave blank to keep the saved credential." = "برای حفظ اطلاعات ورود ذخیره‌شده، خالی بگذارید.";
 
 "No personal budget configured" = "بودجهٔ شخصی تنظیم نشده است";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "فایل اجرایی opencodex";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "مسیر فایل اجرایی ocx (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "حساب‌های Claude یک هاب opencodex را نشان می‌دهد. روی هاب می‌توانید حساب فعال مجموعه را با `ocx` عوض کنید؛ مک‌های دیگر یک تصویر لحظه‌ای فقط‌خواندنی نشان می‌دهند. اطلاعات ورود روی هاب می‌ماند؛ CodexBar هرگز آن‌ها را نمی‌خواند.";
+"Set the ocx executable path below." = "مسیر فایل اجرایی ocx را در زیر تنظیم کنید.";
+"Hub snapshot file" = "فایل تصویر لحظه‌ای هاب";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "اختیاری. روی مکی که هاب نیست، حساب‌های هاب را به‌صورت فقط‌خواندنی از این نسخهٔ JSON از `ocx account list anthropic --quota --json` نشان می‌دهد.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "حساب‌ها روی هاب %@ مدیریت می‌شوند.";
+"Accounts are managed on the opencodex hub." = "حساب‌ها روی هاب opencodex مدیریت می‌شوند.";
+"Switch opencodex hub account" = "تغییر حساب هاب opencodex";
+"Claude accounts on the opencodex hub" = "حساب‌های Claude روی هاب opencodex";
+"Switch the opencodex hub to %@?" = "هاب opencodex به %@ تغییر کند؟";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "هر مکی که از این هاب استفاده می‌کند در درخواست بعدی‌اش به این حساب Claude منتقل می‌شود.";

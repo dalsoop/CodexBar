@@ -2678,3 +2678,19 @@
 "Leave blank to keep the saved credential." = "留空以保留已儲存的憑證。";
 
 "No personal budget configured" = "尚未設定個人預算";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "opencodex 執行檔";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "ocx 執行檔的路徑(github.com/lidge-jun/opencodex)。";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "顯示 opencodex 中樞的 Claude 帳號。在中樞上可以透過 `ocx` 切換帳號池的目前帳號;其他 Mac 顯示唯讀快照。憑證保留在中樞上;CodexBar 從不讀取。";
+"Set the ocx executable path below." = "請在下方設定 ocx 執行檔路徑。";
+"Hub snapshot file" = "中樞快照檔案";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "選用。在不是中樞的 Mac 上,從這個 `ocx account list anthropic --quota --json` 的 JSON 副本以唯讀方式顯示中樞的帳號。";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "帳號由中樞 %@ 管理。";
+"Accounts are managed on the opencodex hub." = "帳號由 opencodex 中樞管理。";
+"Switch opencodex hub account" = "切換 opencodex 中樞帳號";
+"Claude accounts on the opencodex hub" = "opencodex 中樞上的 Claude 帳號";
+"Switch the opencodex hub to %@?" = "要將 opencodex 中樞切換到 %@ 嗎?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "使用此中樞的每台 Mac 都會在下一個請求時改用此 Claude 帳號。";

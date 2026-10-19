@@ -155,6 +155,7 @@ struct DashboardSnapshotProducer: Sendable {
                     let list = try await ClaudeSwapAccountReader.readAccountList(
                         executablePath: path,
                         source: source,
+                        openCodexSnapshotPath: config.providerConfig(for: .claude)?.sanitizedOpenCodexHubSnapshotPath,
                         timeout: timeout)
                     let accounts = ClaudeSwapAccountProjection.accountSnapshots(
                         from: list,

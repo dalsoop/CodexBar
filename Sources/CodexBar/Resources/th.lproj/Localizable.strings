@@ -2702,3 +2702,19 @@
 "Leave blank to keep the saved credential." = "เว้นว่างไว้เพื่อใช้ข้อมูลรับรองที่บันทึกไว้ต่อไป";
 
 "No personal budget configured" = "ยังไม่ได้กำหนดงบประมาณส่วนตัว";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "ไฟล์ปฏิบัติการ opencodex";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "พาธไปยังไฟล์ปฏิบัติการ ocx (github.com/lidge-jun/opencodex)";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "แสดงบัญชี Claude ของฮับ opencodex บนฮับคุณสามารถสลับบัญชีที่ใช้งานอยู่ของพูลผ่าน `ocx` ได้ ส่วน Mac เครื่องอื่นจะแสดงสแนปช็อตแบบอ่านอย่างเดียว ข้อมูลรับรองยังคงอยู่บนฮับ CodexBar ไม่อ่านข้อมูลเหล่านั้นเลย";
+"Set the ocx executable path below." = "ตั้งค่าพาธไฟล์ปฏิบัติการ ocx ด้านล่าง";
+"Hub snapshot file" = "ไฟล์สแนปช็อตของฮับ";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "ไม่บังคับ บน Mac ที่ไม่ใช่ฮับ จะแสดงบัญชีของฮับแบบอ่านอย่างเดียวจากสำเนา JSON ของ `ocx account list anthropic --quota --json` นี้";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "บัญชีได้รับการจัดการบนฮับ %@";
+"Accounts are managed on the opencodex hub." = "บัญชีได้รับการจัดการบนฮับ opencodex";
+"Switch opencodex hub account" = "สลับบัญชีฮับ opencodex";
+"Claude accounts on the opencodex hub" = "บัญชี Claude บนฮับ opencodex";
+"Switch the opencodex hub to %@?" = "สลับฮับ opencodex เป็น %@ หรือไม่";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "Mac ทุกเครื่องที่ใช้ฮับนี้จะย้ายไปใช้บัญชี Claude นี้ในคำขอถัดไป";

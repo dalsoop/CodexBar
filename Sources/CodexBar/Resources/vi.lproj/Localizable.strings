@@ -2701,3 +2701,19 @@
 "Leave blank to keep the saved credential." = "Để trống để giữ thông tin xác thực đã lưu.";
 
 "No personal budget configured" = "Chưa thiết lập ngân sách cá nhân";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "Tệp thực thi opencodex";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "Đường dẫn tới tệp thực thi ocx (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "Hiển thị các tài khoản Claude của một hub opencodex. Trên hub, bạn có thể chuyển tài khoản đang dùng của nhóm qua `ocx`; các máy Mac khác hiển thị ảnh chụp chỉ đọc. Thông tin đăng nhập ở lại trên hub; CodexBar không bao giờ đọc chúng.";
+"Set the ocx executable path below." = "Đặt đường dẫn tệp thực thi ocx bên dưới.";
+"Hub snapshot file" = "Tệp ảnh chụp của hub";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "Tùy chọn. Trên máy Mac không phải hub, hiển thị các tài khoản của hub ở chế độ chỉ đọc từ bản sao JSON này của `ocx account list anthropic --quota --json`.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "Các tài khoản được quản lý trên hub %@.";
+"Accounts are managed on the opencodex hub." = "Các tài khoản được quản lý trên hub opencodex.";
+"Switch opencodex hub account" = "Chuyển tài khoản hub opencodex";
+"Claude accounts on the opencodex hub" = "Tài khoản Claude trên hub opencodex";
+"Switch the opencodex hub to %@?" = "Chuyển hub opencodex sang %@?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "Mọi máy Mac dùng hub này sẽ chuyển sang tài khoản Claude này ở yêu cầu tiếp theo.";

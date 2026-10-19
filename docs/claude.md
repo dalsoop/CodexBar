@@ -441,6 +441,20 @@ The accepted multi-account design in
   offers Switch or Re-authenticate, and CodexBar never sends tcr a switch command. Late list results from a
   previously selected source are discarded before publishing cards, refresh times, or forecast history, including
   when the initial history load is still pending.
+- opencodex source: on an [opencodex](https://github.com/lidge-jun/opencodex) hub, pick "opencodex" in the Source
+  picker (config key `claudeSwapSource: "opencodex"`) and set the path to `ocx` (for example `/opt/homebrew/bin/ocx`).
+  CodexBar runs `ocx account list anthropic --quota --json` and `ocx --version` with the same bounds and translates
+  the pool's Anthropic OAuth accounts into the shared list model: slots are numbered in listing order, `email`/`label`
+  are used as opencodex already masks them, `paused` reads as disabled, `needsReauth` and reauthentication health read
+  as re-login required, and the 5-hour, weekly and `customWindows` (model-scoped) quotas become the card bars. Cards
+  are labelled `opencodex` and identity is `opencodex:<slot>`. Switch runs `ocx account use anthropic <id> --json`
+  after a confirmation, because it moves every client of the hub; the id is resolved from a fresh list and the slot
+  must still hold the same masked email, and ids are never persisted.
+- A Mac linked to an opencodex hub cannot list the hub's accounts (`ocx` answers `Error: not_found`). With
+  `openCodexHubSnapshotPath` set, CodexBar then reads that JSON file read-only: the same `{accounts}` shape, optionally
+  inside a `{state: …}` envelope, plus `hub` (display name of the managing machine) and `fetchedAt` (ISO 8601 or epoch
+  milliseconds). The menu says where the accounts are managed and no row offers Switch. How the file gets to the
+  client is up to the user (for example a scheduled copy taken on the hub); it never needs ids or credentials.
 - tcr forecast history requires both a nonempty email and `organizationUuid` in the list row. When both are
   supplied, it uses the same normalized email/organization hash as claude-swap; display names and slot numbers
   never substitute for an organization UUID. The current tcr contract fixture omits `organizationUuid`, so those

@@ -168,6 +168,8 @@ final class UsageStore {
     var claudeSwapLastRefreshAt: Date?
     var claudeSwapLastError: String?
     var claudeSwapDetectedVersion: String?
+    /// Set while the cards show a read-only copy of a pool another machine manages (opencodex hub snapshot).
+    var claudeSwapRemoteCopy: ClaudeSwapRemoteCopy?
     var claudeSwapRevision: UInt64 = 0
     @ObservationIgnored var claudeSwapRefreshTask: Task<Void, Never>?
     @ObservationIgnored var claudeSwapTransientState = ClaudeSwapTransientState()

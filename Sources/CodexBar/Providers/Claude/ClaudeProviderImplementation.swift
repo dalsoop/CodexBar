@@ -32,6 +32,7 @@ struct ClaudeProviderImplementation: ProviderImplementation {
         _ = settings.claudeSwapShowSingleAccount
         _ = settings.claudeSwapExecutablePath
         _ = settings.claudeSwapSource
+        _ = settings.claudeSwapOpenCodexSnapshotPath
     }
 
     @MainActor
@@ -100,6 +101,16 @@ struct ClaudeProviderImplementation: ProviderImplementation {
             binding: context.binding(\.claudeSwapExecutablePath),
             actions: [],
             isVisible: nil)
+        let openCodexSnapshotField = ProviderSettingsFieldDescriptor(
+            id: "claude-swap-opencodex-snapshot-path",
+            title: "Hub snapshot file",
+            subtitle: "Optional. On a Mac that is not the hub, show the hub's accounts read-only from this " +
+                "JSON copy of `ocx account list anthropic --quota --json`.",
+            kind: .plain,
+            placeholder: "~/opencodex-hub-accounts.json",
+            binding: context.binding(\.claudeSwapOpenCodexSnapshotPath),
+            actions: [],
+            isVisible: { context.settings.claudeSwapSource == .openCodex })
 
         return [
             ProviderSettingsToggleDescriptor(
@@ -172,7 +183,7 @@ struct ClaudeProviderImplementation: ProviderImplementation {
                 binding: claudeSwapBinding,
                 statusText: { Self.claudeSwapStatusText(store: context.store, settings: context.settings) },
                 actions: [],
-                inlineFields: [claudeSwapExecutableField],
+                inlineFields: [claudeSwapExecutableField, openCodexSnapshotField],
                 isVisible: nil,
                 isEnabled: nil,
                 onChange: nil,
@@ -209,6 +220,9 @@ struct ClaudeProviderImplementation: ProviderImplementation {
             let accounts = store.claudeSwapAccountSnapshots.count
             let accountsText = accounts == 1 ? "1 account" : "\(accounts) accounts"
             parts.append("\(accountsText), updated \(refreshedAt.relativeDescription())")
+            if let remoteCopy = store.claudeSwapRemoteCopy {
+                parts.append("read-only copy from \(remoteCopy.managerName ?? "the hub")")
+            }
         }
         return parts.isEmpty ? nil : parts.joined(separator: " — ")
     }
@@ -460,6 +474,15 @@ private struct ClaudeSwapSetupText {
             self.toggleSubtitle = "Shows usage from `tcr`; it does not switch accounts, because tcr picks " +
                 "the account for each request. Credentials stay managed by tcr; CodexBar never reads them."
             self.missingPathStatus = L("Set the tcr executable path below.")
+        case .openCodex:
+            // On the hub ocx lists and switches the pool; a linked Mac shows the snapshot file read-only.
+            self.title = "opencodex executable"
+            self.subtitle = "Path to the ocx executable (github.com/lidge-jun/opencodex)."
+            self.placeholder = "/opt/homebrew/bin/ocx"
+            self.toggleSubtitle = "Shows the Claude accounts of an opencodex hub. On the hub you can switch the " +
+                "pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on " +
+                "the hub; CodexBar never reads them."
+            self.missingPathStatus = L("Set the ocx executable path below.")
         }
     }
 }

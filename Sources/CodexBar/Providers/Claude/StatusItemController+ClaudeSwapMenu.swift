@@ -17,8 +17,29 @@ extension StatusItemController {
         // tcr picks the account for each request, so it never switches and never reports an active account.
         // Keyed on the rows being drawn, not the setting, so a list read before a source change keeps its wording.
         let readsFromTcr = accounts.contains { ClaudeSwapAccountSource(identitySource: $0.id.source) == .tcr }
+        // opencodex switches the hub's pool, so the wording names the hub; a read-only hub snapshot says
+        // where the accounts are managed instead of offering a switch.
+        let readsFromOpenCodex = accounts.contains {
+            ClaudeSwapAccountSource(identitySource: $0.id.source) == .openCodex
+        }
+        let remoteCopy = readsFromOpenCodex ? self.store.claudeSwapRemoteCopy : nil
+        if let remoteCopy {
+            let text = remoteCopy.managerName.map { L("Accounts are managed on the hub %@.", $0) }
+                ?? L("Accounts are managed on the opencodex hub.")
+            let notice = NSMenuItem(title: text, action: nil, keyEquivalent: "")
+            notice.isEnabled = false
+            menu.addItem(notice)
+        }
         if display.showsSwitcher {
-            let headingTitle = readsFromTcr ? L("Claude accounts in tcr") : L("Switch Claude Code account")
+            let headingTitle = if readsFromTcr {
+                L("Claude accounts in tcr")
+            } else if readsFromOpenCodex, remoteCopy != nil {
+                L("Claude accounts on the opencodex hub")
+            } else if readsFromOpenCodex {
+                L("Switch opencodex hub account")
+            } else {
+                L("Switch Claude Code account")
+            }
             let switcherHeading = NSMenuItem(title: headingTitle, action: nil, keyEquivalent: "")
             switcherHeading.isEnabled = false
             menu.addItem(switcherHeading)
@@ -107,11 +128,42 @@ extension StatusItemController {
     private func startClaudeSwapAccountSwitch(_ accountID: ProviderAccountIdentity, menu: NSMenu?) {
         guard self.store.claudeSwapTransientState.task == nil,
               self.store.shouldFetchClaudeSwapAccounts(),
+              let account = self.store.claudeSwapAccountSnapshots.first(where: { $0.id == accountID && $0.canActivate })
+        else { return }
+        guard self.settings.claudeSwapSource == .openCodex else {
+            self.beginClaudeSwapAccountSwitch(accountID, menu: menu)
+            return
+        }
+        // A hub switch moves every Mac that uses the hub, so it is confirmed outside the open menu first.
+        let label = ClaudeSwapAccountMenuDisplay.label(for: account, hidePersonalInfo: self.settings.hidePersonalInfo)
+        menu?.cancelTracking()
+        Task { @MainActor [weak self] in
+            guard let self, Self.confirmOpenCodexHubSwitch(accountLabel: label) else { return }
+            self.beginClaudeSwapAccountSwitch(accountID, menu: nil)
+        }
+    }
+
+    private static func confirmOpenCodexHubSwitch(accountLabel: String) -> Bool {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = L("Switch the opencodex hub to %@?", accountLabel)
+        alert.informativeText = L("Every Mac that uses this hub moves to this Claude account on its next request.")
+        alert.addButton(withTitle: L("Switch Account..."))
+        let cancel = alert.addButton(withTitle: L("Cancel"))
+        cancel.keyEquivalent = "\u{1B}"
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    private func beginClaudeSwapAccountSwitch(_ accountID: ProviderAccountIdentity, menu: NSMenu?) {
+        guard self.store.claudeSwapTransientState.task == nil,
+              self.store.shouldFetchClaudeSwapAccounts(),
               self.store.claudeSwapAccountSnapshots.contains(where: { $0.id == accountID && $0.canActivate })
         else { return }
         self.advanceMenuInteraction(for: menu)
         self.claudeSwapInspectedAccountID = nil
         let executablePath = self.settings.claudeSwapExecutablePath
+        let source = self.settings.claudeSwapSource
         let configurationGeneration = self.store.claudeSwapTransientState.configurationGeneration
         let interactionGeneration = menu.flatMap {
             self.menuSession.menuInteractionGeneration(for: ObjectIdentifier($0))
@@ -122,7 +174,7 @@ extension StatusItemController {
                 guard let self, let menu else { return false }
                 return self.store.isCurrentClaudeSwapConfiguration(
                     executablePath: executablePath,
-                    source: .claudeSwap,
+                    source: source,
                     configurationGeneration: configurationGeneration) &&
                     self.menuSession.isCurrentMenuInteraction(interactionGeneration, for: ObjectIdentifier(menu)) &&
                     self.claudeSwapInspectedAccountID == nil &&

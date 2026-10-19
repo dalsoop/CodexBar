@@ -105,6 +105,7 @@ enum CLIClaudeSwapCards {
         eligible: Bool,
         executablePath: String,
         source: ClaudeSwapAccountSource = .claudeSwap,
+        openCodexSnapshotPath: String? = nil,
         showSingleAccount: Bool = false,
         renderOptions: CLIClaudeSwapCardsRenderOptions,
         ambientFetch: @escaping AmbientFetch,
@@ -115,7 +116,10 @@ enum CLIClaudeSwapCards {
 
         do {
             let reader: AccountListReader = accountListReader ?? { path in
-                try await ClaudeSwapAccountReader.readAccountList(executablePath: path, source: source)
+                try await ClaudeSwapAccountReader.readAccountList(
+                    executablePath: path,
+                    source: source,
+                    openCodexSnapshotPath: openCodexSnapshotPath)
             }
             let list = try await reader(executablePath)
             let retained = ClaudeSwapRetainedUsageStore.previousAccounts(inMemory: previousAccounts)

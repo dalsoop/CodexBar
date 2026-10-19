@@ -2705,3 +2705,19 @@
 "Leave blank to keep the saved credential." = "Leave blank to keep the saved credential.";
 
 "No personal budget configured" = "No personal budget configured";
+
+/* Claude opencodex hub accounts */
+"opencodex executable" = "opencodex executable";
+"Path to the ocx executable (github.com/lidge-jun/opencodex)." = "Path to the ocx executable (github.com/lidge-jun/opencodex).";
+"/opt/homebrew/bin/ocx" = "/opt/homebrew/bin/ocx";
+"Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them." = "Shows the Claude accounts of an opencodex hub. On the hub you can switch the pool's active account through `ocx`; other Macs show a read-only snapshot. Credentials stay on the hub; CodexBar never reads them.";
+"Set the ocx executable path below." = "Set the ocx executable path below.";
+"Hub snapshot file" = "Hub snapshot file";
+"Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`." = "Optional. On a Mac that is not the hub, show the hub's accounts read-only from this JSON copy of `ocx account list anthropic --quota --json`.";
+"~/opencodex-hub-accounts.json" = "~/opencodex-hub-accounts.json";
+"Accounts are managed on the hub %@." = "Accounts are managed on the hub %@.";
+"Accounts are managed on the opencodex hub." = "Accounts are managed on the opencodex hub.";
+"Switch opencodex hub account" = "Switch opencodex hub account";
+"Claude accounts on the opencodex hub" = "Claude accounts on the opencodex hub";
+"Switch the opencodex hub to %@?" = "Switch the opencodex hub to %@?";
+"Every Mac that uses this hub moves to this Claude account on its next request." = "Every Mac that uses this hub moves to this Claude account on its next request.";
