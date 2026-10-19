@@ -173,9 +173,6 @@ public enum OpenCodexAccountReader {
         binary: String) async throws -> ClaudeSwapAccountSwitchResult
     {
         let (row, _) = try self.resolve(current, accountNumber: accountNumber, expectedEmail: expectedEmail)
-        guard let accountID = current.accountIDs[accountNumber] else {
-            throw OpenCodexAccountListError.accountNotFound(slot: accountNumber)
-        }
         let previous = current.list.activeAccountNumber
         if row.isActive {
             return ClaudeSwapAccountSwitchResult(
@@ -183,6 +180,10 @@ public enum OpenCodexAccountReader {
                 fromAccountNumber: previous,
                 toAccountNumber: accountNumber,
                 reason: "already-active")
+        }
+        // The slot is listed, but its id cannot be passed to `ocx account use`.
+        guard let accountID = current.accountIDs[accountNumber] else {
+            throw OpenCodexAccountListError.switchNotAllowed(nil)
         }
         let result = try await SubprocessRunner.runToCompletion(
             binary: binary,

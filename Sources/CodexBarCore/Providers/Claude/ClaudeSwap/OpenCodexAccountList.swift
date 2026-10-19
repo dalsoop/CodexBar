@@ -5,7 +5,8 @@ import Foundation
 public struct OpenCodexAccountListResult: Equatable, Sendable {
     public let list: ClaudeSwapAccountList
     /// Slot number to opencodex account id. Held in memory only to address
-    /// `ocx account use`; never persisted, logged or shown. Empty for snapshots.
+    /// `ocx account use`; never persisted, logged or shown. Empty for snapshots; a slot whose id
+    /// `ocx account use` cannot take has no entry.
     public let accountIDs: [Int: String]
     /// The provider-neutral pool the list was translated from.
     public let pool: OpenCodexHubPool
@@ -93,6 +94,7 @@ public enum OpenCodexAccountListParser {
         }
         var accountIDs: [Int: String] = [:]
         for (index, id) in live.accountIDs.enumerated() {
+            guard let id else { continue }
             accountIDs[index + 1] = id
         }
         return OpenCodexAccountListResult(

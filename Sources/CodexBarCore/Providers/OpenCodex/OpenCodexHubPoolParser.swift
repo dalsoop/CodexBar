@@ -21,11 +21,13 @@ public enum OpenCodexHubPoolError: LocalizedError, Equatable, Sendable {
 
 /// A live `ocx account list <provider> --quota --json` result. `accountIDs[i]` is the full opencodex id of
 /// `pool.accounts[i]`; it is held in memory only to address `ocx account use` and never persisted or shown.
+/// It is nil for a row whose id cannot be passed to `ocx account use` safely; that account is listed but
+/// cannot be switched to.
 public struct OpenCodexHubLivePool: Equatable, Sendable {
     public let pool: OpenCodexHubPool
-    public let accountIDs: [String]
+    public let accountIDs: [String?]
 
-    public init(pool: OpenCodexHubPool, accountIDs: [String]) {
+    public init(pool: OpenCodexHubPool, accountIDs: [String?]) {
         self.pool = pool
         self.accountIDs = accountIDs
     }
@@ -63,7 +65,7 @@ public enum OpenCodexHubPoolParser {
             throw OpenCodexHubPoolError.malformedShape("missing accounts array")
         }
         var accounts: [OpenCodexHubAccount] = []
-        var ids: [String] = []
+        var ids: [String?] = []
         var seen: Set<String> = []
         for rawRow in rawAccounts {
             guard let row = rawRow as? [String: Any] else {
@@ -71,15 +73,17 @@ public enum OpenCodexHubPoolParser {
             }
             // Only this provider's pool feeds its card; other providers never leak in.
             if let rowProvider = row["provider"] as? String, rowProvider != provider.rawValue { continue }
-            let index = accounts.count + 1
-            guard let id = row["id"] as? String, self.isValidAccountID(id) else {
-                throw OpenCodexHubPoolError.malformedShape("account \(index) has no usable id")
-            }
-            guard seen.insert(id).inserted else {
-                throw OpenCodexHubPoolError.malformedShape("duplicate account id in row \(index)")
+            // A row whose id is unusable (or repeats an earlier row's) stays visible without a switch target
+            // instead of failing the whole pool.
+            var id = row["id"] as? String
+            if let candidate = id, !self.isValidAccountID(candidate) || !seen.insert(candidate).inserted {
+                id = nil
             }
             ids.append(id)
-            try accounts.append(self.parseAccount(row, index: index, idSuffix: String(id.suffix(self.idSuffixLength))))
+            try accounts.append(self.parseAccount(
+                row,
+                index: accounts.count + 1,
+                idSuffix: id.map { String($0.suffix(self.idSuffixLength)) }))
         }
         try self.requireSingleActive(accounts)
         let pool = OpenCodexHubPool(provider: provider, accounts: accounts, switchable: true, origin: .hubLocal)
@@ -237,18 +241,26 @@ public enum OpenCodexHubPoolParser {
         }
     }
 
+    /// Whether an opencodex account id may be passed to `ocx account use` as one argument.
+    ///
+    /// opencodex ids come in several forms: 32 hex digits, `chatgpt-<epoch ms>`, a caller-chosen id, and
+    /// `__main__` for the Codex App's own login. Any printable ASCII id is accepted, bounded in length; an
+    /// id that starts with `-` would read as an option.
     static func isValidAccountID(_ id: String) -> Bool {
-        guard !id.isEmpty, id.count <= self.maxAccountIDLength, let first = id.unicodeScalars.first else {
-            return false
-        }
-        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "._:@+-"))
-        return CharacterSet.alphanumerics.contains(first) && id.unicodeScalars.allSatisfy {
-            $0.isASCII && allowed.contains($0)
-        }
+        guard self.isPrintableToken(id, maxLength: self.maxAccountIDLength) else { return false }
+        return !id.hasPrefix("-")
     }
 
+    /// The hub names a target by the last characters of its id, which may start with any id character.
     static func isValidIDSuffix(_ suffix: String) -> Bool {
-        (1...16).contains(suffix.count) && self.isValidAccountID(suffix)
+        self.isPrintableToken(suffix, maxLength: 16)
+    }
+
+    /// Non-empty, at most `maxLength` characters, printable ASCII only: no whitespace or control characters.
+    private static func isPrintableToken(_ text: String, maxLength: Int) -> Bool {
+        let scalars = text.unicodeScalars
+        guard !scalars.isEmpty, scalars.count <= maxLength else { return false }
+        return scalars.allSatisfy { (0x21...0x7E).contains($0.value) }
     }
 
     private static func jsonObject(_ data: Data) throws -> [String: Any] {

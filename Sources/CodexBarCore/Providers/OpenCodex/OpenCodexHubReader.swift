@@ -218,7 +218,7 @@ public enum OpenCodexHubReader {
             throw OpenCodexHubReaderError.accountNotFound
         }
         if live.pool.accounts[index].isActive { return .alreadyActive }
-        let accountID = live.accountIDs[index]
+        guard let accountID = live.accountIDs[index] else { throw OpenCodexHubReaderError.switchNotAllowed(nil) }
         let result = try await SubprocessRunner.runToCompletion(
             binary: binary,
             arguments: ["account", "use", live.pool.provider.rawValue, accountID, "--json"],

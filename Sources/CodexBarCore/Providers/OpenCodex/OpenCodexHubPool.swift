@@ -249,8 +249,9 @@ public struct OpenCodexHubPool: Equatable, Sendable {
     /// Whether `account` can be switched to from this Mac.
     public func canSwitch(to account: OpenCodexHubAccount) -> Bool {
         guard self.switchable, account.isSwitchTarget else { return false }
-        // A request names the target by id suffix and masked email; the hub matches both.
-        return self.isHubLocal || account.idSuffix != nil
+        // A switch names the target by id suffix and masked email. A live row without a suffix has an id
+        // `ocx account use` cannot take; a snapshot row without one cannot be named in a request.
+        return account.idSuffix != nil
     }
 }
 
