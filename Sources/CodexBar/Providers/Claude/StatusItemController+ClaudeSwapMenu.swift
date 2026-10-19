@@ -150,7 +150,9 @@ extension StatusItemController {
         let details = Self.openCodexHubSwitchDetails(for: account, remoteCopy: self.store.claudeSwapRemoteCopy)
         menu?.cancelTracking()
         Task { @MainActor [weak self] in
-            guard let self, Self.confirmOpenCodexHubSwitch(accountLabel: label, details: details) else { return }
+            guard let self, OpenCodexHubSwitchConfirmation.confirm(accountLabel: label, details: details) else {
+                return
+            }
             self.beginClaudeSwapAccountSwitch(accountID, menu: nil)
         }
     }
@@ -185,18 +187,6 @@ extension StatusItemController {
             account: hubAccount,
             isHubLocal: remoteCopy == nil,
             everyMacMoves: everyMacMoves)
-    }
-
-    private static func confirmOpenCodexHubSwitch(accountLabel: String, details: String) -> Bool {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = L("Switch the opencodex hub to %@?", accountLabel)
-        alert.informativeText = details
-        alert.addButton(withTitle: L("Switch Account..."))
-        let cancel = alert.addButton(withTitle: L("Cancel"))
-        cancel.keyEquivalent = "\u{1B}"
-        NSApp.activate(ignoringOtherApps: true)
-        return alert.runModal() == .alertFirstButtonReturn
     }
 
     private func beginClaudeSwapAccountSwitch(_ accountID: ProviderAccountIdentity, menu: NSMenu?) {
