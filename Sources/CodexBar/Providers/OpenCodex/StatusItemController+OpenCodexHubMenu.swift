@@ -89,9 +89,12 @@ extension StatusItemController {
         sender.menu?.supermenu?.cancelTracking()
         sender.menu?.cancelTracking()
         let isHubLocal = pool.isHubLocal
+        let details = OpenCodexHubPresentation.confirmationDetails(
+            account: selection.account,
+            isHubLocal: isHubLocal,
+            everyMacMoves: L("Every Mac that uses this hub moves to this account on its next request."))
         Task { @MainActor [weak self] in
-            guard let self,
-                  Self.confirmOpenCodexHubCardSwitch(selection: selection, isHubLocal: isHubLocal)
+            guard let self, OpenCodexHubSwitchConfirmation.confirm(accountLabel: selection.label, details: details)
             else { return }
             self.store.switchOpenCodexHubAccount(
                 selection.account,
@@ -101,24 +104,38 @@ extension StatusItemController {
         }
     }
 
-    private static func confirmOpenCodexHubCardSwitch(selection: OpenCodexHubMenuSelection, isHubLocal: Bool) -> Bool {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = L("Switch the opencodex hub to %@?", selection.label)
-        alert.informativeText = OpenCodexHubPresentation.confirmationDetails(
-            account: selection.account,
-            isHubLocal: isHubLocal,
-            everyMacMoves: L("Every Mac that uses this hub moves to this account on its next request."))
-        alert.addButton(withTitle: L("Switch Account..."))
-        let cancel = alert.addButton(withTitle: L("Cancel"))
-        cancel.keyEquivalent = "\u{1B}"
-        NSApp.activate(ignoringOtherApps: true)
-        return alert.runModal() == .alertFirstButtonReturn
-    }
-
     func addOpenCodexHubNotice(_ text: String, to menu: NSMenu) {
         let item = NSMenuItem(title: text, action: nil, keyEquivalent: "")
         item.isEnabled = false
         menu.addItem(item)
+    }
+}
+
+/// The confirmation every opencodex hub switch shows (Claude, Codex and Grok cards).
+///
+/// "Switch Account..." is the first, default button (Return) and "Cancel" the second (Escape), as in the
+/// Claude account switch. NSAlert picks its compact or wide layout from the height of the text, so a long
+/// near-limit warning arranged (and exposed to accessibility) the buttons differently from a short
+/// confirmation. A fixed-width accessory keeps one layout for every target.
+enum OpenCodexHubSwitchConfirmation {
+    static let layoutWidth: CGFloat = 360
+
+    static func makeAlert(accountLabel: String, details: String) -> NSAlert {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = L("Switch the opencodex hub to %@?", accountLabel)
+        alert.informativeText = details
+        alert.accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: self.layoutWidth, height: 0))
+        alert.addButton(withTitle: L("Switch Account..."))
+        let cancel = alert.addButton(withTitle: L("Cancel"))
+        cancel.keyEquivalent = "\u{1B}"
+        return alert
+    }
+
+    @MainActor
+    static func confirm(accountLabel: String, details: String) -> Bool {
+        let alert = self.makeAlert(accountLabel: accountLabel, details: details)
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal() == .alertFirstButtonReturn
     }
 }
