@@ -94,6 +94,8 @@ esac
 
 # Load version info
 source "$ROOT/version.env"
+# Redistributors number their own builds above the upstream build they are based on.
+BUILD_NUMBER="${CODEXBAR_BUILD_NUMBER:-$BUILD_NUMBER}"
 source "$ROOT/Scripts/package_product_paths.sh"
 source "$ROOT/Scripts/sparkle_signing_paths.sh"
 
