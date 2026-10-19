@@ -39,6 +39,8 @@ struct ClaudeSwapAccountMenuDisplay {
     }
 
     static func privacyOrdinal(for account: ProviderAccountUsageSnapshot) -> PersonalInfoRedactor.AccountOrdinal? {
+        // The switcher also draws opencodex hub accounts (Codex and Grok cards); they carry their own ordinal.
+        if let ordinal = OpenCodexHubAccountProjection.privacyOrdinal(for: account) { return ordinal }
         guard account.provider == .claude,
               ClaudeSwapAccountSource(identitySource: account.id.source) != nil,
               let number = Int(account.id.opaqueID)

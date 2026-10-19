@@ -8,6 +8,8 @@ struct OpenCodexHubCardState: Equatable {
     var lastRefreshAt: Date?
     var switchStatus = OpenCodexHubSwitchStatus()
     var isSwitching = false
+    /// Segmented menu layout: the hub account whose card the menu shows instead of the active one.
+    var inspectedAccountID: ProviderAccountIdentity?
 }
 
 extension UsageStore {
