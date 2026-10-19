@@ -2699,6 +2699,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "Le hub change de compte…";
 "The hub switched to %@." = "Le hub est passé à %@.";
+"The hub has since switched to %@." = "Le hub est depuis passé à %@.";
 "The hub refused the switch: %@" = "Le hub a refusé le changement : %@";
 "The hub could not switch: %@" = "Le hub n’a pas pu changer : %@";
 "The hub did not pick up the switch request in time." = "Le hub n’a pas pris en compte la demande de changement à temps.";

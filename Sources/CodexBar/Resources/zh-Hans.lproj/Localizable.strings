@@ -2692,6 +2692,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "中心节点正在切换账户…";
 "The hub switched to %@." = "中心节点已切换到 %@。";
+"The hub has since switched to %@." = "中心节点之后已切换到 %@。";
 "The hub refused the switch: %@" = "中心节点拒绝了切换：%@";
 "The hub could not switch: %@" = "中心节点无法切换：%@";
 "The hub did not pick up the switch request in time." = "中心节点未及时处理切换请求。";

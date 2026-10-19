@@ -128,12 +128,13 @@ extension UsageStore {
             state.isSwitching = false
             switch outcome {
             case .success(.switched), .success(.alreadyActive):
-                state.switchStatus.finish(.switched(label))
+                state.switchStatus.finish(.switched(label), activeAccount: .init(account))
             case let .success(.requested(request)):
                 state.switchStatus.begin(request, label: label)
             case let .failure(error):
                 let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                state.switchStatus.finish(.failed(message))
+                let active = state.pool?.activeAccount.map(OpenCodexHubSwitchStatus.AccountKey.init)
+                state.switchStatus.finish(.failed(message), activeAccount: active)
             }
             self.openCodexHubCardStates[provider] = state
             progressDidChange?()

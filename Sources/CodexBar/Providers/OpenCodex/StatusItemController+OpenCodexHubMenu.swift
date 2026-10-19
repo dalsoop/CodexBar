@@ -40,7 +40,7 @@ extension StatusItemController {
         if let error = state.lastError {
             self.addOpenCodexHubNotice(error, to: menu)
         }
-        for line in state.switchStatus.menuLines {
+        for line in state.switchStatus.menuLines(hidePersonalInfo: self.settings.hidePersonalInfo) {
             self.addOpenCodexHubNotice(line, to: menu)
         }
         guard !pool.accounts.isEmpty else { return }

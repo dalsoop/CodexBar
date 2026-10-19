@@ -2700,6 +2700,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "ハブがアカウントを切り替えています…";
 "The hub switched to %@." = "ハブが %@ に切り替えました。";
+"The hub has since switched to %@." = "その後、ハブが %@ に切り替えました。";
 "The hub refused the switch: %@" = "ハブが切り替えを拒否しました: %@";
 "The hub could not switch: %@" = "ハブが切り替えられませんでした: %@";
 "The hub did not pick up the switch request in time." = "ハブが切り替えリクエストを時間内に受け取りませんでした。";

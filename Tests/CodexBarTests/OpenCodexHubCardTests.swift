@@ -126,22 +126,86 @@ struct OpenCodexHubCardTests {
         #expect(progress == 2)
         let status = try #require(fixture.store.openCodexHubCardState(for: .grok)?.switchStatus)
         #expect(status.isPending)
-        #expect(status.menuLines == [L("The hub is switching accounts…")])
+        #expect(status.menuLines(hidePersonalInfo: false) == [L("The hub is switching accounts…")])
         let files = self.requestFiles(fixture)
         #expect(files.count == 1)
         let requestID = try #require(files.first?.replacingOccurrences(of: ".json", with: ""))
 
-        // The hub's next snapshot reports the request as done.
+        // The hub's next snapshot reports the request as done and lists the target as active.
         let done = Self.snapshot.replacingOccurrences(
             of: #""lastRequests": []"#,
             with: #""lastRequests": [{"requestId": "\#(requestID)", "from": "client", "provider": "xai", "#
                 + #""target": {"idSuffix": "ffff", "email": "b***b@example.invalid"}, "result": "done", "#
                 + #""code": "switched", "reason": null, "at": "2026-10-19T03:16:00Z"}]"#)
-        try done.write(toFile: snapshotPath, atomically: true, encoding: .utf8)
+        try Self.activatingXAI("ffff", in: done).write(toFile: snapshotPath, atomically: true, encoding: .utf8)
         await fixture.store.refreshOpenCodexHubCard(.grok, generation: nil)
         let resolved = try #require(fixture.store.openCodexHubCardState(for: .grok)?.switchStatus)
         #expect(!resolved.isPending)
-        #expect(resolved.menuLines == [L("The hub switched to %@.", "b***b")])
+        #expect(resolved.menuLines(hidePersonalInfo: false) == [L("The hub switched to %@.", "b***b")])
+
+        // The hub later moves back on its own: the menu follows the active account, not the old answer.
+        try done.write(toFile: snapshotPath, atomically: true, encoding: .utf8)
+        await fixture.store.refreshOpenCodexHubCard(.grok, generation: nil)
+        let movedOn = try #require(fixture.store.openCodexHubCardState(for: .grok)?.switchStatus)
+        #expect(movedOn.menuLines(hidePersonalInfo: false)
+            == [L("The hub has since switched to %@.", "a***a@example.invalid")])
+        #expect(movedOn.menuLines(hidePersonalInfo: true)
+            == [L("The hub has since switched to %@.", L("Account %@", "1"))])
+    }
+
+    /// The xai pool of `snapshot` with `idSuffix` as its only active account.
+    private static func activatingXAI(_ idSuffix: String, in snapshot: String) -> String {
+        let rows = [
+            ("eeee", "a***a@example.invalid"),
+            ("ffff", "b***b@example.invalid"),
+        ]
+        var text = snapshot
+        for (suffix, email) in rows {
+            let prefix = #"{"idSuffix": "\#(suffix)", "label": "\#(email)", "email": "\#(email)", "active": "#
+            for state in ["true", "false"] {
+                text = text.replacingOccurrences(
+                    of: prefix + state,
+                    with: prefix + (suffix == idSuffix ? "true" : "false"))
+            }
+        }
+        return text
+    }
+
+    @Test
+    func `a switch answer is shown only while the hub keeps that account active`() {
+        let pool = { (active: String) in
+            OpenCodexHubPool(
+                provider: .openai,
+                accounts: ["aaaa", "bbbb"].map { suffix in
+                    OpenCodexHubAccount(
+                        idSuffix: suffix,
+                        label: nil,
+                        email: "\(suffix)@example.invalid",
+                        isActive: suffix == active)
+                },
+                switchable: true,
+                origin: .hubLocal)
+        }
+        var status = OpenCodexHubSwitchStatus()
+        status.finish(.switched("bbbb"), activeAccount: .init(idSuffix: "bbbb", email: "bbbb@example.invalid"))
+        // The menu can render before the next read; the answer stands until a newer pool contradicts it.
+        #expect(status.menuLines(hidePersonalInfo: false) == [L("The hub switched to %@.", "bbbb")])
+        let unchanged = status.reconcile(with: pool("bbbb"))
+        #expect(!unchanged)
+        #expect(status.menuLines(hidePersonalInfo: false) == [L("The hub switched to %@.", "bbbb")])
+        let movedOn = status.reconcile(with: pool("aaaa"))
+        #expect(movedOn)
+        #expect(status.menuLines(hidePersonalInfo: false)
+            == [L("The hub has since switched to %@.", "aaaa@example.invalid")])
+
+        status.finish(.failed("busy"), activeAccount: .init(idSuffix: "aaaa", email: "aaaa@example.invalid"))
+        let stillActive = status.reconcile(with: pool("aaaa"))
+        #expect(!stillActive)
+        #expect(status.menuLines(hidePersonalInfo: false) == [L("The hub could not switch: %@", "busy")])
+        let movedAgain = status.reconcile(with: pool("bbbb"))
+        #expect(movedAgain)
+        #expect(status.menuLines(hidePersonalInfo: true)
+            == [L("The hub has since switched to %@.", L("Account %@", "2"))])
     }
 
     @Test

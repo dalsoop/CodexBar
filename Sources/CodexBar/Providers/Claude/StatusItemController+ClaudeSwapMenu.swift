@@ -35,7 +35,8 @@ extension StatusItemController {
             }
         }
         if readsFromOpenCodex {
-            for line in self.store.claudeSwapHubSwitchStatus.menuLines {
+            let hidePersonalInfo = self.settings.hidePersonalInfo
+            for line in self.store.claudeSwapHubSwitchStatus.menuLines(hidePersonalInfo: hidePersonalInfo) {
                 self.addOpenCodexHubNotice(line, to: menu)
             }
         }
