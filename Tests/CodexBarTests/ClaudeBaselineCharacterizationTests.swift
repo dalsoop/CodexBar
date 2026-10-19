@@ -226,8 +226,6 @@ struct ClaudeBaselineCharacterizationTests {
             "CLAUDE_CLI_PATH": "/usr/bin/true",
             ClaudeOAuthCredentialsStore.environmentTokenKey: "sk-ant-oat01-characterization",
         ]
-        let context = self.makeContext(runtime: .cli, sourceMode: .auto, env: env)
-        #expect(!ClaudeProviderDescriptor.shouldAttemptCLIAutoOAuth(context: context))
         let strategyIDs = await self.strategyIDs(runtime: .cli, sourceMode: .auto, env: env)
         #expect(strategyIDs == ["claude.web", "claude.cli"])
     }

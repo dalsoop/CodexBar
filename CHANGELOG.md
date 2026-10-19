@@ -2,6 +2,10 @@
 
 ## 0.77.1 — Unreleased
 
+### Fixed
+
+- Claude: try readable OAuth credentials before starting the CLI in Linux Auto mode, avoiding unnecessary interactive startup while preserving explicit source selection (#4613, #4615). Thanks @yeseoLee!
+
 ## 0.77.0 — 2026-10-16
 
 ### Highlights

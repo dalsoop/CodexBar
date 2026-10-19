@@ -309,7 +309,9 @@ public enum ClaudeProviderDescriptor {
                 browserDetection: context.browserDetection,
                 hasWebFallback: false)]
         }
-        if context.sourceMode == .api || self.hasAutoAdminAPIKey(context: context) {
+        if context.sourceMode == .api ||
+            (context.sourceMode == .auto && ClaudeAdminAPISettingsReader.apiKey(environment: context.env) != nil)
+        {
             return [ClaudeAdminAPIFetchStrategy()]
         }
 
@@ -343,10 +345,6 @@ public enum ClaudeProviderDescriptor {
         }
     }
 
-    private static func hasAutoAdminAPIKey(context: ProviderFetchContext) -> Bool {
-        context.sourceMode == .auto && ClaudeAdminAPISettingsReader.apiKey(environment: context.env) != nil
-    }
-
     private static func isSelectedOAuthTokenAccount(context: ProviderFetchContext) -> Bool {
         guard context.selectedTokenAccountID != nil,
               context.settings?.claude?.usageDataSource == .oauth
@@ -369,30 +367,23 @@ public enum ClaudeProviderDescriptor {
     }
 
     private static func makePlanningInput(context: ProviderFetchContext) -> ClaudeSourcePlanningInput {
-        let webExtrasEnabled = context.settings?.claude?.webExtrasEnabled ?? false
-        let hasWebSession = Self.hasPlausibleWebSession(context: context)
-        let shouldAttemptOAuth = (context.runtime == .app &&
-            (context.sourceMode == .auto || context.sourceMode == .oauth))
-            || Self.shouldAttemptCLIAutoOAuth(context: context)
+        #if os(Linux)
+        let shouldAttemptOAuth = context.sourceMode == .auto ||
+            (context.runtime == .app && context.sourceMode == .oauth)
+        #else
+        let shouldAttemptOAuth = context.runtime == .app &&
+            (context.sourceMode == .auto || context.sourceMode == .oauth)
+        #endif
 
         return ClaudeSourcePlanningInput(
             runtime: context.runtime,
             selectedDataSource: Self.sourceDataSource(from: context.sourceMode),
-            webExtrasEnabled: webExtrasEnabled,
-            hasWebSession: hasWebSession,
+            webExtrasEnabled: context.settings?.claude?.webExtrasEnabled ?? false,
+            hasWebSession: Self.hasPlausibleWebSession(context: context),
             hasCLI: ClaudeCLIResolver.isAvailable(environment: context.env),
-            // App Auto and explicit OAuth perform one real, noninteractive OAuth attempt. Do not preflight here:
+            // App Auto, Linux CLI Auto, and explicit OAuth plan a noninteractive attempt. Do not preflight here:
             // a preflight can mutate cache state and make the real fetch misclassify a typed error.
             hasOAuthCredentials: shouldAttemptOAuth)
-    }
-
-    /// CLI Auto tries OAuth before the Claude CLI PTY only off macOS; macOS CLI Auto keeps its web → cli plan.
-    static func shouldAttemptCLIAutoOAuth(context: ProviderFetchContext) -> Bool {
-        #if os(macOS)
-        false
-        #else
-        context.runtime == .cli && context.sourceMode == .auto
-        #endif
     }
 
     private static func hasPlausibleWebSession(context: ProviderFetchContext) -> Bool {
@@ -801,10 +792,11 @@ struct ClaudeOAuthFetchStrategy: ProviderFetchStrategy {
         }
         // In Auto mode, fall back to the next strategy (cli/web) when safe credentials are absent or OAuth fails.
         // Cancellation itself is always terminal.
-        if ClaudeProviderDescriptor.shouldAttemptCLIAutoOAuth(context: context) {
-            return true
-        }
+        #if os(Linux)
+        return context.sourceMode == .auto
+        #else
         return context.runtime == .app && context.sourceMode == .auto
+        #endif
     }
 
     fileprivate static func snapshot(

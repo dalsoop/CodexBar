@@ -71,7 +71,9 @@ struct ClaudeCLIAutoOAuthLinuxTests {
     @Test
     func `explicit CLI OAuth stays terminal`() {
         let context = self.makeContext(sourceMode: .oauth)
-        #expect(!ClaudeProviderDescriptor.shouldAttemptCLIAutoOAuth(context: context))
+        #expect(!ClaudeOAuthFetchStrategy().shouldFallback(
+            on: ClaudeOAuthCredentialsError.notFound,
+            context: context))
     }
 }
 #endif
