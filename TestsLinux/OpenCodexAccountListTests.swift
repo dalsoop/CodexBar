@@ -244,6 +244,8 @@ struct OpenCodexAccountListTests {
         try "#!/bin/sh\ncat \"$(dirname \"$0\")/list.json\"\n".write(to: interpreter, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: interpreter.path)
         try "#!/usr/bin/env fake-node\n".write(toFile: ocx, atomically: true, encoding: .utf8)
+        // An atomic write replaces the file; on Linux the replacement loses the executable bit.
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: ocx)
 
         #expect(OpenCodexAccountReader.environment(for: ocx, base: ["PATH": "/usr/bin:/bin"])["PATH"]
             == directory.path + ":/usr/bin:/bin")
