@@ -1,3 +1,4 @@
+import AppKit
 import CodexBarCore
 import Foundation
 import Testing
@@ -206,6 +207,34 @@ struct OpenCodexHubCardTests {
         #expect(movedAgain)
         #expect(status.menuLines(hidePersonalInfo: true)
             == [L("The hub has since switched to %@.", L("Account %@", "2"))])
+    }
+
+    @Test
+    func `every hub switch confirmation keeps one button order and layout`() {
+        _ = NSApplication.shared
+        let short = OpenCodexHubSwitchConfirmation.makeAlert(
+            accountLabel: "b***b@example.invalid",
+            details: L("Every Mac that uses this hub moves to this account on its next request."))
+        let nearLimit = L(
+            "This account has used %@ or more of a limit. The hub may switch away again soon, " +
+                "or requests may stop until the limit resets.",
+            "80%")
+        let long = OpenCodexHubSwitchConfirmation.makeAlert(
+            accountLabel: "b***b@example.invalid",
+            details: [
+                L("Every Mac that uses this hub moves to this Claude account on its next request."),
+                L("Quota: %@", "5h 9% · Weekly 100% · Fable 76%"),
+                nearLimit,
+                L("This Mac asks the hub to switch; the result shows after the hub's next update."),
+                nearLimit,
+            ].joined(separator: "\n\n"))
+        for alert in [short, long] {
+            #expect(alert.buttons.map(\.title) == [L("Switch Account..."), L("Cancel")])
+            #expect(alert.buttons.map(\.keyEquivalent) == ["\r", "\u{1B}"])
+            alert.layout()
+        }
+        #expect(short.window.frame.width == long.window.frame.width)
+        #expect(short.buttons.map(\.frame) == long.buttons.map(\.frame))
     }
 
     @Test
