@@ -640,7 +640,17 @@ if [[ ! -d "$CORE_RESOURCE_BUNDLE" ]]; then
   exit 1
 fi
 rm -rf "$APP/Contents/Helpers/CodexBar_CodexBarCore.bundle"
-cp -R "$CORE_RESOURCE_BUNDLE" "$APP/Contents/Helpers/"
+if [[ "${CODEXBAR_HELPER_RESOURCES_SYMLINK:-0}" == "1" ]]; then
+  # rcodesign leaves a code-less bundle under Helpers out of the outer seal, so point the CLI at the
+  # app's sealed copy in Resources instead (same SwiftPM bundle) when re-signing with rcodesign.
+  if [[ ! -d "$APP/Contents/Resources/CodexBar_CodexBarCore.bundle" ]]; then
+    echo "ERROR: Missing Resources/CodexBar_CodexBarCore.bundle for the helper symlink." >&2
+    exit 1
+  fi
+  ln -s ../Resources/CodexBar_CodexBarCore.bundle "$APP/Contents/Helpers/CodexBar_CodexBarCore.bundle"
+else
+  cp -R "$CORE_RESOURCE_BUNDLE" "$APP/Contents/Helpers/"
+fi
 
 # Ensure contents are writable before stripping attributes and signing.
 chmod -R u+w "$APP"
@@ -653,7 +663,7 @@ find "$APP" -name '._*' -delete
 if [[ -f "${APP}/Contents/Helpers/CodexBarCLI" ]]; then
   codesign "${CODESIGN_ARGS[@]}" "${APP}/Contents/Helpers/CodexBarCLI"
 fi
-if [[ -d "${APP}/Contents/Helpers/CodexBar_CodexBarCore.bundle" ]]; then
+if [[ -d "${APP}/Contents/Helpers/CodexBar_CodexBarCore.bundle" && ! -L "${APP}/Contents/Helpers/CodexBar_CodexBarCore.bundle" ]]; then
   codesign "${CODESIGN_ARGS[@]}" "${APP}/Contents/Helpers/CodexBar_CodexBarCore.bundle"
 fi
 if [[ -f "${APP}/Contents/Helpers/CodexBarClaudeWatchdog" ]]; then
