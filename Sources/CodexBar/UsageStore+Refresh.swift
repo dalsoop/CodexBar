@@ -299,18 +299,23 @@ extension UsageStore {
     {
         guard let spec = await self.providerRefreshSpec(provider) else { return nil }
         guard self.isCurrentProviderRefreshGeneration(provider, generation: generation) else { return nil }
-        // A Codex or Grok card that reads an opencodex hub pool skips the provider's own sources.
-        if self.usesOpenCodexHub(for: provider) {
+        // A Codex or Grok card that reads an opencodex hub pool skips the provider's own sources, unless this
+        // Mac has no hub source at all (no opencodex role and no snapshot); then the card reads its own sources.
+        if self.settings.openCodexHubEnabled(for: provider) {
             guard spec.isEnabled() || allowDisabled else {
                 self.clearProviderRuntimeState(provider)
                 self.clearOpenCodexHubCardState(provider)
                 return nil
             }
-            await self.refreshOpenCodexHubCard(provider, generation: generation)
-            return nil
-        } else if self.openCodexHubCardStates[provider] != nil {
-            self.clearOpenCodexHubCardState(provider)
-            self.snapshots.removeValue(forKey: provider.instanceID)
+            if await self.refreshOpenCodexHubCard(provider, generation: generation) {
+                return nil
+            }
+        } else {
+            self.openCodexHubNativeFallbacks.remove(provider)
+            if self.openCodexHubCardStates[provider] != nil {
+                self.clearOpenCodexHubCardState(provider)
+                self.snapshots.removeValue(forKey: provider.instanceID)
+            }
         }
         let codexExplicitPAT = provider == .codex && self.settings.codexUsageDataSource == .pat
         let codexPreparation = provider == .codex ? self.prepareCodexRefreshPublication() : nil

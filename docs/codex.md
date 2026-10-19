@@ -24,7 +24,8 @@ Local token/cost history is scanned separately; the CLI PTY parser is a manual d
 
 With "Read accounts from an opencodex hub" on (config key `openCodexHubEnabled`), the card skips the Codex sources
 below and reads the `openai` pool of an [opencodex](https://github.com/lidge-jun/opencodex) hub instead: on the hub
-through `ocx account list openai --quota --json`, elsewhere from the hub's snapshot file. A pool with several accounts
+through `ocx account list openai --quota --json`, on a Mac linked to it from the hub's snapshot file (the role comes
+from `ocx status --json`; a Mac with neither keeps the Codex sources below). A pool with several accounts
 follows the multi-account menu layout: stacked shows every account's card with its weekly and monthly limits and the
 active one marked; segmented shows account tabs above the active account's card, and another tab previews that
 account. Switch (on a card, after a confirmation) runs `ocx account use openai <id> --json` on the hub and writes a

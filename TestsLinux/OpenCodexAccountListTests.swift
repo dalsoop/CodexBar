@@ -42,7 +42,8 @@ struct OpenCodexAccountListTests {
     }
     """#
 
-    private func makeFakeOCX(_ body: String) throws -> String {
+    /// A fake `ocx` that reports `role` for `ocx status --json` and runs `body` for every other command.
+    private func makeFakeOCX(_ body: String, role: String = "hub") throws -> String {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("opencodex-tests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -52,6 +53,10 @@ struct OpenCodexAccountListTests {
         let script = """
         LIST='\(listFile.path)'
         printf '%s\\n' "$*" >> '\(url.path).calls'
+        if [ "$1 $2" = "status --json" ]; then
+          printf '{"schemaVersion":1,"runtimeRole":"%s"}\\n' '\(role)'
+          exit 0
+        fi
         \(body)
         """
         try FakeExecutable.install(script, at: url)
@@ -164,12 +169,12 @@ struct OpenCodexAccountListTests {
         let list = try await ClaudeSwapAccountReader.readAccountList(executablePath: ocx, source: .openCodex)
         #expect(list.accounts.count == 3)
         #expect(list.supportsAccountSwitching)
-        #expect(self.calls(ocx) == ["account list anthropic --quota --json"])
+        #expect(self.calls(ocx) == ["status --json", "account list anthropic --quota --json"])
     }
 
     @Test
     func `a linked client falls back to the snapshot file or explains where accounts live`() async throws {
-        let ocx = try self.makeFakeOCX(#"echo "Error: not_found" >&2; exit 4"#)
+        let ocx = try self.makeFakeOCX(#"echo "Error: not_found" >&2; exit 4"#, role: "client")
         await #expect(throws: OpenCodexAccountListError.hubAccountsUnavailable("Error: not_found")) {
             _ = try await ClaudeSwapAccountReader.readAccountList(executablePath: ocx, source: .openCodex)
         }
@@ -207,6 +212,7 @@ struct OpenCodexAccountListTests {
             toAccountNumber: 2,
             reason: "switched"))
         #expect(self.calls(ocx) == [
+            "status --json",
             "account list anthropic --quota --json",
             "account use anthropic 377b0c1d2e3f40516273849506a75592 --json",
         ])
@@ -224,7 +230,7 @@ struct OpenCodexAccountListTests {
             _ = try await ClaudeSwapAccountReader.switchAccount(
                 executablePath: ocx, accountNumber: 2, source: .openCodex, expectedEmail: "someone@else.example")
         }
-        #expect(self.calls(ocx) == ["account list anthropic --quota --json"])
+        #expect(self.calls(ocx) == ["status --json", "account list anthropic --quota --json"])
         await #expect(throws: OpenCodexAccountListError.switchFailed("Error: failed to switch anthropic")) {
             _ = try await ClaudeSwapAccountReader.switchAccount(
                 executablePath: ocx, accountNumber: 2, source: .openCodex, expectedEmail: "b***b@example.com")
@@ -243,7 +249,11 @@ struct OpenCodexAccountListTests {
         try Self.liveList.write(to: directory.appendingPathComponent("list.json"), atomically: true, encoding: .utf8)
         // `fake-node` is found only through PATH, like `#!/usr/bin/env node` in the real launcher.
         try FakeExecutable.install(
-            "cat '\(directory.appendingPathComponent("list.json").path)'\n",
+            """
+            if [ "$1 $2" = "status --json" ]; then echo '{"runtimeRole":"hub"}'; exit 0; fi
+            cat '\(directory.appendingPathComponent("list.json").path)'
+
+            """,
             at: directory.appendingPathComponent("fake-node"))
         let ocx = directory.appendingPathComponent("ocx").path
         try FakeExecutable.install("exec fake-node \"$@\"\n", at: URL(fileURLWithPath: ocx))

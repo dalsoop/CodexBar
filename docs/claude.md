@@ -450,12 +450,14 @@ The accepted multi-account design in
   are labelled `opencodex` and identity is `opencodex:<slot>`. Switch runs `ocx account use anthropic <id> --json`
   after a confirmation, because it moves every client of the hub; the id is resolved from a fresh list and the slot
   must still hold the same masked email, and ids are never persisted.
-- A Mac linked to an opencodex hub cannot list the hub's accounts (`ocx` answers `Error: not_found`). With
-  `openCodexHubSnapshotPath` set, CodexBar then reads the snapshot file the hub writes (see
+- A Mac linked to an opencodex hub (`runtimeRole: "client"` in `ocx status --json`) never runs `ocx account use`, even
+  though opencodex 2.84+ answers `ocx account list` there from the hub's cache. With
+  `openCodexHubSnapshotPath` set, CodexBar reads the snapshot file the hub writes (see
   [opencodex hub snapshot](configuration.md#opencodex-hub-snapshot)): schema 2 `state.providers.anthropic`, or the
   schema 1 `state.accounts` list read-only. The menu says where the accounts are managed and flags a snapshot older
-  than five minutes. When the hub marks the pool `switchable`, Switch writes a request file next to the snapshot
-  instead of running `ocx`, and the menu shows that the hub is switching until a newer snapshot reports the result.
+  than five minutes; while no current snapshot exists it shows the Mac's own list read-only. When the hub marks the
+  pool `switchable`, Switch writes a request file next to a current snapshot instead of running `ocx`, and the menu
+  shows that the hub is switching until a newer snapshot reports the result.
   With a snapshot path set the executable path may stay empty: CodexBar then looks for `ocx` in `/opt/homebrew/bin`,
   `/usr/local/bin` or `~/.local/bin`, so one setting serves the hub and its linked Macs.
 - tcr forecast history requires both a nonempty email and `organizationUuid` in the list row. When both are

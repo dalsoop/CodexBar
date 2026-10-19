@@ -23,6 +23,7 @@ struct ClaudeSwapOpenCodexSwitchTests {
         #!/bin/sh
         printf '%s\\n' "$*" >> "$0.calls"
         case "$1 $2" in
+          "status --json") echo '{"schemaVersion":1,"runtimeRole":"hub"}' ;;
           "account list") cat '\(listFile.path)' ;;
           "account use") printf '{"ok":true,"provider":"anthropic","type":"oauth","activeId":"%s"}\\n' "$4" ;;
           *) exit 64 ;;
@@ -61,7 +62,11 @@ struct ClaudeSwapOpenCodexSwitchTests {
         #expect(fixture.store.claudeSwapTransientState.lastError == nil)
         #expect(fixture.store.claudeSwapTransientState.task == nil)
         let calls = try String(contentsOfFile: executable.path + ".calls", encoding: .utf8)
-        #expect(calls == "account list anthropic --quota --json\naccount use anthropic bbbb2222 --json\n")
+        #expect(calls.split(separator: "\n") == [
+            "status --json",
+            "account list anthropic --quota --json",
+            "account use anthropic bbbb2222 --json",
+        ])
     }
 
     @Test

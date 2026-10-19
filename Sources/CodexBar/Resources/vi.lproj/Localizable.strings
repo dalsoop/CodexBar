@@ -2729,6 +2729,7 @@
 "The hub list is out of date." = "Danh sách của máy chủ trung tâm đã cũ.";
 "Accounts in this pool are switched only on %@." = "Tài khoản trong nhóm này chỉ được chuyển trên %@.";
 "Accounts in this pool are switched only on the hub." = "Tài khoản trong nhóm này chỉ được chuyển trên máy chủ trung tâm.";
+"Switching is off until the hub writes a current snapshot to this Mac." = "Không thể chuyển cho đến khi máy chủ trung tâm ghi bản chụp mới lên máy Mac này.";
 "Quota: %@" = "Hạn mức: %@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "Tài khoản này đã dùng %@ trở lên của một giới hạn. Máy chủ trung tâm có thể sớm chuyển đi lần nữa, hoặc yêu cầu có thể dừng cho đến khi giới hạn được đặt lại.";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "Máy Mac này yêu cầu máy chủ trung tâm chuyển; kết quả hiện ra sau lần cập nhật tiếp theo của máy chủ trung tâm.";

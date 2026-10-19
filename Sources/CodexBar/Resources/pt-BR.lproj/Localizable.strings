@@ -2728,6 +2728,7 @@
 "The hub list is out of date." = "A lista do hub está desatualizada.";
 "Accounts in this pool are switched only on %@." = "As contas deste grupo só são trocadas em %@.";
 "Accounts in this pool are switched only on the hub." = "As contas deste grupo só são trocadas no hub.";
+"Switching is off until the hub writes a current snapshot to this Mac." = "A troca fica desativada até o hub gravar um instantâneo atual neste Mac.";
 "Quota: %@" = "Cota: %@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "Esta conta usou %@ ou mais de um limite. O hub pode trocar de novo em breve, ou as solicitações podem parar até o limite ser redefinido.";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "Este Mac pede ao hub para trocar; o resultado aparece após a próxima atualização do hub.";

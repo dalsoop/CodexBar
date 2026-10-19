@@ -2706,6 +2706,7 @@
 "The hub list is out of date." = "中樞清單已過期。";
 "Accounts in this pool are switched only on %@." = "此帳號池只在 %@ 上切換。";
 "Accounts in this pool are switched only on the hub." = "此帳號池只在中樞上切換。";
+"Switching is off until the hub writes a current snapshot to this Mac." = "在中樞向這台 Mac 寫入最新快照之前，無法切換。";
 "Quota: %@" = "額度：%@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "此帳號已用掉某項限額的 %@ 或更多。中樞可能很快再次切走，或在限額重設前請求可能停止。";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "這台 Mac 會請求中樞切換；結果會在中樞下次更新後顯示。";

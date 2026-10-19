@@ -2729,6 +2729,7 @@
 "The hub list is out of date." = "Список хаба устарел.";
 "Accounts in this pool are switched only on %@." = "Аккаунты этого пула переключаются только на %@.";
 "Accounts in this pool are switched only on the hub." = "Аккаунты этого пула переключаются только на хабе.";
+"Switching is off until the hub writes a current snapshot to this Mac." = "Переключение отключено, пока хаб не запишет актуальный снимок на этот Mac.";
 "Quota: %@" = "Квота: %@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "Этот аккаунт израсходовал %@ или больше лимита. Хаб может вскоре снова переключиться, или запросы могут остановиться до сброса лимита.";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "Этот Mac просит хаб переключиться; результат появится после следующего обновления хаба.";

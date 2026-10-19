@@ -2725,6 +2725,7 @@
 "The hub list is out of date." = "De hublijst is verouderd.";
 "Accounts in this pool are switched only on %@." = "Accounts in deze pool worden alleen op %@ gewisseld.";
 "Accounts in this pool are switched only on the hub." = "Accounts in deze pool worden alleen op de hub gewisseld.";
+"Switching is off until the hub writes a current snapshot to this Mac." = "Wisselen staat uit totdat de hub een actuele momentopname naar deze Mac schrijft.";
 "Quota: %@" = "Quotum: %@";
 "This account has used %@ or more of a limit. The hub may switch away again soon, or requests may stop until the limit resets." = "Dit account heeft %@ of meer van een limiet gebruikt. De hub kan binnenkort weer wisselen, of verzoeken kunnen stoppen tot de limiet wordt gereset.";
 "This Mac asks the hub to switch; the result shows after the hub's next update." = "Deze Mac vraagt de hub om te wisselen; het resultaat verschijnt na de volgende update van de hub.";
