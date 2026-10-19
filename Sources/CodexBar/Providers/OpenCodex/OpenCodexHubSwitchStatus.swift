@@ -4,7 +4,9 @@ import Foundation
 /// The switch a card asked the opencodex hub for, and what the hub answered.
 ///
 /// A Mac that is not the hub writes a request file and shows "the hub is switching" until a newer hub
-/// snapshot reports the request (`lastRequests`) or shows the target as active.
+/// snapshot reports the request (`lastRequests`) or shows the target as active. The answer is shown only
+/// while the hub's active account is still the one it was about; once the hub moves on by itself, the
+/// menu says where the hub is now instead.
 struct OpenCodexHubSwitchStatus: Equatable {
     enum Notice: Equatable {
         case switched(String)
@@ -13,9 +15,33 @@ struct OpenCodexHubSwitchStatus: Equatable {
         case expired
     }
 
+    /// Names a hub account the way a switch request does: id suffix and masked email.
+    struct AccountKey: Equatable {
+        let idSuffix: String?
+        let email: String
+
+        init(idSuffix: String?, email: String) {
+            self.idSuffix = idSuffix
+            self.email = email
+        }
+
+        init(_ account: OpenCodexHubAccount) {
+            self.init(idSuffix: account.idSuffix, email: account.email)
+        }
+    }
+
+    /// The hub's active account when a later pool no longer matches the notice, with its 1-based position.
+    struct MovedOn: Equatable {
+        let account: OpenCodexHubAccount
+        let ordinal: Int
+    }
+
     private(set) var pending: OpenCodexHubPendingSwitch?
     private(set) var pendingLabel: String?
     private(set) var notice: Notice?
+    /// The active account the notice describes: the target of a switch, otherwise the account that stayed.
+    private(set) var noticeAccount: AccountKey?
+    private(set) var movedOn: MovedOn?
 
     var isPending: Bool {
         self.pending != nil
@@ -25,38 +51,58 @@ struct OpenCodexHubSwitchStatus: Equatable {
         self.pending = OpenCodexHubPendingSwitch(request: request)
         self.pendingLabel = label
         self.notice = nil
+        self.noticeAccount = nil
+        self.movedOn = nil
     }
 
-    mutating func finish(_ notice: Notice?) {
+    /// Ends the pending request with `notice`; `activeAccount` is the hub's active account it describes.
+    mutating func finish(_ notice: Notice?, activeAccount: AccountKey? = nil) {
         self.pending = nil
         self.pendingLabel = nil
         self.notice = notice
+        self.noticeAccount = notice == nil ? nil : activeAccount
+        self.movedOn = nil
     }
 
-    /// Resolves a pending request against a newly read pool. Returns true when the status changed.
+    /// Resolves a pending request against a newly read pool, or checks the last answer still describes the
+    /// hub's active account. Returns true when the status changed.
     @discardableResult
     mutating func reconcile(with pool: OpenCodexHubPool, now: Date = Date()) -> Bool {
-        guard let pending = self.pending, pending.request.provider == pool.provider else { return false }
+        guard let pending = self.pending else {
+            return self.recordMovedOn(in: pool)
+        }
+        guard pending.request.provider == pool.provider else { return false }
         let label = self.pendingLabel ?? pending.request.targetEmail
+        let active = pool.activeAccount.map(AccountKey.init)
         switch pending.resolution(in: pool, now: now) {
         case .pending:
             return false
         case .done:
-            self.finish(.switched(label))
+            let target = AccountKey(idSuffix: pending.request.targetIDSuffix, email: pending.request.targetEmail)
+            self.finish(.switched(label), activeAccount: target)
+            self.recordMovedOn(in: pool)
         case let .refused(code, reason):
-            self.finish(.refused(Self.reasonText(code: code, reason: reason)))
+            self.finish(.refused(Self.reasonText(code: code, reason: reason)), activeAccount: active)
         case let .failed(code, reason):
-            self.finish(.failed(Self.reasonText(code: code, reason: reason)))
+            self.finish(.failed(Self.reasonText(code: code, reason: reason)), activeAccount: active)
         case .expired:
-            self.finish(.expired)
+            self.finish(.expired, activeAccount: active)
         }
         return true
     }
 
-    /// Lines for the menu: the pending request or the last answer.
-    var menuLines: [String] {
+    /// Lines for the menu: the pending request, the last answer while it still holds, or where the hub
+    /// moved since.
+    func menuLines(hidePersonalInfo: Bool) -> [String] {
         if self.pending != nil {
             return [L("The hub is switching accounts…")]
+        }
+        if let movedOn {
+            let label = OpenCodexHubPresentation.label(
+                for: movedOn.account,
+                hidePersonalInfo: hidePersonalInfo,
+                ordinal: movedOn.ordinal)
+            return [L("The hub has since switched to %@.", label)]
         }
         switch self.notice {
         case let .switched(label): return [L("The hub switched to %@.", label)]
@@ -65,6 +111,20 @@ struct OpenCodexHubSwitchStatus: Equatable {
         case .expired: return [L("The hub did not pick up the switch request in time.")]
         case nil: return []
         }
+    }
+
+    @discardableResult
+    private mutating func recordMovedOn(in pool: OpenCodexHubPool) -> Bool {
+        guard self.notice != nil, let noticeAccount else { return false }
+        var movedOn: MovedOn?
+        if let index = pool.accounts.firstIndex(where: \.isActive),
+           AccountKey(pool.accounts[index]) != noticeAccount
+        {
+            movedOn = MovedOn(account: pool.accounts[index], ordinal: index + 1)
+        }
+        guard movedOn != self.movedOn else { return false }
+        self.movedOn = movedOn
+        return true
     }
 
     private static func reasonText(code: String?, reason: String?) -> String {

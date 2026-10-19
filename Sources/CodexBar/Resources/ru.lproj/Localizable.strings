@@ -2701,6 +2701,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "Хаб переключает аккаунт…";
 "The hub switched to %@." = "Хаб переключился на %@.";
+"The hub has since switched to %@." = "С тех пор хаб переключился на %@.";
 "The hub refused the switch: %@" = "Хаб отклонил переключение: %@";
 "The hub could not switch: %@" = "Хабу не удалось переключиться: %@";
 "The hub did not pick up the switch request in time." = "Хаб не принял запрос на переключение вовремя.";

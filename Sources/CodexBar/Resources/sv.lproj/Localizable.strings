@@ -2699,6 +2699,7 @@
 /* opencodex hub accounts (Claude, Codex, Grok) */
 "The hub is switching accounts…" = "Hubben byter konto…";
 "The hub switched to %@." = "Hubben bytte till %@.";
+"The hub has since switched to %@." = "Hubben har sedan dess bytt till %@.";
 "The hub refused the switch: %@" = "Hubben avböjde bytet: %@";
 "The hub could not switch: %@" = "Hubben kunde inte byta: %@";
 "The hub did not pick up the switch request in time." = "Hubben tog inte emot bytesbegäran i tid.";
