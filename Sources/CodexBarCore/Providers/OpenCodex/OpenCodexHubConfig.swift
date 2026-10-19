@@ -3,13 +3,25 @@ import Foundation
 /// Defaults for the opencodex hub source. Upstream builds leave the source off and the snapshot path
 /// unset, so nothing is read until a user configures it; a redistribution that ships for one hub layout
 /// can change these defaults in one place.
+///
+/// This build reads them from the app's Info.plist, which `Scripts/package_app.sh` fills for the fleet
+/// (`CODEXBAR_OPENCODEX_HUB_SNAPSHOT_PATH`, `CODEXBAR_OPENCODEX_HUB_NAME`): the hub writes its snapshot to
+/// every Mac, so the packaged app reads the hub without manual settings. Builds without those keys (tests,
+/// `swift run`) keep the upstream defaults.
 public enum OpenCodexHubDefaults {
+    static let snapshotPathKey = "CodexBarOpenCodexHubSnapshotPath"
+    static let hubNameKey = "CodexBarOpenCodexHubName"
+
     /// Whether the Claude, Codex and Grok cards read the opencodex hub when the user has not chosen.
-    public static let sourceEnabledByDefault = false
+    public static let sourceEnabledByDefault = Self.snapshotPath != nil
     /// The hub snapshot file read when no path is configured.
-    public static let snapshotPath: String? = nil
+    public static let snapshotPath: String? = Self.infoString(Self.snapshotPathKey)
     /// The managing machine's name when the snapshot does not carry one.
-    public static let hubName: String? = nil
+    public static let hubName: String? = Self.infoString(Self.hubNameKey)
+
+    private static func infoString(_ key: String) -> String? {
+        SettingsValue.cleaned(Bundle.main.object(forInfoDictionaryKey: key) as? String)
+    }
 }
 
 extension ProviderConfig {

@@ -27,6 +27,9 @@ AUTO_CHECKS=false
 BUILD_TIMESTAMP=2026-01-01T00:00:00Z
 GIT_COMMIT=test
 APP_TEAM_ID=TESTTEAM
+SPARKLE_PUBLIC_KEY=test-public-key
+OPENCODEX_HUB_SNAPSHOT_PATH='~/.swift-app-state/opencodex-hub-accounts.json'
+OPENCODEX_HUB_NAME=m5m1
 source "$PLIST_SCRIPT"
 
 if command -v plutil >/dev/null 2>&1; then
@@ -45,6 +48,8 @@ assert declarations == [{
     "UTTypeConformsTo": ["public.data"],
     "UTTypeTagSpecification": {},
 }]
+assert plist.get("CodexBarOpenCodexHubSnapshotPath") == "~/.swift-app-state/opencodex-hub-accounts.json"
+assert plist.get("CodexBarOpenCodexHubName") == "m5m1"
 PY
 
 echo "Package Info.plist tests passed."
