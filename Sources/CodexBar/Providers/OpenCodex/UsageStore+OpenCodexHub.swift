@@ -30,6 +30,12 @@ extension UsageStore {
         self.usesOpenCodexHub(for: .codex)
     }
 
+    /// The Claude card reads the hub pool, so the opencodex account adapter (same pool) stays off. Other adapter
+    /// sources (claude-swap, tcr) are separate account stores and keep running.
+    var claudeCardReplacesOpenCodexAdapter: Bool {
+        self.usesOpenCodexHub(for: .claude) && self.settings.claudeSwapSource == .openCodex
+    }
+
     func dropCodexNativeCreditsForOpenCodexHub() {
         self.credits = nil
         self.lastCreditsError = nil

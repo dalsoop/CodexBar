@@ -167,9 +167,11 @@ All provider fields are optional unless noted.
   `<source>:<slot>` identity. Machine-local like the executable path.
 - `openCodexHubSnapshotPath`: Claude (opencodex source), Codex and Grok; the opencodex hub snapshot file a Mac that
   is not the hub reads. Switch requests are written to `opencodex-hub-requests/` next to it. Machine-local.
-- `openCodexHubEnabled`: Codex and Grok; read the provider's accounts and limits from an opencodex hub (`openai` and
-  `xai` pools) instead of the provider's own sources. Defaults to `false`.
-- `openCodexHubExecutablePath`: Codex and Grok; the `ocx` executable on the hub. Empty looks in `/opt/homebrew/bin`,
+- `openCodexHubEnabled`: Claude, Codex and Grok; read the provider's accounts and limits from an opencodex hub
+  (`anthropic`, `openai` and `xai` pools) instead of the provider's own sources. Defaults to `false` (a build packaged
+  with a hub snapshot path turns it on). A Claude card that reads the hub replaces the opencodex account adapter
+  (`claudeSwapSource: "opencodex"`), which then stays off so the pool is not listed twice.
+- `openCodexHubExecutablePath`: Claude, Codex and Grok; the `ocx` executable on the hub. Empty looks in `/opt/homebrew/bin`,
   `/usr/local/bin` and `~/.local/bin`. Machine-local.
 - `claudeSwapShowSingleAccount`: prefer a claude-swap card when exactly one account is available. Defaults to
   `false`; multiple claude-swap accounts retain their existing precedence.
@@ -187,8 +189,8 @@ to a hub also answers `ocx account list` from the hub's cache, while it refuses 
   the hub's tooling) and leaves switch requests next to it. While the snapshot is missing or more than five minutes
   old, the card shows this Mac's own `ocx account list` read-only and says that switching waits for a current
   snapshot. `ocx account use` never runs on a client.
-- No `ocx` or no role reported: the snapshot only. Without a snapshot either, the Codex and Grok cards read their own
-  sources as if the hub source were off, and the Claude adapter says where the accounts are managed.
+- No `ocx` or no role reported: the snapshot only. Without a snapshot either, the Claude, Codex and Grok cards read
+  their own sources as if the hub source were off, and the Claude adapter says where the accounts are managed.
 
 CodexBar reads only the fields below; the file never contains tokens or full account ids.
 

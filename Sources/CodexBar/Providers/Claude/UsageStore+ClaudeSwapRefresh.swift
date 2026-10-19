@@ -25,6 +25,8 @@ extension UsageStore {
     /// stays external-process-owned and never exposes credentials to CodexBar.
     func shouldFetchClaudeSwapAccounts() -> Bool {
         guard self.isEnabled(.claude), self.settings.claudeSwapEnabled else { return false }
+        // The Claude card lists the hub pool itself; the opencodex adapter would list the same accounts twice.
+        guard !self.claudeCardReplacesOpenCodexAdapter else { return false }
         if !self.settings.claudeSwapExecutablePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return true
         }
@@ -101,6 +103,10 @@ extension UsageStore {
 
     func refreshClaudeSwapAccounts(generation: UInt64? = nil) async {
         defer { self.publishAppStateMirror() }
+        guard !self.claudeCardReplacesOpenCodexAdapter else {
+            self.clearClaudeSwapAccountState()
+            return
+        }
         let executablePath = self.settings.claudeSwapExecutablePath
         let source = self.settings.claudeSwapSource
         await self.probeClaudeSwapVersionIfNeeded(executablePath: executablePath, source: source)
