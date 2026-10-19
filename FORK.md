@@ -14,6 +14,11 @@ This is a long-lived, self-managed fork of [steipete/CodexBar](https://github.co
 - The stack is rebased onto each new upstream release tag; `gujo` is force-pushed with a lease. Keep fork commits small and independent so a rebase conflict stays in one commit.
 - The former pull request branch `feat/opencodex-hub-accounts` is archived as the tag `archive/opencodex-hub-accounts-pr4630` and deleted. Do not recreate it.
 
+## Fork-only features
+
+- opencodex hub accounts for Claude, Codex and Grok (`docs/configuration.md`, "opencodex hub snapshot").
+- The app state mirror `~/.swift-app-state/codexbar.json` and `codexbar app-state [--json]` (`docs/app-state.md`), so scripts and agents can see what the menu shows.
+
 ## Weekly sync and release
 
 A weekly job rebases `gujo` onto the newest upstream release, runs the build, the fork's focused tests, `make check` and the locale check, and on green signs, notarises, publishes and installs the build. On a rebase conflict or a red gate it stops, leaves the published release as it is and asks the owner. The job lives outside this repository (private `upstream-mono` `tools/codexbar-fork-sync/`), so this branch carries no fleet configuration.

@@ -100,6 +100,7 @@ extension UsageStore {
     }
 
     func refreshClaudeSwapAccounts(generation: UInt64? = nil) async {
+        defer { self.publishAppStateMirror() }
         let executablePath = self.settings.claudeSwapExecutablePath
         let source = self.settings.claudeSwapSource
         await self.probeClaudeSwapVersionIfNeeded(executablePath: executablePath, source: source)
