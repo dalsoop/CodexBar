@@ -15,6 +15,32 @@ final class OpenCodexHubMenuSelection: NSObject {
 }
 
 extension StatusItemController {
+    @objc func manageOpenCodexHubAccountsFromMenu(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let provider = UsageProvider(rawValue: raw) else { return }
+        Task { @MainActor [weak self] in await self?.openOpenCodexHubManagement(provider) }
+    }
+
+    func openOpenCodexHubManagement(_ provider: UsageProvider) async {
+        guard self.settings.openCodexHubEnabled(for: provider),
+              let hubProvider = OpenCodexHubProvider(usageProvider: provider)
+        else { return }
+        let executablePath = self.settings.openCodexHubExecutablePath(for: provider)
+        do {
+            let url = try await OpenCodexHubManagement.accountsURL(
+                executablePath: executablePath, provider: hubProvider)
+            guard self.settings.openCodexHubEnabled(for: provider),
+                  self.settings.openCodexHubExecutablePath(for: provider) == executablePath
+            else { return }
+            if !NSWorkspace.shared.open(url) {
+                self.presentLoginAlert(
+                    title: L("Manage hub accounts..."),
+                    message: L("Could not open the hub browser."))
+            }
+        } catch {
+            self.presentLoginAlert(title: L("Manage hub accounts..."), message: error.localizedDescription)
+        }
+    }
+
     /// Adds the hub rows when the card reads an opencodex hub pool.
     func addOpenCodexHubMenuItemsIfNeeded(provider: UsageProvider, to menu: NSMenu) {
         guard self.store.usesOpenCodexHub(for: provider) else { return }

@@ -64,6 +64,16 @@ struct OpenCodexHubSwitchStatus: Equatable {
         self.movedOn = nil
     }
 
+    /// A failed read cannot postpone the request deadline or establish whether the hub executed it.
+    @discardableResult
+    mutating func expirePendingIfNeeded(now: Date = Date()) -> Bool {
+        guard let pending,
+              now.timeIntervalSince(pending.request.requestedAt) > OpenCodexHubPendingSwitch.expiryInterval
+        else { return false }
+        self.finish(.expired)
+        return true
+    }
+
     /// Resolves a pending request against a newly read pool, or checks the last answer still describes the
     /// hub's active account. Returns true when the status changed.
     @discardableResult
@@ -105,10 +115,10 @@ struct OpenCodexHubSwitchStatus: Equatable {
             return [L("The hub has since switched to %@.", label)]
         }
         switch self.notice {
-        case let .switched(label): return [L("The hub switched to %@.", label)]
+        case let .switched(label): return [L("The hub switched to %@.", hidePersonalInfo ? L("Account") : label)]
         case let .refused(reason): return [L("The hub refused the switch: %@", reason)]
         case let .failed(reason): return [L("The hub could not switch: %@", reason)]
-        case .expired: return [L("The hub did not pick up the switch request in time.")]
+        case .expired: return [L("The switch result is unknown. Refresh the hub before trying again.")]
         case nil: return []
         }
     }

@@ -256,20 +256,9 @@ public enum OpenCodexHubReader {
         let role = await roleCache.role(forBinary: binary, now: now)
         try Task.checkCancellation()
         if role.ownsAccounts, let binary {
-            do {
-                let live = try await self.readLivePool(provider: provider, binary: binary, timeout: timeout)
-                return .hub(live, binary: binary)
-            } catch let error as OpenCodexHubPoolError {
-                throw error
-            } catch is CancellationError {
-                throw CancellationError()
-            } catch {
-                // The hub's own list failed: a request through its snapshot still reaches it.
-                guard let snapshotPath else { throw error }
-                let snapshot = try self.readSnapshot(provider: provider, path: snapshotPath)
-                let directory = OpenCodexHubSwitchRequestWriter.requestsDirectory(forSnapshotPath: snapshotPath)
-                return .request(snapshot, requestsDirectory: directory)
-            }
+            // The collector only reads client requests; a request in the hub's own folder has no consumer.
+            let live = try await self.readLivePool(provider: provider, binary: binary, timeout: timeout)
+            return .hub(live, binary: binary)
         }
         guard let snapshotPath,
               let snapshot = try self.readSnapshotIfPresent(provider: provider, path: snapshotPath)

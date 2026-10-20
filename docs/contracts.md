@@ -1,5 +1,15 @@
 # 외부 도구 연결 계약
 
+## 허브 공급자 계정 관리
+
+공급자의 허브 계정 소스를 켜면 일반 계정 추가·로그인 액션은 `Manage hub accounts...`로 바뀐다. 설정의 로컬 Codex 계정 편집도 숨긴다. 재인증 필요 카드의 액션 역시 같은 공급자의 허브 관리 화면을 연다. 이 경로는 데이터 API 키 관리와 별개이며 로컬 OAuth 홈이나 로그인 사본을 만들지 않는다.
+
+사용자 클릭마다 `ocx status --json`을 새로 읽는다. schemaVersion 1과 실행 중 proxy를 확인하고, hub는 `hub.managementPublicOrigin`, connected client는 `connection.managementUrl`, standalone은 `dashboard.url`의 정확한 loopback 주소만 쓴다. 데이터 주소나 옛 snapshot으로 관리 주소를 추정하지 않는다. URL에는 userinfo·query·기존 fragment·하위 경로를 허용하지 않고, 공통 대시보드 주소 검증의 HTTPS·loopback HTTP·유효한 port 규칙을 적용한다.
+
+Anthropic·xAI는 `#providers?provider=<공급자>&tab=accounts`, Codex는 `#codex-set`을 기본 브라우저로 연다. 기존 서버 UI가 기본 Codex 로그인과 추가 계정의 서로 다른 인증 흐름을 소유한다. 브라우저 열기를 인증 성공으로 표시하거나 계정 전환을 실행하지 않는다. 관리 세션·pairing grant·계정 토큰을 CodexBar에 가져오지 않으며 인증은 사용자가 정상 관리 화면에서 완료한다. client의 로컬 네이티브 키 관리·내장 대시보드 권한은 그대로 거절한다.
+
+전환 요청의 UI 대기는 목록 읽기 실패와 무관하게 11분 뒤 끝난다. 이때 결과는 미확인이며 자동 재시도를 하지 않는다. hub·standalone의 직접 목록 읽기 실패는 오류로 끝내고, 감시 작업이 읽지 않는 자기 요청 폴더에 요청을 만들지 않는다. 전환 성공 안내의 계정 표시명은 현재 개인정보 숨김 설정을 따른다.
+
 기존 CodexBarCLI는 usage·cost 등의 명령으로 공급자 자료를 출력한다. 사용량 JSON은 제공된 details 배열과 선택적 필드를 보존하고 공급자·계정별 자료를 섞지 않는다. 현재 API 키 관리 진입점은 macOS 설정이며 CodexBarCLI에는 OpenClaw 자동 설정 명령이 없다.
 
 `codexbar usage --provider 공급자 --format json`은 선택한 공급자의 사용량 JSON을 반환한다. 공급자별 추가 표시값은 usage.details에 있으며 폐기된 공급자별 별칭을 소비자가 추정하지 않는다. `--account`, `--account-index`, `--all-accounts`는 공급자 하나를 선택했을 때만 사용한다. 자격은 선택한 공급자의 기존 config·환경·CLI·명시적 허용 소스에서 해석한다.

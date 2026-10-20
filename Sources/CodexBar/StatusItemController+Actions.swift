@@ -509,6 +509,10 @@ extension StatusItemController: StatusItemMenuPersistentActionDelegate {
     }
 
     @objc func addManagedCodexAccountFromMenu(_: NSMenuItem) {
+        if self.settings.openCodexHubEnabled(for: .codex) {
+            Task { @MainActor [weak self] in await self?.openOpenCodexHubManagement(.codex) }
+            return
+        }
         guard self.codexAccountPromotionCoordinator.isInteractionBlocked() == false else {
             self.loginLogger.info("Add Account tap ignored: Codex account change already in-flight")
             return
@@ -537,6 +541,7 @@ extension StatusItemController: StatusItemMenuPersistentActionDelegate {
     }
 
     @objc func requestCodexSystemPromotionFromMenu(_ sender: NSMenuItem) {
+        guard !self.settings.openCodexHubEnabled(for: .codex) else { return }
         guard let rawManagedAccountID = sender.representedObject as? String,
               let managedAccountID = UUID(uuidString: rawManagedAccountID)
         else {
@@ -705,6 +710,14 @@ extension StatusItemController: StatusItemMenuPersistentActionDelegate {
     }
 
     private func startLoginFlow(provider: UsageProvider) {
+        if self.settings.openCodexHubEnabled(for: provider) {
+            self.loginTask = Task { @MainActor [weak self] in
+                guard let self else { return }
+                defer { self.loginTask = nil }
+                await self.openOpenCodexHubManagement(provider)
+            }
+            return
+        }
         self.loginTask = Task { @MainActor [weak self] in
             guard let self else { return }
             defer {

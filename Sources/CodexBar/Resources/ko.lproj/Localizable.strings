@@ -2790,3 +2790,9 @@
 "opencodex_settings_apply_path" = "경로 적용";
 "opencodex_settings_path_hint" = "비워 두면 기본 위치에서 찾습니다. 이 경로는 공급자 계정 설정과 별도로 저장됩니다.";
 "opencodex_settings_invalid_path" = "절대 실행 파일 경로를 입력하거나 비워 두세요. 제어 문자나 URL은 사용할 수 없습니다.";
+
+// Hub account management
+"Manage hub accounts..." = "허브 계정 관리...";
+"Could not open the hub browser." = "허브 관리 화면을 열 수 없습니다.";
+"Add or re-authenticate accounts in the hub browser. Credentials stay on the hub." = "허브 관리 화면에서 계정을 추가하거나 다시 인증합니다. 로그인 정보는 허브에 보관됩니다.";
+"The switch result is unknown. Refresh the hub before trying again." = "전환 결과를 확인하지 못했습니다. 다시 시도하기 전에 허브를 새로고침하세요.";
