@@ -12,7 +12,7 @@
 
 ## 최종 검증
 
-구현 기준7b24ffc7c에서 swift build, 요구한 집중 make test-fast 필터82개(앱 Swift56·공통 Swift19·XCTest7), CodexBarLinuxTests559개, make check, 전체 언어 검사, 이름 변경 보조 실행기 별도 oxlint, diff 검사가 모두 종료0이었다. 집중 필터의 XCTest에는 합성 화면3개가 포함되며 proof 환경을 켜 실제로 실행했고 skip이 없었다.
+문서 적용과 SwiftPM 제외 설정을 포함한 기준 fd45c8c3d에서 swift build, 요구한 집중 make test-fast 필터82개(앱 Swift56·공통 Swift19·XCTest7), CodexBarLinuxTests559개, make check, 전체 언어 검사, 이름 변경 보조 실행기 별도 oxlint, diff 검사가 모두 종료0이었다. 집중 필터의 XCTest에는 합성 화면3개가 포함되며 proof 환경을 켜 실제로 실행했고 skip이 없었다.
 
 실제 PreferencesView의 Opencodex 선택 경로와 별도 pane·마스킹된 결과·역할/권한/서버 오류를 합성 자료로 확인했다. 실제 WebKit에 외부 리소스 없는 HTML을 띄워 창 재사용·재시도·해제를 확인했다. 전체 설정 루트의 오프스크린 제목/선택행 표현에는 캡처 한계가 있어 전체 창의 시각적 완성도를 검증했다고 보지 않는다. 운영 앱 시작·실계정·실제 키 생성/폐기·운영 대시보드 인증은 검증하지 않았다.
 
