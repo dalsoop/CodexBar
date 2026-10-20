@@ -178,6 +178,8 @@ final class UsageStore {
     /// Hub-enabled Codex and Grok cards that read their own sources because this Mac has no hub source.
     var openCodexHubNativeFallbacks: Set<UsageProvider> = []
     @ObservationIgnored var openCodexHubPollTasks: [UsageProvider: Task<Void, Never>] = [:]
+    /// The agent-readable state mirror's bookkeeping (`~/.swift-app-state/codexbar.json`).
+    @ObservationIgnored var appStateMirrorRecorder = AppStateMirrorRecorder()
     var claudeSwapRevision: UInt64 = 0
     @ObservationIgnored var claudeSwapRefreshTask: Task<Void, Never>?
     @ObservationIgnored var claudeSwapTransientState = ClaudeSwapTransientState()

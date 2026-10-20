@@ -14,6 +14,7 @@ extension SettingsPane {
         case .menu: "menu"
         case .advanced: "advanced"
         case .hooks: "hooks"
+        case .opencodex: "opencodex"
         case .plugins: "plugins"
         case .about: "about"
         case .debug: "debug"
@@ -33,6 +34,7 @@ extension SettingsPane {
         case "menu": self = .menu
         case "advanced": self = .advanced
         case "hooks": self = .hooks
+        case "opencodex": self = .opencodex
         case "plugins": self = .plugins
         case "about": self = .about
         case "debug": self = .debug

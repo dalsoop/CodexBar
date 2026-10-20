@@ -1,54 +1,54 @@
-# Repository Guidelines
+# CodexBar gujo 포크
 
-## Project Structure & Modules
-- `Sources/CodexBar`: Swift 6 menu bar app (usage/credits probes, icon renderer, settings). Keep changes small and reuse existing helpers.
-- `Tests/CodexBarTests`: XCTest coverage for usage parsing, status probes, icon patterns; mirror new logic with focused tests.
-- `Scripts`: build/package helpers (`package_app.sh`, `sign-and-notarize.sh`, `build_icon.sh`, `compile_and_run.sh`). Read-only release helpers call `Scripts/mac-release`, which resolves `MAC_RELEASE_TOOL` or the shared `agent-scripts` checkout; CI owns publication.
-- `docs`: release notes and process (`docs/RELEASING.md`, screenshots). Root-level zips/appcast are generated artifacts—avoid editing except during releases.
+여러 모델 공급자의 사용량·한도·지출과 계정 상태를 보여 주는 macOS 메뉴 막대 앱이며 Linux CLI·Qt 데스크톱도 제공한다. `dalsoop/CodexBar`의 `gujo`는 개인 Mac에서 Opencodex 허브 계정과 API 키를 함께 관리하는 포크다. SwiftPM·Swift 6 엄격한 동시성을 사용하며 최소 macOS는 14다.
 
-## Build, Test, Run
-- Dev loop: `./Scripts/compile_and_run.sh` kills old instances, builds, packages, relaunches `CodexBar.app`, and confirms it stays running; add `--test` for the sharded full suite.
-- Quick build/test: `swift build` (debug) or `swift build -c release`; `make test` for the sharded full suite.
-- Package locally: `./Scripts/package_app.sh` to refresh `CodexBar.app`, then restart with `pkill -x CodexBar || pkill -f CodexBar.app || true; cd /Users/steipete/Projects/codexbar && open -n /Users/steipete/Projects/codexbar/CodexBar.app`.
-- Release publication is owned by `.github/workflows/release.yml`; use its default dry-run dispatch to rehearse. Repo build/signing stays in `Scripts/sign-and-notarize.sh`; see `docs/RELEASING.md`.
+## 프로젝트 구조
 
-## Coding Style & Naming
-- Enforce SwiftFormat/SwiftLint: run `swiftformat Sources Tests` and `swiftlint --strict`. 4-space indent, 120-char lines, explicit `self` is intentional—do not remove.
-- Favor small, typed structs/enums; maintain existing `MARK` organization. Use descriptive symbols; match current commit tone.
+```text
+./
+├── AGENTS.md → 작업 시작점과 핵심 경계
+├── CLAUDE.md → 같은 내용의 Claude 작업 시작점
+├── docs/
+│   ├── architecture.md → 구성 요소와 데이터 이동
+│   ├── business-rules.md → 계정·키·사용 기록의 의미
+│   ├── security.md → 로컬 관리 권한과 비밀값 수명
+│   ├── standards.md → 구현·검증·저장소 작업 규칙
+│   ├── engineering-notes.md → 잘못된 키 선택 등 확인된 함정
+│   ├── operations.md → 빌드·안전한 검증·배포 경계
+│   ├── contracts.md → CLI와 Opencodex 연결 계약
+│   └── tracking/
+│       ├── status.md → 구현·검증 상태와 남은 범위
+│       ├── decisions/ → 선택 이유와 대안
+│       │   └── index.md → 결정 기록 목록
+│       └── findings.md → 현재 해결하지 못한 문제
+├── Integrations/
+│   ├── Linux/AGENTS.md → Qt 데스크톱·로컬 IPC
+│   └── Omarchy/AGENTS.md → Quickshell 표시 어댑터
+├── WidgetExtension/AGENTS.md → WidgetKit 확장 포장
+└── Sources/
+    ├── CodexBar/AGENTS.md → 설정·창·사용량 UI
+    ├── CodexBarCore/AGENTS.md → 공급자 해석·관리·실행 계층
+    ├── CodexBarCLI/AGENTS.md → 명령행 출력과 설정
+    ├── CodexBarWidget/AGENTS.md → 공유 스냅샷 표시
+    ├── CodexBarClaudeWatchdog/AGENTS.md → Claude PTY 보조 프로세스
+    ├── CodexBarClaudeWebProbe/AGENTS.md → 웹 진단 도구
+    ├── AdaptiveRefreshCore/AGENTS.md → 갱신 정책의 공통 정본
+    ├── AdaptiveReplayKit/AGENTS.md → 오프라인 재현 입력과 실행
+    ├── AdaptiveReplayCLI/AGENTS.md → 재현 명령행 진입점
+    └── CSQLite3/AGENTS.md → Linux 시스템 SQLite 연결
+```
 
-## Testing Guidelines
-- Add/extend XCTest cases under `Tests/CodexBarTests/*Tests.swift` (`FeatureNameTests` with `test_caseDescription` methods).
-- Swift Testing: prefer backticked sentence names; no camelCase.
-- Model names in tests/code: released models or clearly fictitious names only; never expose unreleased names.
-- Iterate with focused runs (`make test-fast FILTER='SuiteName'` or `swift test --filter ...`) covering the touched suites. For a local full run use `./Scripts/test.sh --direct-workers 8` (parallel isolated groups, ~10 min) instead of serial `make test` (~45 min). The full suite is not a handoff gate: run it in the background or leave it to PR CI; never block on it in the foreground.
-- While iterating, format/lint only touched files; run `make check` once before commit/handoff and fix reported issues.
-- Prefer CLI/focused tests over app-bundle live tests when behavior can be verified without relaunching CodexBar.
-- Never run tests/checks or ad-hoc validation that can display macOS Keychain prompts. Live provider probes, browser-cookie imports, `codexbar usage` against real accounts, and real SecItem reads must be explicitly requested; otherwise use parser tests, stubs, test stores, or `KeychainNoUIQuery`.
-- App-group migration tests must inject dictionary-backed defaults, both snapshot URLs, a synthetic home, and a contained recording FileManager. UUID defaults suites and Keychain isolation flags do not isolate defaults search domains or filesystem access. Ordinary SettingsStore tests must not discover shared defaults or run app-group migration.
-- macOS CI is brittle around headless AppKit status/menu tests. Prefer covering menu behavior through stable state/model seams (`MenuDescriptor`, `ProvidersPane`, `CodexAccountsSectionState`, etc.) instead of constructing live `NSStatusBar`/`NSMenu` flows unless the AppKit wiring itself is the thing under test.
+## 먼저 지킬 경계
 
-## CI Efficiency
-- Follow [the direct-test and SwiftPM cache contracts](docs/DEVELOPMENT.md#macos-direct-test-groups) when changing CI or test execution; preserve full test inventory, deadlines, failure handling, cache verification, and clean fallback.
-- Reuse incremental builds during iteration; never copy compiled products between worktrees. Clean `.build` for diagnosed contamination, a cold-build comparison, or maintainer-requested cleanup.
-- Run focused tests during development; the final code needs focused tests plus `make check`, with the full suite from PR CI or a background run. Repeat successful full checks when relevant inputs or the environment change, a failure or unresolved concern requires it, or a maintainer requests it; do not repeat them solely to prepare a report.
+- 공급자 신원·계정·자격은 다른 공급자의 카드에 섞지 않는다.
+- 실제 Keychain이나 실계정 조회는 명시적 요청 없이 실행하지 않는다. 가짜 저장소와 억제된 테스트 환경을 사용한다.
+- API 키 비밀값과 관리 자격을 로그·설정·미러·검증 이미지에 남기지 않는다. 역할이 불명확하면 관리를 허용하지 않는다.
+- 포크 수정은 포크에서만 준비한다. 원본 저장소 쓰기, 운영 앱 교체, 배포는 별도 승인 없이 실행하지 않는다.
 
-## Commit & PR Guidelines
-- Commit messages: short imperative clauses (e.g., “Improve usage probe”, “Fix icon dimming”); keep commits scoped.
-- PRs/patches should list summary, commands run, screenshots/GIFs for UI changes, and linked issue/reference when relevant.
+## 작업 전 확인
 
-## Agent Notes
-- Use the provided scripts and package manager (SwiftPM); avoid adding dependencies or tooling without confirmation.
-- Menu bar automation: capture the target screen first and verify the CodexBar icon is visibly onscreen. Reject `click-extra` success when coordinates fall outside display bounds; hidden menu extras are not click proof.
-- Validate UI/runtime behavior against the freshly built bundle; restart via the pkill+open command above to avoid running stale binaries.
-- To guarantee the right bundle is running after a rebuild, use: `pkill -x CodexBar || pkill -f CodexBar.app || true; cd /Users/steipete/Projects/codexbar && open -n /Users/steipete/Projects/codexbar/CodexBar.app`.
-- For CLI-testable provider/parser/settings behavior, use CLI/focused tests instead of `Scripts/package_app.sh` or `./Scripts/compile_and_run.sh`.
-- Run `./Scripts/compile_and_run.sh` only when UI/runtime behavior needs bundle-level validation; it builds, tests, packages, relaunches, and verifies the app stays running.
-- Widget/Tahoe UI issues: use Parallels macOS VM plus screenshots/clicks for autonomous verification.
-- Release workflow: wait for completion and verify the complete artifact/feed/tap handoff; do not publish locally.
-- Sparkle release key: CI `SPARKLE_PRIVATE_KEY` must match the existing AGCY public key in `.github/release.json`; never substitute another app’s key.
-- Swift concurrency: treat sibling `async let` tasks as a review red flag when one child is required and another is optional/best-effort. Prefer sequential awaits or a drained `withThrowingTaskGroup` that surfaces required failures and explicitly contains optional failures; crash stacks mentioning `swift_task_dealloc` or `asyncLet_finish_after_task_completion` should trigger an audit of nearby `async let` usage.
-- Prefer modern SwiftUI/Observation macros: use `@Observable` models with `@State` ownership and `@Bindable` in views; avoid `ObservableObject`, `@ObservedObject`, and `@StateObject`.
-- Favor modern macOS 15+ APIs over legacy/deprecated counterparts when refactoring (Observation, new display link APIs, updated menu item styling, etc.).
-- Keep provider data siloed: when rendering usage or account info for a provider (Claude vs Codex), never display identity/plan fields sourced from a different provider.
-- Claude CLI status line is custom + user-configurable; never rely on it for usage parsing by default. A user-enabled, opt-in statusLine JSON feed is permitted as an explicit data source (owner ruling, #2733): it must be off by default, clearly labeled as sourced from the user's own statusLine config, and fail soft when the format drifts.
-- Cookie imports: use the shared default browser order; `BrowserCookieAccessGate` ensures no background/settings prompts, host-matching cookie rows before Safe Storage access, at most one interactive Keychain read per manual action, denial cooldowns even on manual retries (only `codexbar cookie refresh --allow-keychain-prompt` overrides), and traversal stopping at the first validated session. Restrict a provider to a browser subset only with a documented technical reason next to the code.
+`docs/standards.md`, `docs/engineering-notes.md`와 해당 모듈의 `AGENTS.md`를 읽는다. 인증·키 작업 전에는 `docs/security.md`의 역할·비밀값 경계를 확인하고, 이름 변경 전에는 기존 CLI의 이름 재해석 문제를 확인한다. 설정 저장·이전 작업은 메모리 기본 설정과 합성 홈을 주입하는 기존 패턴을 먼저 읽는다. CI·테스트 실행기를 바꾸기 전에는 `docs/DEVELOPMENT.md`의 direct-test와 SwiftPM 캐시 계약을 읽는다.
+
+## 문제 처리
+
+다른 공급자 신원 노출, 잘못된 ID의 키 변경, 비밀값 기록, 관리 역할 우회, 사용자 설정 손상 가능성이 발견되면 변경을 멈추고 사용자에게 즉시 알린다. 현재 범위에서 해결할 수 없는 다른 문제는 재현 조건·영향·미해결 이유를 `docs/tracking/findings.md`에 기록한다.

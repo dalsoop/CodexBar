@@ -123,6 +123,10 @@ extension UsageStore {
 
     func refreshCreditsIfNeeded(minimumSnapshotUpdatedAt: Date? = nil) async {
         guard self.isEnabled(.codex) else { return }
+        guard !self.codexCardReadsOpenCodexHub else {
+            self.dropCodexNativeCreditsForOpenCodexHub()
+            return
+        }
         var expectedGuard = self.freshCodexAccountScopedRefreshGuard()
         if expectedGuard.identity == .unresolved,
            let minimumSnapshotUpdatedAt,

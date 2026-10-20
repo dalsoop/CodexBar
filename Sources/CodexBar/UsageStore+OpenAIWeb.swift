@@ -423,6 +423,7 @@ extension UsageStore {
     {
         self.syncOpenAIWebState()
         guard self.isEnabled(.codex),
+              !self.codexCardReadsOpenCodexHub,
               self.settings.openAIWebAccessEnabled,
               self.settings.codexCookieSource.isEnabled
         else { return }

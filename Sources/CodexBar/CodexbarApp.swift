@@ -104,7 +104,8 @@ struct CodexBarApp: App {
             account: account,
             selection: preferencesSelection,
             managedCodexAccountCoordinator: managedCodexAccountCoordinator,
-            codexAccountPromotionCoordinator: codexAccountPromotionCoordinator))
+            codexAccountPromotionCoordinator: codexAccountPromotionCoordinator,
+            openCodexAccess: .production(defaults: settings.userDefaults)))
     }
 
     @SceneBuilder
@@ -371,6 +372,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let selection: PreferencesSelection
         let managedCodexAccountCoordinator: ManagedCodexAccountCoordinator
         let codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator
+        var openCodexAccess: OpenCodexAccessSettings?
     }
 
     let updaterController: UpdaterProviding = makeUpdaterController()
@@ -391,6 +393,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator?
     private var cloudSyncCoordinator: CloudSyncCoordinator?
     private var settingsWindowController: SettingsWindowController?
+    private var openCodexAccess: OpenCodexAccessSettings?
     private var pendingUpdateSettingsOpen = false
     private lazy var placeholderSettingsWindowGuard = PlaceholderSettingsWindowGuard(
         isKnownSettingsWindow: { [weak self] window in
@@ -423,12 +426,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.managedCodexAccountCoordinator = dependencies.managedCodexAccountCoordinator
         self.codexAccountPromotionCoordinator = dependencies.codexAccountPromotionCoordinator
         self.cloudSyncCoordinator = CloudSyncCoordinator(settings: dependencies.settings, state: self.cloudSyncState)
+        self.openCodexAccess = dependencies.openCodexAccess ?? self.openCodexAccess
         self.settingsWindowController = SettingsWindowController(
             settings: dependencies.settings,
             store: dependencies.store,
             cloudSyncState: self.cloudSyncState,
             updater: self.updaterController,
             selection: dependencies.selection,
+            openCodexAccess: self.openCodexAccess,
             managedCodexAccountCoordinator: dependencies.managedCodexAccountCoordinator,
             codexAccountPromotionCoordinator: dependencies.codexAccountPromotionCoordinator,
             runProviderLoginFlow: { [weak self] provider in
@@ -545,6 +550,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         self.cloudSyncCoordinator?.applicationDidBecomeActive()
+        self.settingsWindowController?.refreshOpenCodexIfVisible()
     }
 
     func runProviderLoginFlow(_ provider: UsageProvider) async {
