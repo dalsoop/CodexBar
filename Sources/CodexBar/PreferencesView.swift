@@ -13,6 +13,7 @@ enum SettingsPane: Hashable {
     case advanced
     case hooks
     case plugins
+    case opencodex
     case about
     case debug
     case provider(ProviderInstanceID)
@@ -37,6 +38,7 @@ enum SettingsPane: Hashable {
         case .menu: L("tab_menu")
         case .advanced: L("tab_advanced")
         case .hooks: L("tab_hooks")
+        case .opencodex: L("Opencodex")
         case .plugins: L("Plugins")
         case .about: L("tab_about")
         case .debug: L("tab_debug")
@@ -53,6 +55,7 @@ struct PreferencesView: View {
     @Bindable var settings: SettingsStore
     @Bindable var store: UsageStore
     @Bindable var cloudSyncState: CloudSyncState
+    let openCodexAccess: OpenCodexAccessSettings?
     let updater: UpdaterProviding
     @Bindable var selection: PreferencesSelection
     let managedCodexAccountCoordinator: ManagedCodexAccountCoordinator
@@ -77,10 +80,12 @@ struct PreferencesView: View {
         cloudSyncState: CloudSyncState = CloudSyncState(),
         updater: UpdaterProviding,
         selection: PreferencesSelection,
+        openCodexAccess: OpenCodexAccessSettings? = nil,
         managedCodexAccountCoordinator: ManagedCodexAccountCoordinator = ManagedCodexAccountCoordinator(),
         codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator? = nil,
         runProviderLoginFlow: @escaping @MainActor (UsageProvider) async -> Void = { _ in })
     {
+        self.openCodexAccess = openCodexAccess
         self.settings = settings
         self.store = store
         self.cloudSyncState = cloudSyncState
@@ -171,6 +176,7 @@ struct PreferencesView: View {
             idealHeight: SettingsPane.windowHeight,
             maxHeight: .infinity)
         .id(self.settings.appLanguage)
+        .modifier(OpenCodexAccessSettingsPresenter(feature: self.openCodexAccess))
         .codexBarLocalized()
         .background {
             SettingsWindowAppearanceBridge(colorScheme: self.colorScheme, windowTitle: self.selection.pane.title)
@@ -222,6 +228,10 @@ struct PreferencesView: View {
             AdvancedPane(settings: self.settings, store: self.store)
         case .hooks:
             HooksPane(settings: self.settings)
+        case .opencodex:
+            if let openCodexAccess {
+                OpenCodexAccessSettingsPane(feature: openCodexAccess)
+            }
         case .plugins:
             PluginsPane(settings: self.settings, store: self.store)
         case .about:
