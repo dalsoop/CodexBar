@@ -1,6 +1,6 @@
 // Limited 2.88.0 adapter. No CLI import, name lookup, config writes, or authentication export.
 import { realpath, readFile, stat, access } from "node:fs/promises";
-import { constants } from "node:fs";
+import { constants, openSync, closeSync, writeSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
@@ -162,11 +162,44 @@ export async function renameOnce(selectedCLI, runtimePath, input) {
   }
 }
 
+function writeResult(fd, result) {
+  try {
+    const bytes = Buffer.from(JSON.stringify(result) + "\n");
+    let offset = 0;
+    while (offset < bytes.length) {
+      const written = writeSync(fd, bytes, offset, bytes.length - offset);
+      if (written === 0) break;
+      offset += written;
+    }
+  } catch {
+    // A broken result pipe must not turn into a raw runtime diagnostic.
+  } finally {
+    if (fd > 2) {
+      try {
+        closeSync(fd);
+      } catch {
+        /* Nothing may be printed here. */
+      }
+    }
+  }
+}
+
 async function main() {
-  // Silence package diagnostics before importing it. No server body, error message, or credential reaches Swift.
-  const output = process.stdout.write.bind(process.stdout);
-  process.stdout.write = () => true;
-  process.stderr.write = () => true;
+  let output;
+  try {
+    // Bun's native console bypasses process.stdout/stderr.write. Keep a private result descriptor,
+    // then silence fd 1/2 before any package import, including Console instances and direct fs writes.
+    output = openSync("/dev/fd/1", constants.O_WRONLY);
+    if (output <= 2) fail("unsupported_installation");
+    closeSync(1);
+    if (openSync("/dev/null", constants.O_WRONLY) !== 1) fail("unsupported_installation");
+    closeSync(2);
+    if (openSync("/dev/null", constants.O_WRONLY) !== 2) fail("unsupported_installation");
+  } catch {
+    // Fail before loading the management module if isolation cannot be established.
+    writeResult(output ?? 1, { error: "unsupported_installation" });
+    return;
+  }
   let result = { error: "invalid_input" };
   try {
     if (process.argv.length === 3) {
@@ -182,7 +215,7 @@ async function main() {
   } catch {
     /* Fixed error only. */
   }
-  output(JSON.stringify(result) + "\n");
+  writeResult(output, result);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
