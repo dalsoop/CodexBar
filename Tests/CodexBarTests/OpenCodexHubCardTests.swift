@@ -74,7 +74,7 @@ struct OpenCodexHubCardTests {
     }
 
     @Test
-    func `hub source is off by default and only Codex and Grok cards read it through these settings`() throws {
+    func `hub source is off by default and only Claude, Codex and Grok cards read it through these settings`() throws {
         let (fixture, _, _) = try self.makeFixture()
         defer { fixture.cleanup() }
         #expect(!fixture.settings.codexOpenCodexHubEnabled)
@@ -83,7 +83,9 @@ struct OpenCodexHubCardTests {
         fixture.settings.setOpenCodexHubEnabled(true, for: .claude)
         #expect(fixture.store.usesOpenCodexHub(for: .codex))
         #expect(!fixture.store.usesOpenCodexHub(for: .grok))
-        #expect(!fixture.store.usesOpenCodexHub(for: .claude))
+        #expect(fixture.store.usesOpenCodexHub(for: .claude))
+        fixture.settings.setOpenCodexHubEnabled(true, for: .cursor)
+        #expect(!fixture.store.usesOpenCodexHub(for: .cursor))
     }
 
     @Test

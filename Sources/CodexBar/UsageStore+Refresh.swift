@@ -224,6 +224,7 @@ extension UsageStore {
                 break
             }
         }
+        self.noteAppStateRefreshFinished(provider)
     }
 
     private func prepareCodexRefreshPublication() -> CodexRefreshPublicationPreparation {

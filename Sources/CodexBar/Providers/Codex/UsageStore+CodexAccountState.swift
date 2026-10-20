@@ -132,6 +132,8 @@ extension UsageStore {
     }
 
     func clearCodexPublishedUsageState(preserveSessionQuotaTransitionState: Bool = false) {
+        // The hub card owns this state; it is not tied to the local Codex account.
+        guard !self.codexCardReadsOpenCodexHub else { return }
         self.invalidateGenericWidgetUsage(for: .codex)
         self.snapshots.removeValue(forKey: .codex)
         self.errors[.codex] = nil
@@ -153,6 +155,7 @@ extension UsageStore {
         with currentGuard: CodexAccountScopedRefreshGuard,
         persistWidgetSnapshot: Bool = true) -> Bool
     {
+        guard !self.codexCardReadsOpenCodexHub else { return false }
         let hasPublishedUsageState = self.snapshots[.codex] != nil ||
             self.lastKnownResetSnapshots[.codex] != nil ||
             self.errors[.codex] != nil ||

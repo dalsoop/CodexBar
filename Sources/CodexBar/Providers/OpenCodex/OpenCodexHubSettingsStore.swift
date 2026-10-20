@@ -1,11 +1,12 @@
 import CodexBarCore
 import Foundation
 
-/// opencodex hub settings for the Codex and Grok cards. (Claude reads the hub through its account
-/// adapter: `claudeSwapSource == .openCodex`.)
+/// opencodex hub settings for the Claude, Codex and Grok cards. A Claude card that reads the hub replaces the
+/// opencodex account adapter (`claudeSwapSource == .openCodex`), which stays for Macs without a hub source.
 extension SettingsStore {
-    /// The providers whose card can read an opencodex hub pool through these settings.
-    static let openCodexHubCardProviders: [UsageProvider] = [.codex, .grok]
+    /// The providers whose card can read an opencodex hub pool through these settings. The hub pool is what the
+    /// hub routes to; the provider's own sources behind an opencodex proxy read another login or none.
+    static let openCodexHubCardProviders: [UsageProvider] = [.claude, .codex, .grok]
 
     func openCodexHubEnabled(for provider: UsageProvider) -> Bool {
         guard Self.openCodexHubCardProviders.contains(provider) else { return false }

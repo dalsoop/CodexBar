@@ -21,6 +21,7 @@ extension UsageStore {
     func persistWidgetSnapshot(reason: String) {
         // Central spot: every snapshot-publishing path (account switches, invalidations) refreshes the CLI cache.
         self.persistCLIUsageCache()
+        self.publishAppStateMirror()
         guard Self.shouldPersistWidgetSnapshot(
             isRunningTests: SettingsStore.isRunningTests,
             hasSaveOverride: self._test_widgetSnapshotSaveOverride != nil,

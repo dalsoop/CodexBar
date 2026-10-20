@@ -68,8 +68,8 @@ enum CodexBarCLI {
                 self.runConfig(path: path, values: invocation.parsedValues)
             case let path where path.first == "hooks":
                 await self.runHooks(path: path, values: invocation.parsedValues)
-            case ["cache", "clear"]:
-                self.runCacheClear(invocation.parsedValues)
+            case ["cache", "clear"], ["app-state"]:
+                self.runLocalFileCommand(path: invocation.path, values: invocation.parsedValues)
             case ["cookie", "refresh"]:
                 await self.runCookieRefreshWithTermination(invocation.parsedValues)
             case ["diagnose"]:
@@ -177,6 +177,7 @@ enum CodexBarCLI {
         let cacheSignature = CommandSignature.describe(CacheOptions()).flattened()
         let diagnoseSignature = CommandSignature.describe(DiagnoseOptions()).flattened()
         let guardSignature = CommandSignature.describe(GuardOptions()).flattened()
+        let appStateSignature = CommandSignature.describe(AppStateOptions()).flattened()
 
         var descriptors = [
             Self.codexAccountsCommandDescriptor(),
@@ -288,6 +289,11 @@ enum CodexBarCLI {
                 abstract: "Run provider diagnostic and emit safe JSON export",
                 discussion: nil,
                 signature: diagnoseSignature),
+            CommandDescriptor(
+                name: "app-state",
+                abstract: "Print the running app's state mirror (providers, sources, errors, accounts)",
+                discussion: nil,
+                signature: appStateSignature),
         ]
         descriptors.append(Self.pluginsCommandDescriptor())
         return descriptors

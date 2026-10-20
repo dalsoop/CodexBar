@@ -167,9 +167,11 @@ All provider fields are optional unless noted.
   `<source>:<slot>` identity. Machine-local like the executable path.
 - `openCodexHubSnapshotPath`: Claude (opencodex source), Codex and Grok; the opencodex hub snapshot file a Mac that
   is not the hub reads. Switch requests are written to `opencodex-hub-requests/` next to it. Machine-local.
-- `openCodexHubEnabled`: Codex and Grok; read the provider's accounts and limits from an opencodex hub (`openai` and
-  `xai` pools) instead of the provider's own sources. Defaults to `false`.
-- `openCodexHubExecutablePath`: Codex and Grok; the `ocx` executable on the hub. Empty looks in `/opt/homebrew/bin`,
+- `openCodexHubEnabled`: Claude, Codex and Grok; read the provider's accounts and limits from an opencodex hub
+  (`anthropic`, `openai` and `xai` pools) instead of the provider's own sources. Defaults to `false` (a build packaged
+  with a hub snapshot path turns it on). A Claude card that reads the hub replaces the opencodex account adapter
+  (`claudeSwapSource: "opencodex"`), which then stays off so the pool is not listed twice.
+- `openCodexHubExecutablePath`: Claude, Codex and Grok; the `ocx` executable on the hub. Empty looks in `/opt/homebrew/bin`,
   `/usr/local/bin` and `~/.local/bin`. Machine-local.
 - `claudeSwapShowSingleAccount`: prefer a claude-swap card when exactly one account is available. Defaults to
   `false`; multiple claude-swap accounts retain their existing precedence.
@@ -187,8 +189,8 @@ to a hub also answers `ocx account list` from the hub's cache, while it refuses 
   the hub's tooling) and leaves switch requests next to it. While the snapshot is missing or more than five minutes
   old, the card shows this Mac's own `ocx account list` read-only and says that switching waits for a current
   snapshot. `ocx account use` never runs on a client.
-- No `ocx` or no role reported: the snapshot only. Without a snapshot either, the Codex and Grok cards read their own
-  sources as if the hub source were off, and the Claude adapter says where the accounts are managed.
+- No `ocx` or no role reported: the snapshot only. Without a snapshot either, the Claude, Codex and Grok cards read
+  their own sources as if the hub source were off, and the Claude adapter says where the accounts are managed.
 
 CodexBar reads only the fields below; the file never contains tokens or full account ids.
 
@@ -429,6 +431,16 @@ iCloud projection syncs onward; reset notifications, the additional menu setting
 unless explicitly exported and imported. Import does not modify `config.json` or iCloud's remote-update suppression.
 
 ### Menu bar controls
+
+**Settings → Menu Bar → Show all accounts in Overview** is off by default. When enabled, each selected
+multi-account provider expands into account rows labeled with its account name or email. The provider’s
+current account source stays in use: claude-swap/tcr, managed Codex accounts, or saved token accounts,
+independently of the provider tab’s stacked/segmented layout. The six-provider cap, provider order, and
+Overview selection still apply to providers before expansion; account rows do not use extra provider
+slots. Rows keep each account’s cached usage and errors; missing usage stays unavailable instead of
+borrowing another account’s quota. The setting adds no fetches and does not change refresh limits.
+Clicking a row opens its provider tab without selecting another credential. The local additive defaults
+key is `mergedOverviewAllAccounts`; older versions ignore it.
 
 **Auto** ranks each provider's eligible quota windows from the current snapshot. An exhausted quota comes
 first; otherwise a supported lane’s pace forecast that runs out before reset takes priority, with the shortest time to

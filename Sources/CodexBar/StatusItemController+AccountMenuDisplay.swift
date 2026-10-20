@@ -83,23 +83,6 @@ extension StatusItemController {
         return accounts.compactMap { snapshotsByID[$0.id] }
     }
 
-    func tokenAccountMenuCardModel(
-        for provider: UsageProvider,
-        accountSnapshot: TokenAccountUsageSnapshot) -> UsageMenuCardView.Model?
-    {
-        let label = accountSnapshot.account.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return self.menuCardModel(
-            for: provider,
-            context: .account(.init(
-                snapshot: accountSnapshot.snapshot,
-                error: accountSnapshot.error,
-                info: AccountInfo(email: label.isEmpty ? nil : label, plan: nil),
-                historySelection: self.store.planUtilizationHistorySelection(
-                    for: provider,
-                    account: accountSnapshot.account),
-                tokenAccountID: accountSnapshot.account.id)))
-    }
-
     func codexAccountMenuDisplay(for provider: UsageProvider) -> CodexAccountMenuDisplay? {
         // Provider-specific by design: managed Codex profiles use reconciled visible-account projection state.
         guard provider == .codex, !self.store.usesOpenCodexHub(for: provider) else { return nil }
