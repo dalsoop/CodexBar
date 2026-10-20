@@ -26,6 +26,26 @@ struct OpenCodexDashboardNavigationIntegrationTests {
     }
 
     @Test
+    func `page timer DOM click characterizes navigation type without claiming a user gesture`() async throws {
+        let fixture = OfflineDashboardNavigationFixture(script: """
+        window.fixtureResult = 'automatic-click';
+        document.getElementById('link').click();
+        """)
+        defer { fixture.controller.close() }
+        let session = try await fixture.start()
+        #expect(try await session.scriptResult() == "automatic-click")
+        let action = try await session.externalDecision()
+        // Characterize current WebKit/controller behavior, not compliance with a trusted-gesture boundary.
+        #expect(action.type == .linkActivated)
+        #expect(action.mainFrame)
+        #expect(!action.newWindow)
+        #expect(action.policy == .cancel)
+        #expect(fixture.browserURLs == [OfflineDashboardNavigationFixture.externalURL])
+        print("Offline automatic DOM click browser recordings: \(fixture.browserURLs.count)")
+        #expect(session.newWindowCallbacks == 0)
+    }
+
+    @Test
     func `script top level navigation is cancelled with native guidance instead of browser launch`() async throws {
         let fixture = OfflineDashboardNavigationFixture(script: """
         window.fixtureResult = 'assigned';
