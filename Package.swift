@@ -81,6 +81,7 @@ let package = Package(
                     .product(name: "Logging", package: "swift-log"),
                     .product(name: "SweetCookieKit", package: "SweetCookieKit"),
                 ],
+                exclude: ["AGENTS.md"],
                 resources: [
                     .process("Resources"),
                 ],
@@ -98,6 +99,7 @@ let package = Package(
                     .product(name: "Crypto", package: "swift-crypto"),
                 ],
                 path: "Sources/CodexBarCLI",
+                exclude: ["AGENTS.md"],
                 swiftSettings: [
                     .enableUpcomingFeature("StrictConcurrency"),
                 ],
@@ -118,6 +120,7 @@ let package = Package(
                 name: "AdaptiveRefreshCore",
                 dependencies: [],
                 path: "Sources/AdaptiveRefreshCore",
+                exclude: ["AGENTS.md"],
                 swiftSettings: [
                     .enableUpcomingFeature("StrictConcurrency"),
                 ]),
@@ -127,7 +130,7 @@ let package = Package(
                 name: "AdaptiveReplayKit",
                 dependencies: ["AdaptiveRefreshCore"],
                 path: "Sources/AdaptiveReplayKit",
-                exclude: ["README.md"],
+                exclude: ["README.md", "AGENTS.md"],
                 swiftSettings: [
                     .enableUpcomingFeature("StrictConcurrency"),
                 ]),
@@ -135,6 +138,7 @@ let package = Package(
                 name: "AdaptiveReplayCLI",
                 dependencies: ["AdaptiveReplayKit"],
                 path: "Sources/AdaptiveReplayCLI",
+                exclude: ["AGENTS.md"],
                 swiftSettings: [
                     .enableUpcomingFeature("StrictConcurrency"),
                 ]),
@@ -182,6 +186,7 @@ let package = Package(
                 name: "CodexBarClaudeWatchdog",
                 dependencies: [],
                 path: "Sources/CodexBarClaudeWatchdog",
+                exclude: ["AGENTS.md"],
                 swiftSettings: [
                     .enableUpcomingFeature("StrictConcurrency"),
                 ]),
@@ -195,6 +200,7 @@ let package = Package(
                     "CodexBarCore",
                 ],
                 path: "Sources/CodexBar",
+                exclude: ["AGENTS.md"],
                 resources: [
                     .process("Resources"),
                 ],
@@ -207,6 +213,7 @@ let package = Package(
                 name: "CodexBarWidget",
                 dependencies: ["CodexBarCore"],
                 path: "Sources/CodexBarWidget",
+                exclude: ["AGENTS.md"],
                 resources: [
                     .process("Resources"),
                 ],
@@ -217,6 +224,7 @@ let package = Package(
                 name: "CodexBarClaudeWebProbe",
                 dependencies: ["CodexBarCore"],
                 path: "Sources/CodexBarClaudeWebProbe",
+                exclude: ["AGENTS.md"],
                 swiftSettings: [
                     .enableUpcomingFeature("StrictConcurrency"),
                 ]),

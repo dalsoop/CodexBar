@@ -1,123 +1,35 @@
----
-summary: "Architecture overview: modules, entry points, and data flow."
-read_when:
-  - Reviewing architecture before feature work
-  - Refactoring app structure, app lifecycle, or module boundaries
----
+# 구성 요소와 데이터 이동
 
-# Architecture overview
+CodexBar 앱은 설정과 사용량 상태를 소유하고 Core의 공급자 조회·해석 결과로 메뉴·계정 카드·알림을 갱신한다. CLI도 같은 Core를 사용하지만 앱의 창이나 전역 UI 상태에는 의존하지 않는다. WidgetKit 확장은 앱이 게시한 공유 스냅샷을 읽으며 공급자 인증과 관리 변경을 직접 수행하지 않는다.
 
-## Modules
-- `Sources/CodexBarCore`: fetch + parse (Codex RPC, PTY runner, Claude probes, OpenAI web scraping, status polling).
-- `Sources/CodexBar`: state + UI (UsageStore, SettingsStore, StatusItemController, menus, icon rendering).
-- `Sources/CodexBarWidget`: WidgetKit extension wired to the shared snapshot.
-- `Sources/CodexBarCLI`: bundled CLI for `codexbar` usage/status output.
-- `Sources/CodexBarClaudeWatchdog`: helper process for stable Claude CLI PTY sessions.
-- `Sources/CodexBarClaudeWebProbe`: CLI helper to diagnose Claude web fetches.
+| 구성 요소 | 역할과 의존 방향 |
+| --- | --- |
+| CodexBar | SwiftUI·AppKit 설정과 메뉴, UsageStore·SettingsStore, Core 및 공통 갱신 정책 사용 |
+| CodexBarCore | 공급자 조회·해석·설정 저장 계약·프로세스 실행과 Opencodex 관리, 앱 UI에 의존하지 않음 |
+| CodexBarCLI | Commander 명령·출력, Core 사용 |
+| CodexBarWidget | WidgetKit timeline과 공유 스냅샷 표시, Core 사용 |
+| CodexBarClaudeWatchdog | Claude PTY 자식 프로세스 수명 보조, UI 상태 소유 안 함 |
+| CodexBarClaudeWebProbe | 명시적 웹 진단 도구, Core의 웹 조회 사용 |
+| AdaptiveRefreshCore | Foundation 기반 갱신 결정표, 앱과 재현 도구가 공유 |
+| AdaptiveReplayKit | 명시적 trace로 정책을 재현, 공통 정책만 사용 |
+| AdaptiveReplayCLI | 재현 인수·출력, ReplayKit 사용 |
+| CSQLite3 | Linux 시스템 SQLite 헤더·링크 연결 |
+| Integrations/Linux | Qt C++·QML 창·polling·비용·알림·같은 사용자 IPC, Swift CLI의 JSON 조회 사용 |
+| Integrations/Omarchy | Quickshell 막대·popup, Linux 데스크톱의 IPC snapshot 사용 |
+| WidgetExtension | CodexBarWidget 소스를 공유하는 Xcode app-extension 포장, Core 의존 |
 
-## Entry points
-- `CodexBarApp`: SwiftUI keepalive + Settings scene.
-- `AppDelegate`: wires status controller, Sparkle updater, notifications.
-- Status items are created on the main actor from `applicationDidFinishLaunching`; see
-  [status-item startup diagnostics](status-item-diagnostics.md) for opt-in lifecycle and Control Center traces.
+앱의 일반 조회 흐름은 갱신 계기 → UsageFetcher와 공급자별 probe → UsageStore의 공급자별 표현 스냅샷 → 메뉴·설정 카드·위젯 게시다. 공급자 설정은 descriptor에 등록된 타입별 스냅샷으로 전달하며 앱과 CLI의 자격 선택 정책은 각각의 진입점에서 결정한다. 카드가 원시 웹 자료와 조정된 계정 상태를 별도로 합쳐 서로 다른 신원을 표시하지 않게 공통 표현 입력을 사용한다.
 
-## Data flow
-- Background refresh → `UsageFetcher`/provider probes → `UsageStore` → menu/icon/widgets.
-- Settings toggles feed `SettingsStore` → `UsageStore` refresh cadence + feature flags.
-- Runtime-only provider settings flow through typed, descriptor-registered sections in `ProviderSettingsSnapshot`.
-- Codex cost conversation titles reuse SQLite database discovery per working directory and SQLite home within each
-  enrichment call. The next call resolves paths again, so config edits and new state database versions are picked up.
+사용량 비용 저장소는 정규화한 데이터베이스 위치별 직렬 실행기를 공유한다. 서로 다른 데이터베이스 작업은 같은 SQLite 잠금을 기다리지 않으며 일반 앱 조회는 별도의 scan queue를 사용한다. 비용 결과의 현재 설정 범위·리비전·확인된 빈 결과는 같은 게시 상태에서 선택한다. Workspaces와 위젯은 필요한 스냅샷만 읽는다.
 
-## CLI login lifecycle
-- `CodexLoginRunner` and `KiroLoginRunner` resolve their own executable and environment, including Codex home scoping.
-- `CLILoginRunner` owns browser-waiting login processes, bounded output capture, timeout/cancellation, and optional
-  device-flow progress. It returns one shared result type; provider presentations retain their own recovery messages.
-- The login runner and `SubprocessRunner` share `ProcessTermination` and process-tree termination. Cancelling a login
-  stops its child process, joins its progress callback task, and produces no failure alert. Timeouts retain captured
-  diagnostic output, and inherited pipes cannot keep the caller waiting indefinitely.
-- Probe ownership cleanup reads exact environment markers, retaining PID identity checks before signaling. Environment
-  parsing searches NUL byte ranges so large unrelated values do not dominate timeout and cancellation cleanup.
-- Codex and Grok RPC clients share deadline selection through `RPCRequestTimeout`. The deadline wins before teardown
-  can report stdout EOF; each client keeps its protocol initialization, encoding, diagnostics, and error types.
+로그인 실행기는 공급자별 실행 파일·환경 선택과 공통 브라우저 대기 프로세스 수명을 분리한다. 공통 프로세스 계층은 종료·기한·출력 한도와 자식 정리를 담당하고 각 공급자가 사용자 복구 문구를 결정한다. 계정 로그인과 Opencodex 데이터 키 발급은 서로 다른 경로다.
 
-## Concurrency & platform
-- Swift 6 strict concurrency enabled; prefer Sendable state and explicit MainActor hops.
-- macOS 14+ targeting; avoid deprecated APIs when refactoring.
-- Cost stores share one utility serial executor per canonical database location, including symlinked cache roots and
-  database files. Separate database operations do not share SQLite lock waits. Executors are weakly registered and
-  released with their last store or queued job. Normal app fetches still use the separate serial scan queue;
-  WAL transactions are unchanged.
+Opencodex 설정은 기존 공급자 계정 카드와 별도의 관리 상태를 사용한다. 앱 수명의 상태가 네이티브 변경 하나와 생성 결과를 소유하며 설정 뷰의 생성·소멸은 변경 작업의 수명을 바꾸지 않는다. Core가 실행 파일 탐색·고정 CLI 호출·상태와 메타데이터 해석·역할과 주소 정책을 제공한다.
 
-## Shared policy ownership
-- `ProviderCatalog` indexes the immutable generated list of app implementations. JavaScript plugins use their own
-  runtime registry. Provider settings contexts bind directly to their store; the shared cookie picker owns mode
-  conversion, options, and live subtitle selection while providers retain labels, visibility, and cache scopes. Settings
-  link actions resolve their provider-supplied destinations when clicked, including region and account selection.
-  Cookie subtitles use explicit localization keys and arguments supplied by providers; the picker selects the current
-  mode and Keychain-disabled explanation without parsing English display text.
-- Descriptor-registered cookie sections preserve their concrete types after app policy resolves credentials. The app
-  keeps its automatic default, Keychain-disabled manual mode, and selected-account normalization; CLI inference stays
-  separate. Cookie-source writes share config persistence and logging, with provider-specific side effects retained.
-- Core's public descriptor registry keeps one ordered descriptor collection with an index for lookup. Its storage owns
-  synchronization, and replacing a descriptor updates metadata and CLI names without changing provider order.
-- `UsageStore.presentationSnapshot` owns subscription metadata selection. Live cards use that projection once; explicit
-  account cards use only their supplied snapshots, identity, and credits. Compact and stacked Codex account layouts share
-  the same account-card builder. Reordering visible providers preserves loaded config records for unavailable plugins;
-  config decoding retains its existing known-provider rules.
-- `UsageStore.menuCardInput` assembles cards for Settings, the live menu, and explicit account contexts. It owns common
-  quota, pace, warning-marker, and display-preference projection. Settings retains diagnostics and all usage lanes;
-  menus retain their cost display policy and account-scoped forecasts. An account context stays isolated even when empty.
-  Cards consume the reconciled Codex projection; the raw dashboard is not a separate model input.
-- App credential properties read directly from the config snapshot and delegate common string writes to the typed
-  `SettingsStore` config accessor, which owns normalization, persistence, and secret-update logging. Field activation
-  does not trigger credential loading. Legacy provider toggles are read only by the config migrator.
-- Token-cost publications own their snapshots, revisions, and source scope in one store. Raw and current-config readers
-  select from that same state while retaining confirmed-empty and unpublished distinctions. Provider settings and
-  plugin edits reuse Core's config upsert; their defaults and notification policies remain explicit.
-- The native status-item controller owns menu composition. Persistent refresh-row metrics are independent of menu
-  rendering, and screenshot fixtures exercise the active card views. Legacy menu-layout resolution retains its
-  rendering mode and projected layout without copying unused settings into a second state object.
-- `SettingsValue` owns whitespace and wrapping-quote normalization for config and provider settings. Readers retain
-  their credential precedence, endpoint validation, and provider-specific decoding.
-- `ISO8601DateParser` owns fractional-first internet timestamp parsing with a whole-second fallback. Provider readers
-  retain their text extraction, whitespace, numeric timestamp, and custom-format policies; each parse owns its formatter.
-- Kilo's CLI fetch strategy and organization discovery share `KiloBearerTokenResolver` for auth-file loading.
-  Vertex AI credential loading and renewal share display-only ID-token decoding; diagnostic fetch labels use
-  `ProviderDiagnosticFetchAttempt` across the app and CLI.
-- Core owns status feed fetching, decoding, and status models through `ProviderStatusFetcher`; the app supplies
-  localized labels and component UI, and the CLI supplies its existing status payload and English labels.
-- `KeychainStringStore` owns generic-password operations for legacy credential migration. Provider adapters retain
-  their existing item names, prompt kinds, cookie validation, and cache lifetimes. Structured OAuth/cache stores
-  retain their separate persistence and authorization contracts.
-- Simple API-token providers use `ProviderFetchPlan.apiToken`; provider loaders retain endpoint-specific behavior
-  and optional-data rules. Strategies with credential provenance, region selection, or fallback policies stay explicit.
-- `ProviderCostSnapshot.spendLimitWindow` owns spend-budget quota projection. Antigravity's shared family classifier
-  owns ID-before-title precedence; visibility and compact widget selection retain their distinct unknown-family rules.
-- `TestProcessSafety` owns test-runner recognition; callers retain explicit headless and fixture-path policies.
-- `CheckedSum` owns integer overflow handling. Callers still decide whether absent or empty counts mean zero,
-  unavailable, or incomplete; persistent accumulators retain their own overflow state.
-- `BrowserCookieProfiles` merges browser stores within each profile using the existing expiry and store-priority
-  rules. Providers still validate their own sessions. `ExpiringValueCache` supplies their short-lived import caches,
-  with a separate cache instance per provider. `CookiePropertyJSON` preserves the legacy Date/URL marker encoding;
-  session stores retain their own file envelopes, expiration policies, and secure writes.
-- `OpenCodeWebParsing` owns workspace discovery and quota-candidate traversal for OpenCode and OpenCode Go. Each
-  supplies its own numeric/window decoder and required-lane policy. Alibaba Token Plan and Qwen Cloud share
-  `OneConsoleTokenPlanSnapshot` projection while retaining distinct public snapshot types and provider identities.
-- `StreamScanBuffer` supplies bounded overlap for Codex and Claude terminal-marker matching; command handling and
-  session lifecycle remain provider-specific.
-- Codex's persistent and one-shot PTY readers share `CodexStatusMarkers`, including the marker lengths used for
-  bounded overlap. Cursor-query handling remains part of each terminal loop.
-- `TTYCommandRunner` reports the captured POSIX error number and description when PTY allocation fails, so
-  descriptor exhaustion can be distinguished from other terminal allocation failures.
-- `UsageSnapshot.withAccountLabel` applies token-account fallback labels for the app and CLI while preserving the
-  provider's account ID and other identity fields. Codex visible-account labels keep their surface-specific policy.
-- Raw Chromium local-storage consumers share `ChromiumLocalStorageDiscovery`, retaining their own browser lists and
-  origin decoders. Both plugin engines use the manifest's management-auth eligibility policy after adapting their
-  engine-specific option values.
-- Codex RPC and OAuth spend limits use `CodexSpendControlNumber` while keeping their wire-field aliases separate.
-  Reset values retain truncation toward zero, with unrepresentable values omitted instead of trapping.
-- Claude's persistent CLI operations and serialized browser fetches each own an `AsyncOperationGate`; the shared
-  implementation retains FIFO ownership and the CLI cleanup path's explicit cancellation exception. CLI usage and
-  cards validate account/provider selection through `TokenAccountCLISelection` before resolving credentials.
+키 생성의 대표 흐름은 사용자 클릭 → 최신 로컬 역할 확인 → 기존 ocx 생성 명령 → 응답 검증 → 일시 결과 화면 → 메타데이터 목록 갱신이다. 관리 인증은 Opencodex 프로세스 안에서 처리한다. 비밀값은 결과 전달에만 사용하고 공급자 설정·미러·공유 스냅샷으로 보내지 않는다.
 
-See also: `docs/providers.md`, `docs/refresh-loop.md`, `docs/ui.md`.
+이름 변경은 같은 설치의 관리 클라이언트를 제한된 번들 보조 실행기에서 재사용한다. 정확한 ID와 이름만 서버에 보내며 지원 설치가 아니면 이 변경을 제공하지 않는다. CodexBar에 별도 키 저장소나 발급 서버를 만들지 않는다.
+
+대시보드는 검증한 상태 주소를 별도 WebKit 창에 연다. 전용 비영구 웹 저장소는 창 수명에 묶인다. 웹과 네이티브 모델 사이에는 비밀 브리지가 없으며 웹에서 변경한 내용은 설정으로 돌아와 목록을 다시 읽어 반영한다. 서버·웹 인증의 정본은 기존 Opencodex다.
+
+Linux에서는 데스크톱 backend 하나가 Swift CLI를 통해 공급자 자료를 조회하고 Qt 창·tray를 갱신한다. Omarchy 어댑터는 backend의 비공개 같은 사용자 소켓에서 표시 snapshot만 받는다. backend와 어댑터는 HTTP 서버를 새로 열지 않으며 공급자 인증 자료는 CLI 쪽에 남긴다. macOS의 새 Opencodex 키 화면은 이 경로에 추가되지 않는다.
