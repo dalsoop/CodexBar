@@ -7,8 +7,11 @@
 "%@ used" = "%@ terpakai";
 "%@, selected" = "%@, dipilih";
 "%@-day limit" = "Batas hari %@";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "Batas %@-jam";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "Batas %@-menit";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@h";
 "%@H" = "%@j";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Anggaran bulanan";
 "Monthly credits" = "Kredit bulanan";
 "Monthly quota" = "Kuota bulanan";
+"Monthly usage" = "Monthly usage";
 "No data" = "Tidak ada data";
 "Not reported by %@" = "Tidak dilaporkan oleh %@";
 "On-demand" = "Penggunaan sesuai permintaan";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Jendela Mingguan";
 "Weekly quota" = "Kuota mingguan";
 "Weekly tokens" = "token mingguan";
+"Weekly usage" = "Penggunaan mingguan";
 "Window" = "Jendela penggunaan";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "setelah diatur ulang";

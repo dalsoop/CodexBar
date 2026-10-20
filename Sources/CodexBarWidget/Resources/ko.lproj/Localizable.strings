@@ -7,8 +7,11 @@
 "%@ used" = "%@ 사용됨";
 "%@, selected" = "%@, 선택됨";
 "%@-day limit" = "%@일 제한";
+"%@-day usage" = "%@일 사용량";
 "%@-hour limit" = "%@시간 제한";
+"%@-hour usage" = "%@시간 사용량";
 "%@-minute limit" = "%@-분 제한";
+"%@-minute usage" = "%@분 사용량";
 "%@: %@" = "%@: %@";
 "%@D" = "%@일";
 "%@H" = "%@시간";
@@ -97,6 +100,7 @@
 "Monthly budget" = "월예산";
 "Monthly credits" = "월간 크레딧";
 "Monthly quota" = "월간 할당량";
+"Monthly usage" = "월간 사용량";
 "No data" = "데이터 없음";
 "Not reported by %@" = "%@에 의해 보고되지 않음";
 "On-demand" = "주문형 사용";
@@ -178,6 +182,7 @@
 "Weekly Window" = "주간 창";
 "Weekly quota" = "주간 할당량";
 "Weekly tokens" = "주간 토큰";
+"Weekly usage" = "주간 사용량";
 "Window" = "사용량 창";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "재설정 후";

@@ -7,8 +7,11 @@
 "%@ used" = "%@ использовано";
 "%@, selected" = "%@, выбрано";
 "%@-day limit" = "%@ дней";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "%@-часовой лимит";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@ минутный лимит";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@дн";
 "%@H" = "%@ч";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Ежемесячный бюджет";
 "Monthly credits" = "Ежемесячно Кредиты";
 "Monthly quota" = "Ежемесячно Квота";
+"Monthly usage" = "Monthly usage";
 "No data" = "Нет данных";
 "Not reported by %@" = "Не сообщил %@";
 "On-demand" = "Использование по требованию";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Еженедельное окно";
 "Weekly quota" = "Еженедельно Квота";
 "Weekly tokens" = "Еженедельно токены";
+"Weekly usage" = "Еженедельное использование";
 "Window" = "Окно использования";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "после сброса";

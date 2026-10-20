@@ -7,8 +7,11 @@
 "%@ used" = "%@ usado";
 "%@, selected" = "%@, seleccionado";
 "%@-day limit" = "%@ límite de días";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "%@ límite de horas";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@ límite de minutos";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@d";
 "%@H" = "%@h";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Orzamento mensual";
 "Monthly credits" = "Créditos mensual";
 "Monthly quota" = "Cota mensual";
+"Monthly usage" = "Monthly usage";
 "No data" = "Sen datos";
 "Not reported by %@" = "Non informado por %@";
 "On-demand" = "Uso baixo demanda";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Ventá semanal";
 "Weekly quota" = "Cota semanal";
 "Weekly tokens" = "tokens semanal";
+"Weekly usage" = "Uso semanal";
 "Window" = "Fiestra de uso";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "despois do reinicio";

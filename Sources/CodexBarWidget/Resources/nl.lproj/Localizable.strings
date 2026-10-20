@@ -7,8 +7,11 @@
 "%@ used" = "%@ gebruikt";
 "%@, selected" = "%@, geselecteerd";
 "%@-day limit" = "%@-daglimiet";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "%@-uurlimiet";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@-minutenlimiet";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@d";
 "%@H" = "%@u";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Maandelijks budget";
 "Monthly credits" = "Maandelijks Kredieten";
 "Monthly quota" = "Maandelijks Quotum";
+"Monthly usage" = "Monthly usage";
 "No data" = "Geen gegevens";
 "Not reported by %@" = "Niet gerapporteerd door %@";
 "On-demand" = "On-demand gebruik";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Wekelijks venster";
 "Weekly quota" = "Wekelijks Quotum";
 "Weekly tokens" = "Wekelijks tokens";
+"Weekly usage" = "Wekelijks gebruik";
 "Window" = "Gebruiksvenster";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "na resetten";

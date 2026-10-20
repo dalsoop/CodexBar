@@ -348,7 +348,7 @@ struct OpenCodexHubCardTests {
             accountLabel: "b***b@example.invalid",
             details: [
                 L("Every Mac that uses this hub moves to this Claude account on its next request."),
-                L("Quota: %@", "5h 9% · Weekly 100% · Fable 76%"),
+                L("Quota: %@", "5h: 9% used · Weekly: 100% used · Fable: 76% used"),
                 nearLimit,
                 L("This Mac asks the hub to switch; the result shows after the hub's next update."),
                 nearLimit,

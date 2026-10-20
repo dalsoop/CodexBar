@@ -7,8 +7,11 @@
 "%@ used" = "%@ 使用済み";
 "%@, selected" = "%@、選択済み";
 "%@-day limit" = "%@ 日の制限";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "%@ 時間制限";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@ 分の制限";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@日";
 "%@H" = "%@時間";
@@ -97,6 +100,7 @@
 "Monthly budget" = "月々の予算";
 "Monthly credits" = "月刊 クレジット";
 "Monthly quota" = "月刊 クォータ";
+"Monthly usage" = "Monthly usage";
 "No data" = "データなし";
 "Not reported by %@" = "%@ では報告されていません";
 "On-demand" = "オンデマンドでの使用";
@@ -178,6 +182,7 @@
 "Weekly Window" = "毎週のウィンドウ";
 "Weekly quota" = "週刊 クォータ";
 "Weekly tokens" = "週刊 トークン";
+"Weekly usage" = "週間使用量";
 "Window" = "利用窓口";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "リセット後";

@@ -21,23 +21,8 @@ extension StatusItemController {
     }
 
     func openOpenCodexHubManagement(_ provider: UsageProvider) async {
-        guard self.settings.openCodexHubEnabled(for: provider),
-              let hubProvider = OpenCodexHubProvider(usageProvider: provider)
-        else { return }
-        let executablePath = self.settings.openCodexHubExecutablePath(for: provider)
-        do {
-            let url = try await OpenCodexHubManagement.accountsURL(
-                executablePath: executablePath, provider: hubProvider)
-            guard self.settings.openCodexHubEnabled(for: provider),
-                  self.settings.openCodexHubExecutablePath(for: provider) == executablePath
-            else { return }
-            if !NSWorkspace.shared.open(url) {
-                self.presentLoginAlert(
-                    title: L("Manage hub accounts..."),
-                    message: L("Could not open the hub browser."))
-            }
-        } catch {
-            self.presentLoginAlert(title: L("Manage hub accounts..."), message: error.localizedDescription)
+        if let message = await self.store.openHubAccountManagement(provider, openURL: { NSWorkspace.shared.open($0) }) {
+            self.presentLoginAlert(title: L("Add account or sign in again..."), message: message)
         }
     }
 
@@ -50,6 +35,9 @@ extension StatusItemController {
     /// Notices and the account switcher of a Codex or Grok card that reads an opencodex hub pool. The
     /// active account's quota renders as the provider card below these rows.
     func addOpenCodexHubMenuItems(provider: UsageProvider, to menu: NSMenu) {
+        if let state = self.store.openCodexHubManagementState(for: provider) {
+            self.addOpenCodexHubNotice(state.menuMessage, to: menu)
+        }
         guard let state = self.store.openCodexHubCardState(for: provider) else {
             self.addOpenCodexHubNotice(L("Reading the opencodex hub…"), to: menu)
             return

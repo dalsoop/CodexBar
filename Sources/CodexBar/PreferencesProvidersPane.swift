@@ -97,9 +97,15 @@ struct ProvidersPane: View {
             onRefresh: {
                 self.triggerRefresh(for: self.provider)
             },
-            showsSupplementarySettingsContent: self.codexAccountsSectionState(for: self.provider) != nil,
+            showsSupplementarySettingsContent: self.settings.openCodexHubEnabled(for: self.provider)
+                || self.codexAccountsSectionState(for: self.provider) != nil,
             supplementarySettingsContent: {
-                if let state = self.codexAccountsSectionState(for: self.provider) {
+                if self.settings.openCodexHubEnabled(for: self.provider) {
+                    OpenCodexHubAccountManagementView(
+                        provider: self.provider,
+                        store: self.store,
+                        openAccounts: { await self.runProviderLoginFlow(self.provider) })
+                } else if let state = self.codexAccountsSectionState(for: self.provider) {
                     CodexAccountsSectionView(
                         state: state,
                         setActiveVisibleAccount: { visibleAccountID in
@@ -439,17 +445,7 @@ struct ProvidersPane: View {
 
     private func extraSettingsActions(for provider: UsageProvider) -> [ProviderSettingsActionsDescriptor] {
         if self.settings.openCodexHubEnabled(for: provider) {
-            return [ProviderSettingsActionsDescriptor(
-                id: "opencodex-hub-management",
-                title: L("Manage hub accounts..."),
-                subtitle: L("Add or re-authenticate accounts in the hub browser. Credentials stay on the hub."),
-                actions: [ProviderSettingsActionDescriptor(
-                    id: "opencodex-hub-management-open",
-                    title: L("Manage hub accounts..."),
-                    style: .bordered,
-                    isVisible: nil,
-                    perform: { await self.runProviderLoginFlow(provider) })],
-                isVisible: nil)]
+            return []
         }
         guard let impl = ProviderCatalog.implementation(for: provider) else { return [] }
         let context = self.makeSettingsContext(provider: provider)

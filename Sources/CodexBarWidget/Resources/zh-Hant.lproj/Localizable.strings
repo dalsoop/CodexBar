@@ -7,8 +7,11 @@
 "%@ used" = "%@ 已用";
 "%@, selected" = "%@，已選擇";
 "%@-day limit" = "%@日限";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "%@小時限制";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@-分鐘限制";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@：%@";
 "%@D" = "%@天";
 "%@H" = "%@小時";
@@ -97,6 +100,7 @@
 "Monthly budget" = "每月預算";
 "Monthly credits" = "每月 額度";
 "Monthly quota" = "每月額度";
+"Monthly usage" = "Monthly usage";
 "No data" = "無資料";
 "Not reported by %@" = "%@ 未報告";
 "On-demand" = "按需使用";
@@ -178,6 +182,7 @@
 "Weekly Window" = "每週視窗";
 "Weekly quota" = "每周額度";
 "Weekly tokens" = "每周 token";
+"Weekly usage" = "每週使用量";
 "Window" = "使用週期";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "重置之後";

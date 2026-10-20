@@ -150,7 +150,7 @@ enum OpenCodexHubPresentation {
         return account.email.isEmpty ? L("Account %@", String(ordinal)) : account.email
     }
 
-    /// "Weekly 51% · Monthly 0%"; nil without windows.
+    /// Percentages always describe usage, independently of the card's remaining/used bar preference.
     static func quotaSummary(_ quota: OpenCodexHubQuota) -> String? {
         let parts = OpenCodexHubUsageProjection.summary(quota).map { part in
             let name = switch part.label {
@@ -159,7 +159,7 @@ enum OpenCodexHubPresentation {
             case "Monthly": L("Monthly")
             default: part.label
             }
-            return "\(name) \(Int(part.percent.rounded()))%"
+            return L("%@: %@%% used", name, codexBarLocalizedInteger(Int(part.percent.rounded())))
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
@@ -175,6 +175,22 @@ enum OpenCodexHubPresentation {
             title += " — \(summary)"
         }
         return title
+    }
+
+    /// Reading an old copy now does not make the source list current.
+    static func listStatus(_ pool: OpenCodexHubPool, now: Date = Date()) -> String {
+        var parts = [L("Accounts: %@", codexBarLocalizedInteger(pool.accounts.count))]
+        if pool.isLinkedCopy {
+            parts.append(L("Read-only account list; last hub update is unknown."))
+        } else if !pool.isHubLocal {
+            if let updatedAt = pool.snapshotUpdatedAt {
+                parts.append(L("Hub list updated %@.", updatedAt.relativeDescription()))
+            } else {
+                parts.append(L("Last hub update is unknown."))
+            }
+            if pool.isStale(now: now) { parts.append(L("The hub list is out of date.")) }
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// Where the accounts live, staleness and why switching is off. Empty for a live list on the hub.

@@ -7,8 +7,11 @@
 "%@ used" = "%@ використано";
 "%@, selected" = "%@, вибрано";
 "%@-day limit" = "%@-денний ліміт";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "%@-годинний ліміт";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@-хвилинний ліміт";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@дн";
 "%@H" = "%@год";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Місячний бюджет";
 "Monthly credits" = "Щомісяця Кредити";
 "Monthly quota" = "Щомісяця Квота";
+"Monthly usage" = "Monthly usage";
 "No data" = "Немає даних";
 "Not reported by %@" = "Не повідомляє %@";
 "On-demand" = "Використання за вимогою";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Тижневе вікно";
 "Weekly quota" = "Щотижня Квота";
 "Weekly tokens" = "Щотижня жетони";
+"Weekly usage" = "Щотижневе використання";
 "Window" = "Вікно використання";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "після скидання";

@@ -7,8 +7,11 @@
 "%@ used" = "%@ مستخدم";
 "%@, selected" = "%@، محدد";
 "%@-day limit" = "%@ الحد الأقصى لليوم";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "الحد الأقصى للساعة %@";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "حد %@ للدقائق";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@ي";
 "%@H" = "%@س";
@@ -97,6 +100,7 @@
 "Monthly budget" = "الميزانية الشهرية";
 "Monthly credits" = "الاعتمادات الشهرية";
 "Monthly quota" = "الحصة الشهرية";
+"Monthly usage" = "Monthly usage";
 "No data" = "لا توجد بيانات";
 "Not reported by %@" = "لم يتم الإبلاغ عنها بواسطة %@";
 "On-demand" = "الاستخدام حسب الطلب";
@@ -178,6 +182,7 @@
 "Weekly Window" = "النافذة الأسبوعية";
 "Weekly quota" = "أسبوعي الحصة";
 "Weekly tokens" = "أسبوعي الرموز";
+"Weekly usage" = "الاستخدام الأسبوعي";
 "Window" = "نافذة الاستخدام";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "بعد إعادة التعيين";
