@@ -19,14 +19,18 @@ struct OpenCodexDashboardNavigationIntegrationTests {
         #expect(action.newWindow == (element == "blank"))
         #expect(action.mainFrame == (element == "link"))
         #expect(action.policy == .cancel)
+        #expect(fixture.browserURLs.isEmpty)
+        #expect(fixture.controller.state.failure == .externalNavigation)
+        #expect(fixture.controller.state.canOpenExternal)
+        print("Offline DOM link \(element) browser recordings before confirmation: \(fixture.browserURLs.count)")
+        session.confirmExternal()
         #expect(fixture.browserURLs == [OfflineDashboardNavigationFixture.externalURL])
-        #expect(fixture.controller.state.failure == nil)
-        #expect(!fixture.controller.state.canOpenExternal)
+        print("Offline DOM link \(element) browser recordings after confirmation: \(fixture.browserURLs.count)")
         #expect(session.newWindowCallbacks == 0)
     }
 
     @Test
-    func `page timer DOM click characterizes navigation type without claiming a user gesture`() async throws {
+    func `page timer DOM click requires native confirmation despite link activated navigation type`() async throws {
         let fixture = OfflineDashboardNavigationFixture(script: """
         window.fixtureResult = 'automatic-click';
         document.getElementById('link').click();
@@ -35,13 +39,18 @@ struct OpenCodexDashboardNavigationIntegrationTests {
         let session = try await fixture.start()
         #expect(try await session.scriptResult() == "automatic-click")
         let action = try await session.externalDecision()
-        // Characterize current WebKit/controller behavior, not compliance with a trusted-gesture boundary.
+        // A timer-generated link activation is not permission to launch an external application.
         #expect(action.type == .linkActivated)
         #expect(action.mainFrame)
         #expect(!action.newWindow)
         #expect(action.policy == .cancel)
+        #expect(fixture.browserURLs.isEmpty)
+        #expect(fixture.controller.state.failure == .externalNavigation)
+        #expect(fixture.controller.state.canOpenExternal)
+        print("Offline automatic DOM click browser recordings before confirmation: \(fixture.browserURLs.count)")
+        session.confirmExternal()
         #expect(fixture.browserURLs == [OfflineDashboardNavigationFixture.externalURL])
-        print("Offline automatic DOM click browser recordings: \(fixture.browserURLs.count)")
+        print("Offline automatic DOM click browser recordings after confirmation: \(fixture.browserURLs.count)")
         #expect(session.newWindowCallbacks == 0)
     }
 
@@ -62,6 +71,8 @@ struct OpenCodexDashboardNavigationIntegrationTests {
         #expect(fixture.browserURLs.isEmpty)
         #expect(fixture.controller.state.failure == .externalNavigation)
         #expect(fixture.controller.state.canOpenExternal)
+        session.confirmExternal()
+        #expect(fixture.browserURLs == [OfflineDashboardNavigationFixture.externalURL])
         #expect(session.newWindowCallbacks == 0)
     }
 
@@ -142,6 +153,7 @@ private final class OfflineDashboardNavigationSession: NSObject, OpenCodexDashbo
     let native: OpenCodexDashboardWebSession
     let webView: WKWebView
     let script: String
+    let confirmExternal: @MainActor () -> Void
     var decisions: [Decision] = []
     var finished = 0
     var newWindowCallbacks = 0
@@ -152,6 +164,7 @@ private final class OfflineDashboardNavigationSession: NSObject, OpenCodexDashbo
         script: String) throws
     {
         self.script = script
+        self.confirmExternal = callbacks.openExternal
         self.native = OpenCodexDashboardWebSession(state: state, callbacks: callbacks, presentWindow: { _ in })
         self.webView = try #require(self.native.webView)
         #expect(!self.webView.configuration.preferences.javaScriptCanOpenWindowsAutomatically)

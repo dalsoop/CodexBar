@@ -248,21 +248,19 @@ final class OpenCodexDashboardWindowController {
         self.session?.load(url)
     }
 
-    private func navigate(to url: URL?, type: WKNavigationType, mainFrame: Bool, newWindow: Bool) -> Bool {
+    private func navigate(to url: URL?, type _: WKNavigationType, mainFrame: Bool, newWindow: Bool) -> Bool {
         guard self.hasValidStatus else { return false }
         guard let url, let destination else {
             if mainFrame || newWindow { self.fail(.invalidAddress) }
             return false
         }
-        // targetFrame == nil is never evidence of a gesture. Form submissions and .other are not link clicks.
-        let policy = destination.navigation(to: url, userInitiated: type == .linkActivated)
+        // Even a page timer's DOM click can be .linkActivated. Only the native guidance button
+        // authorizes an external application launch; WebKit navigation types do not prove user input.
+        let policy = destination.navigation(to: url, userInitiated: false)
         switch policy {
         case .embedded:
             return true
-        case .externalBrowser:
-            guard mainFrame || newWindow else { return false }
-            if !self.openBrowser(url) { self.fail(.externalBrowser) }
-        case .requiresUserAction:
+        case .externalBrowser, .requiresUserAction:
             guard mainFrame || newWindow else { return false }
             self.pendingExternalURL = url
             self.state.canOpenExternal = true
