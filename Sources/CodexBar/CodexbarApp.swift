@@ -395,6 +395,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: SettingsWindowController?
     private var openCodexAccess: OpenCodexAccessSettings?
     private var pendingUpdateSettingsOpen = false
+    private var pendingSettingsReopen = false
     private lazy var placeholderSettingsWindowGuard = PlaceholderSettingsWindowGuard(
         isKnownSettingsWindow: { [weak self] window in
             self?.settingsWindowController?.window === window
@@ -415,6 +416,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #if DEBUG
     func _test_configureSettings(_ settings: SettingsStore) {
         self.settings = settings
+    }
+
+    func _test_configureSettingsWindowController(_ controller: SettingsWindowController) {
+        self.settingsWindowController = controller
+        self.openPendingSettingsIfNeeded()
     }
     #endif
 
@@ -440,10 +446,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self else { return }
                 await self.runProviderLoginFlow(provider)
             })
-        if self.pendingUpdateSettingsOpen {
-            self.pendingUpdateSettingsOpen = false
-            self.openSettings(pane: .about)
-        }
+        self.openPendingSettingsIfNeeded()
     }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -464,6 +467,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         // CodexBar lives in the menu bar and has no untitled document to open at launch or on reopen.
         false
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        // An explicit Finder/Spotlight reopen should reveal our real Settings window,
+        // while login launches and the empty SwiftUI Settings scene remain silent.
+        if self.settingsWindowController == nil {
+            self.pendingSettingsReopen = true
+        } else {
+            self.openSettings(pane: nil)
+        }
+        return false
+    }
+
+    private func openPendingSettingsIfNeeded() {
+        if self.pendingUpdateSettingsOpen {
+            self.pendingUpdateSettingsOpen = false
+            self.pendingSettingsReopen = false
+            self.openSettings(pane: .about)
+        } else if self.pendingSettingsReopen {
+            self.pendingSettingsReopen = false
+            self.openSettings(pane: nil)
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
