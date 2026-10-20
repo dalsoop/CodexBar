@@ -70,23 +70,47 @@ struct OpenCodexDashboardWindowTests {
     }
 
     @Test
-    func `only explicit links permit cross origin browser navigation including new windows`() throws {
+    func `all cross origin navigation types require native confirmation including new windows`() throws {
         let harness = DashboardHarness()
         let controller = harness.controller
         controller.open(status: Self.status(), connectionID: "local", refreshStatus: { Self.status() })
         let callbacks = try #require(harness.sessions.first?.callbacks)
         let external = try #require(URL(string: "https://auth.invalid/sign-in"))
-        #expect(!callbacks.navigation(external, .other, true, false))
-        #expect(harness.browserURLs.isEmpty)
-        #expect(controller.state.failure == .externalNavigation)
-        #expect(!callbacks.navigation(external, .other, false, true))
-        #expect(harness.browserURLs.isEmpty)
-        #expect(!callbacks.navigation(external, .linkActivated, false, true))
+        let types: [WKNavigationType] = [
+            .linkActivated, .other, .formSubmitted, .backForward, .reload, .formResubmitted,
+        ]
+        for type in types {
+            #expect(!callbacks.navigation(external, type, true, false))
+            #expect(harness.browserURLs.isEmpty)
+            #expect(controller.state.failure == .externalNavigation)
+            #expect(controller.state.canOpenExternal)
+            #expect(!callbacks.navigation(external, type, false, true))
+            #expect(harness.browserURLs.isEmpty)
+            #expect(controller.state.failure == .externalNavigation)
+            #expect(controller.state.canOpenExternal)
+        }
+        controller.openPendingExternalInBrowser()
         #expect(harness.browserURLs == [external])
         #expect(!callbacks.navigation(URL(string: "https://user:secret@auth.invalid"), .linkActivated, true, false))
         #expect(!callbacks.navigation(URL(string: "javascript:alert(1)"), .linkActivated, false, true))
         #expect(harness.browserURLs == [external])
         #expect(callbacks.navigation(URL(string: "http://localhost:18432/keys"), .other, true, false))
+    }
+
+    @Test
+    func `unsafe navigation cannot offer external confirmation even when classified as a link`() throws {
+        for raw in ["https://user:secret@auth.invalid", "javascript:alert(1)", "http://remote.invalid"] {
+            let harness = DashboardHarness()
+            let controller = harness.controller
+            controller.open(status: Self.status(), connectionID: "local", refreshStatus: { Self.status() })
+            let callbacks = try #require(harness.sessions.first?.callbacks)
+            #expect(!callbacks.navigation(URL(string: raw), .linkActivated, true, false))
+            #expect(controller.state.failure == .invalidAddress)
+            #expect(!controller.state.canOpenExternal)
+            controller.openPendingExternalInBrowser()
+            #expect(harness.browserURLs.isEmpty)
+            controller.close()
+        }
     }
 
     @Test
@@ -97,7 +121,9 @@ struct OpenCodexDashboardWindowTests {
         let external = try #require(URL(string: "https://auth.invalid"))
         #expect(!callbacks.navigation(external, .linkActivated, false, false))
         #expect(harness.browserURLs.isEmpty)
+        #expect(!harness.controller.state.canOpenExternal)
         #expect(!callbacks.navigation(external, .other, true, false))
+        #expect(!callbacks.navigation(URL(string: "https://subframe.invalid"), .linkActivated, false, false))
         harness.controller.openPendingExternalInBrowser()
         #expect(harness.browserURLs == [external])
         harness.controller.close()
@@ -170,6 +196,8 @@ struct OpenCodexDashboardWindowTests {
             refreshStatus: { Self.status(role: .standalone) })
         let received = try #require(callbacks)
         #expect(!received.navigation(URL(string: "https://auth.invalid"), .linkActivated, true, false))
+        #expect(blockedBrowser.state.failure == .externalNavigation)
+        blockedBrowser.openPendingExternalInBrowser()
         #expect(blockedBrowser.state.failure == .externalBrowser)
         blockedBrowser.close()
     }
