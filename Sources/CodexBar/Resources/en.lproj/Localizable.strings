@@ -2827,3 +2827,9 @@
 "opencodex_settings_apply_path" = "Apply path";
 "opencodex_settings_path_hint" = "Leave empty to use the default search locations. This path is independent of provider account settings.";
 "opencodex_settings_invalid_path" = "Enter an absolute executable path or leave it empty. Control characters and URLs are not accepted.";
+
+// Hub account management
+"Manage hub accounts..." = "Manage hub accounts...";
+"Could not open the hub browser." = "Could not open the hub browser.";
+"Add or re-authenticate accounts in the hub browser. Credentials stay on the hub." = "Add or re-authenticate accounts in the hub browser. Credentials stay on the hub.";
+"The switch result is unknown. Refresh the hub before trying again." = "The switch result is unknown. Refresh the hub before trying again.";

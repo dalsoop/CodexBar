@@ -71,6 +71,7 @@ struct MenuDescriptor {
         case statusPage
         case changelog
         case addCodexAccount
+        case manageOpenCodexHubAccounts(UsageProvider)
         case requestCodexSystemPromotion(UUID)
         case addProviderAccount(UsageProvider)
         case switchAccount(UsageProvider)
@@ -572,9 +573,11 @@ struct MenuDescriptor {
         }
 
         // Show "Add Account" if no account, "Switch Account" if logged in
-        if let targetProvider,
-           let implementation = ProviderCatalog.implementation(for: targetProvider),
-           implementation.supportsLoginFlow
+        if let targetProvider, store.settings.openCodexHubEnabled(for: targetProvider) {
+            entries.append(.action(L("Manage hub accounts..."), .manageOpenCodexHubAccounts(targetProvider)))
+        } else if let targetProvider,
+                  let implementation = ProviderCatalog.implementation(for: targetProvider),
+                  implementation.supportsLoginFlow
         {
             if let loginContext,
                let override = implementation.loginMenuAction(context: loginContext)
@@ -805,6 +808,7 @@ extension MenuDescriptor.MenuAction {
         case .statusPage: MenuDescriptor.MenuActionSystemImage.statusPage.rawValue
         case .changelog: MenuDescriptor.MenuActionSystemImage.changelog.rawValue
         case .addCodexAccount, .addProviderAccount: MenuDescriptor.MenuActionSystemImage.addAccount.rawValue
+        case .manageOpenCodexHubAccounts: MenuDescriptor.MenuActionSystemImage.systemAccount.rawValue
         case .requestCodexSystemPromotion:
             nil
         case .switchAccount: MenuDescriptor.MenuActionSystemImage.switchAccount.rawValue

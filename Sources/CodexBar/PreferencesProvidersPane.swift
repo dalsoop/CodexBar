@@ -56,13 +56,14 @@ struct ProvidersPane: View {
         let unfilteredModel = UsageMenuCardView.Model.make(self.store.menuCardInput(
             for: self.provider, context: .settings))
         // Provider-specific by design: only Codex has managed OAuth account snapshots for this shared settings view.
-        let overview = self.provider == .codex ? self.store.codexAccountUsageOverview { accountIDs in
-            Task { @MainActor in
-                await ProviderSettingsRefreshInteraction.perform {
-                    await self.store.refreshCodexAccountsForSettings(accountIDs)
+        let overview = self.provider == .codex && !self.settings.openCodexHubEnabled(for: .codex)
+            ? self.store.codexAccountUsageOverview { accountIDs in
+                Task { @MainActor in
+                    await ProviderSettingsRefreshInteraction.perform {
+                        await self.store.refreshCodexAccountsForSettings(accountIDs)
+                    }
                 }
-            }
-        } : nil
+            } : nil
         let visibilityModel = UsageMenuCardView.Model.make(self.store.menuCardInput(
             for: self.provider, context: .settings, optionalUsageOverride: true))
         let usageItems = ((overview?.usageItems ?? []) + visibilityModel.usageItemDescriptors(
@@ -259,7 +260,7 @@ struct ProvidersPane: View {
     func codexAccountsSectionState(for provider: UsageProvider) -> CodexAccountsSectionState? {
         // Provider-specific by design: managed Codex profiles own app-only account promotion and reauthentication
         // state.
-        guard provider == .codex else { return nil }
+        guard provider == .codex, !self.settings.openCodexHubEnabled(for: provider) else { return nil }
         let projection = self.settings.codexVisibleAccountProjection
         let degradedNotice: CodexAccountsSectionNotice? = if projection.hasUnreadableAddedAccountStore {
             CodexAccountsSectionNotice(
@@ -283,12 +284,14 @@ struct ProvidersPane: View {
     }
 
     func selectCodexVisibleAccount(id: String) async {
+        guard !self.settings.openCodexHubEnabled(for: .codex) else { return }
         self.codexAccountsNotice = nil
         guard self.settings.selectCodexVisibleAccount(id: id) else { return }
         await self.refreshCodexProvider()
     }
 
     func requestCodexSystemVisibleAccount(id: String) async {
+        guard !self.settings.openCodexHubEnabled(for: .codex) else { return }
         self.codexAccountsNotice = nil
         guard let account = self.settings.codexVisibleAccountProjection.visibleAccounts.first(where: { $0.id == id }),
               let managedAccountID = account.storedAccountID
@@ -306,6 +309,10 @@ struct ProvidersPane: View {
     }
 
     func addManagedCodexAccount() async {
+        if self.settings.openCodexHubEnabled(for: .codex) {
+            await self.runProviderLoginFlow(.codex)
+            return
+        }
         self.codexAccountsNotice = nil
         guard let state = self.codexAccountsSectionState(for: .codex), state.canAddAccount else {
             return
@@ -321,6 +328,10 @@ struct ProvidersPane: View {
     }
 
     func reauthenticateCodexAccount(_ account: CodexVisibleAccount) async {
+        if self.settings.openCodexHubEnabled(for: .codex) {
+            await self.runProviderLoginFlow(.codex)
+            return
+        }
         self.codexAccountsNotice = nil
         self.settings.invalidateCodexAccountReconciliationSnapshotCache()
         guard let state = self.codexAccountsSectionState(for: .codex),
@@ -360,6 +371,7 @@ struct ProvidersPane: View {
     }
 
     func removeManagedCodexAccount(id: UUID) async {
+        guard !self.settings.openCodexHubEnabled(for: .codex) else { return }
         self.codexAccountsNotice = nil
         do {
             try await self.managedCodexAccountCoordinator.removeManagedAccount(id: id)
@@ -426,6 +438,19 @@ struct ProvidersPane: View {
     }
 
     private func extraSettingsActions(for provider: UsageProvider) -> [ProviderSettingsActionsDescriptor] {
+        if self.settings.openCodexHubEnabled(for: provider) {
+            return [ProviderSettingsActionsDescriptor(
+                id: "opencodex-hub-management",
+                title: L("Manage hub accounts..."),
+                subtitle: L("Add or re-authenticate accounts in the hub browser. Credentials stay on the hub."),
+                actions: [ProviderSettingsActionDescriptor(
+                    id: "opencodex-hub-management-open",
+                    title: L("Manage hub accounts..."),
+                    style: .bordered,
+                    isVisible: nil,
+                    perform: { await self.runProviderLoginFlow(provider) })],
+                isVisible: nil)]
+        }
         guard let impl = ProviderCatalog.implementation(for: provider) else { return [] }
         let context = self.makeSettingsContext(provider: provider)
         return impl.settingsActions(context: context)
