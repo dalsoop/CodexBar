@@ -59,6 +59,7 @@ struct SettingsSidebarView: View {
             SettingsSidebarPaneRow(pane: .advanced, systemImage: "slider.horizontal.3", color: .purple)
             SettingsSidebarPaneRow(pane: .hooks, systemImage: "bolt.horizontal.circle.fill", color: .orange)
             SettingsSidebarPaneRow(pane: .plugins, systemImage: "puzzlepiece.extension.fill", color: .indigo)
+            SettingsSidebarPaneRow(pane: .opencodex, systemImage: "key.fill", color: .green)
             SettingsSidebarAboutRow(onSelect: self.onSelectAbout)
             if self.settings.debugMenuEnabled {
                 SettingsSidebarPaneRow(pane: .debug, systemImage: "ladybug.fill", color: .red)
