@@ -16,6 +16,8 @@ Bun의 기본 console 출력은 process.stdout.write·process.stderr.write 재�
 
 compile_and_run.sh는 기존 CodexBar를 중단하고 새 앱을 띄운다. 운영 앱을 보존하는 검증에서는 이 명령을 사용하지 않는다. 서명이 달라진 ad-hoc 앱은 기존 Keychain 허가를 그대로 얻지 못할 수 있으므로 반복 재시작으로 허가를 해결하려 하지 않는다.
 
+LaunchServices가 제출한 `application.net.ranode.codexbar.*` 작업은 `launchctl list`·`print`·`kickstart -p`가 성공해도 재시작 가능하다는 뜻이 아니다. m5m2의 jetsam 작업에 `kickstart -k -p`를 호출하자 기존 프로세스가 종료된 뒤 종료 코드 102로 실패했다. 기존 설치본과 실행을 복구한 뒤, 최종 배포는 정확한 앱 PID에 SIGTERM을 보내 정상 종료를 기다리고 검증된 서명 실행 파일을 분리 실행했다. 설치 파일과 실제 프로세스의 실행 파일 매핑·지속 실행·리소스 검사를 따로 확인했다. 이 프로세스 검증은 원격 설정 화면의 증거가 아니며, opencodex 프록시나 mac-infra 작업 재시작과도 별개다.
+
 Xcode Python이 packaged-app 격리 테스트의 ambient-home에 Library/Caches/com.apple.python을 만들면 빈 홈 assertion이 실패한다. 가짜 sandbox 실행기 자체의 pyc 기록이며 앱의 접근 증거가 아니다. PYTHONDONTWRITEBYTECODE=1 환경으로 같은 테스트를 다시 실행해 assertion을 통과시키고 검사 기준을 완화하지 않는다.
 
 명시적 계정 카드의 자료가 비었을 때 현재 활성 계정의 snapshot으로 채우면 다른 신원이 나타난다. 계정 컨텍스트는 빈 상태 그대로 두고 공통 카드 입력을 사용한다. Codex 카드는 조정된 표현을 받아야 하며 원시 대시보드를 별도 입력으로 합치지 않는다. 빈 계정과 서로 다른 활성 계정을 함께 둔 회귀로 확인한다.
