@@ -221,6 +221,21 @@ CodexBar reads only the fields below; the file never contains tokens or full acc
   Switching to an account at or above 80% of a limit is allowed; the confirmation warns that the hub may switch away
   again or requests may stop.
 
+## Opencodex 로컬 관리 설정
+
+**설정 → Opencodex**는 공급자 설정과 별개인 로컬 API 키 관리 화면입니다.
+선택 위치의 저장·복원 토큰은 `opencodex`이며 기존 설정 위치와 뒤로/앞으로 이동을 유지합니다.
+실행 파일 경로는 앱의 기기별 기본 설정 `opencodexAccessExecutablePath`에 경로만 저장합니다.
+위 JSON의 공급자 `apiKey`나 `openCodexHubExecutablePath`, `claudeSwapExecutablePath`를 덮어쓰지 않습니다.
+빈 경로는 기존 `OpenCodexHubReader.resolvedExecutablePath`의 기본 탐색 위치를 사용합니다.
+관리 토큰·생성 비밀값은 이 설정이나 공유 설정 미러에 저장하지 않습니다.
+
+`runtimeRole`이 `hub` 또는 `standalone`인 자신의 로컬 설치만 관리합니다.
+`client`·알 수 없는 역할에서는 허브 관리 안내를 표시하며 원격 관리 권한을 새로 배포하지 않습니다.
+사용 안내와 생성 비밀값의 수명, 클립보드 만료, 대시보드 재인증 및 기록 불완전 안내는
+[Opencodex 키 관리와 내장 대시보드](opencodex-access.md)를 참고하세요.
+키 생성은 OpenClaw 자동 설정이나 인증 없는 loopback 사용량의 키별 비용 귀속을 뜻하지 않습니다.
+
 ## Manual cookies
 Use manual cookies when automatic browser import is unavailable, disabled, or too noisy for your setup.
 The app and CLI both read the same resolved config file, so a manual cookie saved in the UI is also used by
