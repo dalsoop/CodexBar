@@ -132,6 +132,44 @@ struct OpenCodexHubManagementFlowTests {
     }
 
     @Test
+    func `a successful native link read checks membership without waiting for snapshot sync`() async throws {
+        let fixture = try self.fixture()
+        defer { fixture.cleanup() }
+        let store = fixture.store
+        let accounts = (0..<3).map { index in
+            OpenCodexHubAccount(
+                idSuffix: String(format: "%04x", index),
+                label: nil,
+                email: "a\(index)***e@example.com",
+                isActive: index == 0,
+                quota: .init())
+        }
+        var reads = 0
+        store._test_openCodexHubRefreshOverride = { provider in
+            reads += 1
+            store.applyOpenCodexHubPool(OpenCodexHubPool(
+                provider: .openai,
+                accounts: accounts,
+                switchable: false,
+                origin: .linkedCopy(hubName: "fixture")), provider: provider)
+        }
+        await store.openHubAccountManagement(.codex, resolveURL: { _, _ in self.url }, openURL: { _ in true })
+        await store.refreshHubAccountList(.codex)
+        let management = try #require(store.openCodexHubManagementState(for: .codex))
+        let pool = try #require(store.openCodexHubCardState(for: .codex)?.pool)
+        #expect(reads == 1)
+        #expect(management.phase == .checked)
+        #expect(!management.needsAttention)
+        #expect(pool.accounts.count == 3)
+        #expect(pool.isLinkedCopy)
+        #expect(!pool.switchable)
+        #expect(pool.accounts.allSatisfy { $0.quota.isEmpty && !pool.canSwitch(to: $0) })
+        #expect(pool.snapshotUpdatedAt == nil)
+        #expect(management.message == L("Account list checked. Confirm that your account appears; " +
+                "opening the browser does not complete sign-in."))
+    }
+
+    @Test
     func `failed list refresh does not ask the user to repeat a possibly successful login`() async throws {
         let fixture = try self.fixture()
         defer { fixture.cleanup() }

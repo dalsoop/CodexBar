@@ -145,7 +145,7 @@ extension UsageStore {
         if let card = self.openCodexHubCardState(for: provider), card.lastError == nil,
            card.lastRefreshAt != previousReadAt, let pool = card.pool
         {
-            state.phase = pool.isLinkedCopy || pool.isStale() ? .waitingForSync : .checked
+            state.phase = pool.isStale() ? .waitingForSync : .checked
         } else {
             state.phase = .failed(L("Could not refresh the account list. " +
                     "Your browser sign-in may still have succeeded. Try refreshing again."))
