@@ -72,6 +72,7 @@ extension StatusItemController {
             // rebuild force-closes the hovered submenu. Each reopen then triggered another rescan,
             // producing an infinite open/close/rebuild flicker loop (#2652).
             self.store.noteMenuOpened()
+            self.store.checkHubAccountsAfterBrowserReturn()
             self.agentSessions.refreshOnMenuOpen()
         }
 

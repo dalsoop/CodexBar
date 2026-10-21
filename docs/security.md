@@ -26,3 +26,5 @@
 Linux 표시 backend는 사용자 소유 runtime 디렉터리와 같은 사용자 소켓을 사용한다. 디렉터리 소유자 불일치나 symlink를 허용하여 다른 사용자에게 IPC를 열지 않는다. 어댑터 snapshot에는 계정 신원·CLI 경로·자격 설정을 넣지 않는다. 공급자 인증은 설치된 CLI에서 처리하고 터미널 로그인 출력을 데스크톱이 수집하지 않는다.
 
 CodexBar의 기존 HTTP server는 Opencodex 관리 서버와 별개다. 기본 loopback의 조회 경로가 열려 있다는 사실을 네트워크 바인딩에 적용하지 않는다. 비-loopback에서는 데이터 경로 bearer 인증과 평문 HTTP 전송의 명시적 수락을 요구한다. token이 있다는 이유로 TLS를 제공한다고 표시하거나 Opencodex 자격으로 재사용하지 않는다.
+
+Remote Link의 `connection.managementUrl`은 브라우저 권한의 근거가 아니다. 데이터 터널은 계정관리 UI를 제공하지 않는다. 연결된 client의 별도 브라우저 origin은 사용자 설정 또는 배포 설정으로 명시하며 HTTPS 원격 주소만 허용한다. 설정 UI는 userinfo·query·fragment·하위 경로·loopback이 있는 입력을 저장하지 않는다. 이 주소는 네이티브 키 관리·relay 쓰기 권한을 늘리지 않는다. Tailscale 관리 주소는 같은 tailnet 접근이 필요하다.

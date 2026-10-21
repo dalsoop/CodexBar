@@ -574,7 +574,7 @@ struct MenuDescriptor {
 
         // Show "Add Account" if no account, "Switch Account" if logged in
         if let targetProvider, store.settings.openCodexHubEnabled(for: targetProvider) {
-            entries.append(.action(L("Manage hub accounts..."), .manageOpenCodexHubAccounts(targetProvider)))
+            entries.append(.action(L("Add account or sign in again..."), .manageOpenCodexHubAccounts(targetProvider)))
         } else if let targetProvider,
                   let implementation = ProviderCatalog.implementation(for: targetProvider),
                   implementation.supportsLoginFlow

@@ -7,8 +7,11 @@
 "%@ used" = "%@ utilitzat";
 "%@, selected" = "%@, seleccionat";
 "%@-day limit" = "%@ límit de dies";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "Límit d'hores %@";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@ límit de minuts";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@d";
 "%@H" = "%@h";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Pressupost mensual";
 "Monthly credits" = "Crèdits mensual";
 "Monthly quota" = "Quota mensual";
+"Monthly usage" = "Monthly usage";
 "No data" = "Sense dades";
 "Not reported by %@" = "No informat per %@";
 "On-demand" = "Ús sota demanda";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Finestra setmanal";
 "Weekly quota" = "Quota setmanal";
 "Weekly tokens" = "tokens setmanal";
+"Weekly usage" = "Ús setmanal";
 "Window" = "Finestra d'ús";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "després del reinici";

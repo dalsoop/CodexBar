@@ -574,6 +574,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        self.store?.checkHubAccountsAfterBrowserReturn()
         self.cloudSyncCoordinator?.applicationDidBecomeActive()
         self.settingsWindowController?.refreshOpenCodexIfVisible()
     }

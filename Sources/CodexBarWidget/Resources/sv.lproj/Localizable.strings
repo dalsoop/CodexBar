@@ -7,8 +7,11 @@
 "%@ used" = "%@ använt";
 "%@, selected" = "%@, vald";
 "%@-day limit" = "%@-dagars gräns";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "%@-timmarsgräns";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@-minutersgräns";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@d";
 "%@H" = "%@t";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Månadsbudget";
 "Monthly credits" = "Månatlig Krediter";
 "Monthly quota" = "Månatlig Kvot";
+"Monthly usage" = "Monthly usage";
 "No data" = "Inga data";
 "Not reported by %@" = "Inte rapporterad av %@";
 "On-demand" = "Användning på begäran";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Veckofönster";
 "Weekly quota" = "Veckovis Kvot";
 "Weekly tokens" = "Veckovis token";
+"Weekly usage" = "Veckoanvändning";
 "Window" = "Användningsfönster";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "efter återställning";

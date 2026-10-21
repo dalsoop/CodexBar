@@ -377,11 +377,19 @@ struct BurnDownState {
         case .weekly: return W("Weekly")
         case .primary, .secondary, .tertiary:
             let title = self.entry.usageRows?.first { $0.id == selection.rawValue }?.title
+                ?? self.semanticTitle(for: selection)
                 ?? (selection == .primary ? metadata?.sessionLabel
                     : selection == .secondary ? metadata?.weeklyLabel : metadata?.opusLabel)
                 ?? "Usage"
             return W(title)
         }
+    }
+
+    /// Codex publishes semantic row ids (session/weekly/monthly), while intents can address physical slots.
+    private func semanticTitle(for selection: BurnWindowChoice) -> String? {
+        guard let window = self.window(for: selection) else { return nil }
+        let matches = self.entry.usageRows?.filter { $0.window == window } ?? []
+        return matches.count == 1 ? matches[0].title : nil
     }
 
     var selectedTitle: String {

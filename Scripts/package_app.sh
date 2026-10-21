@@ -288,6 +288,8 @@ SPARKLE_PUBLIC_KEY="${CODEXBAR_SPARKLE_PUBLIC_KEY:-AGCY8w5vHirVfGGDGc8Szc5iuOqup
 DEFAULT_OPENCODEX_HUB_SNAPSHOT_PATH='~/.swift-app-state/opencodex-hub-accounts.json'
 OPENCODEX_HUB_SNAPSHOT_PATH="${CODEXBAR_OPENCODEX_HUB_SNAPSHOT_PATH-$DEFAULT_OPENCODEX_HUB_SNAPSHOT_PATH}"
 OPENCODEX_HUB_NAME="${CODEXBAR_OPENCODEX_HUB_NAME-m5m1}"
+# Supply the current hub's browser origin when packaging fleet builds; never derive it from a data tunnel.
+OPENCODEX_HUB_MANAGEMENT_ORIGIN="${CODEXBAR_OPENCODEX_HUB_MANAGEMENT_ORIGIN-}"
 APP_GROUP_BASE="com.steipete.codexbar"
 AUTO_CHECKS=true
 if [[ "$LOWER_CONF" == "debug" ]]; then
@@ -397,6 +399,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CodexBarTeamID</key><string>${APP_TEAM_ID}</string>
     <key>CodexBarOpenCodexHubSnapshotPath</key><string>${OPENCODEX_HUB_SNAPSHOT_PATH}</string>
     <key>CodexBarOpenCodexHubName</key><string>${OPENCODEX_HUB_NAME}</string>
+    <key>CodexBarOpenCodexHubManagementOrigin</key><string>${OPENCODEX_HUB_MANAGEMENT_ORIGIN}</string>
     <key>UTExportedTypeDeclarations</key>
     <array>
         <dict>

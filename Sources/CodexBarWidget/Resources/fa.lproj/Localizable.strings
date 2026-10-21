@@ -7,8 +7,11 @@
 "%@ used" = "%@ مصرف‌شده";
 "%@, selected" = "%@، انتخاب شد";
 "%@-day limit" = "محدودیت روز %@";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "محدودیت ساعت %@";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "محدودیت دقیقه %@";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@روز";
 "%@H" = "%@س";
@@ -97,6 +100,7 @@
 "Monthly budget" = "بودجه ماهانه";
 "Monthly credits" = "ماهانه اعتبارات";
 "Monthly quota" = "ماهانه سهمیه";
+"Monthly usage" = "Monthly usage";
 "No data" = "داده ای وجود ندارد";
 "Not reported by %@" = "توسط %@ گزارش نشده است";
 "On-demand" = "استفاده بر حسب تقاضا";
@@ -178,6 +182,7 @@
 "Weekly Window" = "پنجره هفتگی";
 "Weekly quota" = "هفتگی سهمیه";
 "Weekly tokens" = "هفتگی توکن ها";
+"Weekly usage" = "استفاده هفتگی";
 "Window" = "پنجره استفاده";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "پس از تنظیم مجدد";

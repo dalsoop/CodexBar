@@ -48,3 +48,7 @@ mac-infra 감시 작업 재개·새 계정 상태의 기기 간 전달·실제 �
 최신 0.78.0 소스와 합친 결과에서 집중 테스트 92개(앱 Swift 66·공통 Swift 19·XCTest 7), 공통 테스트 565개, 빌드·정적·전체 언어·보조 실행기 lint 검사가 모두 종료 0이었다. 합성 화면 3개도 skip 없이 실행했다. 패키지와 위젯의 서명·번들 무결성, checkout을 읽을 수 없는 격리 환경의 리소스 로딩과 6초 실행 검사도 통과했다.
 
 실제 Opencodex 상태는 hub·서버 실행 중이며, 운영 상태와 키 목록 응답을 제품 파서가 정상 해석했다. 키 3개의 메타데이터만 읽었고 생성·변경·폐기는 하지 않았다. 운영 대시보드는 기본 TLS 검증과 HEAD 요청에서 HTTP 200이었다. 웹 본문·쿠키·원시 응답은 기록하지 않았다. 빌드 17112에서 명시적 앱 재열기가 기존 설정 창을 표시하도록 보완했다. 관련 44개 테스트·make check·서명·격리 실행 검증을 통과했고, 설치본의 실제 Opencodex 설정과 키 3개 행, 내장 대시보드 온라인 화면을 확인했다. 창 닫기 뒤 Finder 재열기와 선택 pane 유지도 확인했다. 창 없는 첫 실행의 도구 선택 timeout은 재열기로 복구할 수 있다. 실제 로그인 입력·인증 거절 경로는 별도로 검증하지 않았다.
+
+## 2026-10-21 follow-up prepared in PR #2
+
+Remote Link clients reported their SSH data tunnel as `connection.managementUrl`; opening it as account management returned HTTP 404. PR #2 now separates the browser's HTTPS management origin from that tunnel, supports a fleet-packaged default and an explicit provider setting, and explains missing configuration. The actual hub HTTPS origin returned HTML / HTTP 200 from both m1m1 and m5m2. The follow-up passed 49 focused tests and `make check` on m5m2. The source audit and screenshot are in [account-flow-audit-20261021.md](account-flow-audit-20261021.md). Existing build 17113 installation evidence above is preserved; PR #2 is not merged, published or installed.

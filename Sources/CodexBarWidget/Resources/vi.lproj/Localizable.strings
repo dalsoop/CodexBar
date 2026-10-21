@@ -7,8 +7,11 @@
 "%@ used" = "%@ đã dùng";
 "%@, selected" = "%@, đã chọn";
 "%@-day limit" = "Giới hạn ngày %@";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "Giới hạn giờ %@";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "Giới hạn phút %@";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@ngày";
 "%@H" = "%@giờ";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Ngân sách hàng tháng";
 "Monthly credits" = "Tín dụng hàng tháng";
 "Monthly quota" = "Hạn mức hàng tháng";
+"Monthly usage" = "Monthly usage";
 "No data" = "Không có dữ liệu";
 "Not reported by %@" = "Không được báo cáo bởi %@";
 "On-demand" = "Sử dụng theo yêu cầu";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Cửa sổ hàng tuần";
 "Weekly quota" = "Hạn mức hàng tuần";
 "Weekly tokens" = "mã thông báo hàng tuần";
+"Weekly usage" = "Hàng tuần Mức sử dụng";
 "Window" = "Cửa sổ sử dụng";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "sau khi thiết lập lại";

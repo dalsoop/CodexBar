@@ -7,8 +7,11 @@
 "%@ used" = "%@ kullanıldı";
 "%@, selected" = "%@, seçildi";
 "%@-day limit" = "%@ gün sınırı";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "%@ saat sınırı";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "%@ dakika sınırı";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@g";
 "%@H" = "%@sa";
@@ -97,6 +100,7 @@
 "Monthly budget" = "Aylık bütçe";
 "Monthly credits" = "Aylık Krediler";
 "Monthly quota" = "Aylık Kota";
+"Monthly usage" = "Monthly usage";
 "No data" = "Veri yok";
 "Not reported by %@" = "%@ tarafından bildirilmedi";
 "On-demand" = "İsteğe bağlı kullanım";
@@ -178,6 +182,7 @@
 "Weekly Window" = "Haftalık Pencere";
 "Weekly quota" = "Haftalık Kota";
 "Weekly tokens" = "Haftalık token";
+"Weekly usage" = "Haftalık kullanım";
 "Window" = "Kullanım penceresi";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "sıfırlamadan sonra";

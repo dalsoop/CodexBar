@@ -21,3 +21,7 @@ m5m1·m5m2·m1m1 모두 최신 머지본 149dee234의 빌드 17113을 설치했�
 남은 도구 제약은 완전히 종료된 앱의 첫 실행이다. 초기 창을 만들지 않으므로 첫 선택은 여전히 timeout일 수 있고, 실행된 앱을 한 번 더 선택하면 재열기가 설정 창을 표시한다. 사용자가 수동으로 메뉴를 열 필요는 없다. 앱 상태 조회 자체도 재열기를 일으킬 수 있어 닫힘 검증은 Finder로 전환한 뒤 수행했다. `LSUIElement` 제거·서명된 Info.plist 직접 수정·시스템 접근성 권한 초기화는 필요하지 않았다. 실제 로그인 입력·인증 거절 경로는 별도로 검증하지 않았으며, 페이지가 정상 표시된 것을 모든 인증 경로의 검증으로 확대하지 않는다.
 
 비밀값 없는 실행 결과는 로컬 `.dryforge/reopen/verification.json`에 기록한다. 운영 화면·키 이름·웹 본문·쿠키는 저장소의 검증 자료에 추가하지 않았다.
+
+## Remote Link account-management address in installed build 17113
+
+The installed client's `connection.managementUrl` is a loopback SSH data tunnel, not the hub's browser UI. m1m1's `http://127.0.0.1:65130/` returned HTTP 404. The central HTTPS management origin reported by the hub returned HTML / HTTP 200 from both m1m1 and m5m2 through Tailscale. Source changes and tests are prepared in PR #2; the installed build still needs the separately approved integration, publication and installation. See [the follow-up audit](account-flow-audit-20261021.md). This is independent of the intentionally unloaded account-snapshot watcher jobs, which remain subject to their existing recovery conditions.

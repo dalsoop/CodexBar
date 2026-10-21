@@ -2827,3 +2827,37 @@
 "Could not open the hub browser." = "Could not open the hub browser.";
 "Add or re-authenticate accounts in the hub browser. Credentials stay on the hub." = "Add or re-authenticate accounts in the hub browser. Credentials stay on the hub.";
 "The switch result is unknown. Refresh the hub before trying again." = "The switch result is unknown. Refresh the hub before trying again.";
+
+/* Hub account sign-in and usage periods. */
+"Opening account sign-in in your browser…" = "Opening account sign-in in your browser…";
+"Finish signing in in your browser. Return here to check the account list." = "Finish signing in in your browser. Return here to check the account list.";
+"Checking the account list…" = "Checking the account list…";
+"Account list checked. Confirm that your account appears; opening the browser does not complete sign-in." = "Account list checked. Confirm that your account appears; opening the browser does not complete sign-in.";
+"This Mac still has a read-only or outdated account list. A new sign-in may not appear until hub sync resumes." = "This Mac still has a read-only or outdated account list. A new sign-in may not appear until hub sync resumes.";
+"Could not open your browser. Try opening the account manager again." = "Could not open your browser. Try opening the account manager again.";
+"Could not reach the account manager. Check the hub connection and try again." = "Could not reach the account manager. Check the hub connection and try again.";
+"Could not refresh the account list. Your browser sign-in may still have succeeded. Try refreshing again." = "Could not refresh the account list. Your browser sign-in may still have succeeded. Try refreshing again.";
+"Hub accounts" = "Hub accounts";
+"Open the account manager in your browser, then add an account or sign in again. Your sign-in stays on the hub." = "Open the account manager in your browser, then add an account or sign in again. Your sign-in stays on the hub.";
+"For sign-in from another Mac, the account manager also offers device-code sign-in." = "For sign-in from another Mac, the account manager also offers device-code sign-in.";
+"Add account or sign in again..." = "Add account or sign in again...";
+"Refresh accounts" = "Refresh accounts";
+"Accounts: %@" = "Accounts: %@";
+"Read-only account list; last hub update is unknown." = "Read-only account list; last hub update is unknown.";
+"Hub list updated %@." = "Hub list updated %@.";
+"Last hub update is unknown." = "Last hub update is unknown.";
+"Monthly usage" = "Monthly usage";
+"%@-minute usage" = "%@-minute usage";
+"%@-day usage" = "%@-day usage";
+"%@-hour usage" = "%@-hour usage";
+"No accounts found. Add an account in your browser, then refresh this list." = "No accounts found. Add an account in your browser, then refresh this list.";
+"Account list not loaded. Choose Refresh accounts to check it." = "Account list not loaded. Choose Refresh accounts to check it.";
+"Finish sign-in in your browser, then refresh accounts." = "Finish sign-in in your browser, then refresh accounts.";
+"Account list checked. Verify your account is listed." = "Account list checked. Verify your account is listed.";
+"Account list is not current. Check hub sync." = "Account list is not current. Check hub sync.";
+"Account management needs attention. Open Settings." = "Account management needs attention. Open Settings.";
+"Hub HTTPS management address" = "Hub HTTPS management address";
+"https://your-hub.example" = "https://your-hub.example";
+"Save address" = "Save address";
+"Use the hub's management address, not 127.0.0.1 or its data API address. For a Tailscale address, this Mac must be connected to the same tailnet." = "Use the hub's management address, not 127.0.0.1 or its data API address. For a Tailscale address, this Mac must be connected to the same tailnet.";
+"Set the hub's HTTPS management address in Settings. The local data tunnel cannot open the account manager." = "Set the hub's HTTPS management address in Settings. The local data tunnel cannot open the account manager.";

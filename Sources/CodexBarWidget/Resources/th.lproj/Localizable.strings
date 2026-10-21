@@ -7,8 +7,11 @@
 "%@ used" = "%@ ใช้แล้ว";
 "%@, selected" = "เลือก %@ แล้ว";
 "%@-day limit" = "ขีดจำกัด %@ วัน";
+"%@-day usage" = "%@-day usage";
 "%@-hour limit" = "ขีดจำกัดในช่วง %@ ชั่วโมง";
+"%@-hour usage" = "%@-hour usage";
 "%@-minute limit" = "ขีดจำกัด %@ นาที";
+"%@-minute usage" = "%@-minute usage";
 "%@: %@" = "%@: %@";
 "%@D" = "%@วัน";
 "%@H" = "%@ชม.";
@@ -97,6 +100,7 @@
 "Monthly budget" = "งบประมาณรายเดือน";
 "Monthly credits" = "เครดิต รายเดือน";
 "Monthly quota" = "โควต้า รายเดือน";
+"Monthly usage" = "Monthly usage";
 "No data" = "ไม่มีข้อมูล";
 "Not reported by %@" = "ไม่ได้รายงานโดย %@";
 "On-demand" = "การใช้งานตามความต้องการ";
@@ -178,6 +182,7 @@
 "Weekly Window" = "หน้าต่างรายสัปดาห์";
 "Weekly quota" = "โควต้า รายสัปดาห์";
 "Weekly tokens" = "โทเค็น รายสัปดาห์";
+"Weekly usage" = "การใช้งานรายสัปดาห์";
 "Window" = "หน้าต่างการใช้งาน";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "หลังจากรีเซ็ต";

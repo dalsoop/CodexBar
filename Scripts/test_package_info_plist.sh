@@ -30,6 +30,7 @@ APP_TEAM_ID=TESTTEAM
 SPARKLE_PUBLIC_KEY=test-public-key
 OPENCODEX_HUB_SNAPSHOT_PATH='~/.swift-app-state/opencodex-hub-accounts.json'
 OPENCODEX_HUB_NAME=m5m1
+OPENCODEX_HUB_MANAGEMENT_ORIGIN=https://hub.example
 source "$PLIST_SCRIPT"
 
 if command -v plutil >/dev/null 2>&1; then
@@ -50,6 +51,7 @@ assert declarations == [{
 }]
 assert plist.get("CodexBarOpenCodexHubSnapshotPath") == "~/.swift-app-state/opencodex-hub-accounts.json"
 assert plist.get("CodexBarOpenCodexHubName") == "m5m1"
+assert plist.get("CodexBarOpenCodexHubManagementOrigin") == "https://hub.example"
 PY
 
 echo "Package Info.plist tests passed."
