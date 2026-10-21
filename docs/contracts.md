@@ -82,6 +82,10 @@ snapshot·계정 응답은 성공과 오류 모두 `Cache-Control: no-store`다.
 
 ## Opencodex 로컬 관리
 
+### Linked account membership reads
+
+A client with a current hub snapshot uses that snapshot. When the snapshot is missing or older than five minutes, it reads `ocx account list <provider> --json` without `--quota`; Remote Link rejects active quota refresh. This passive list supplies membership and current account state, grants no local switching authority, and does not establish when the hub last refreshed quota. Uniquely matching cached quota retains its source timestamp and an unavailable marker; missing or ambiguous quota remains missing. A failed passive list may fall back to the old snapshot without changing its timestamp. Hub and standalone reads continue to request quota. The existing 256 KiB output and 30-second execution limits apply to the whole roster, with no ten-account truncation.
+
 새 로컬 관리 연결의 입력은 선택한 ocx 실행 경로와 명시적인 사용자 요청이다. 경로가 비어 있으면 기존 실행 파일 탐색을 사용한다. 모든 프로세스는 셸 없는 인수 배열로 실행하며 원시 결과를 저장하거나 오류문으로 전달하지 않는다.
 
 | 기능 | 입력 | 확인하는 출력 | 실패 |
