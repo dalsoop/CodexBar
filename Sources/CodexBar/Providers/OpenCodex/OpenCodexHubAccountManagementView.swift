@@ -5,6 +5,7 @@ struct OpenCodexHubAccountManagementView: View {
     let provider: UsageProvider
     let store: UsageStore
     let openAccounts: @MainActor () async -> Void
+    @State private var managementOriginDraft = ""
 
     var body: some View {
         let state = self.store.openCodexHubManagementState(for: self.provider)
@@ -17,6 +18,17 @@ struct OpenCodexHubAccountManagementView: View {
                 Text(L("For sign-in from another Mac, the account manager also offers device-code sign-in."))
                     .font(.callout).foregroundStyle(.secondary)
             }
+            Text(L("Hub HTTPS management address")).font(.callout)
+            HStack {
+                TextField(L("https://your-hub.example"), text: self.$managementOriginDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { self.saveManagementOrigin() }
+                Button(L("Save address")) { self.saveManagementOrigin() }
+                    .disabled(!self.validManagementOriginDraft)
+            }
+            Text(L("Use the hub's management address, not 127.0.0.1 or its data API address. " +
+                    "For a Tailscale address, this Mac must be connected to the same tailnet."))
+                .font(.caption).foregroundStyle(.secondary)
             ViewThatFits(in: .horizontal) {
                 HStack { self.actionButtons }
                 VStack(alignment: .leading) { self.actionButtons }
@@ -54,6 +66,20 @@ struct OpenCodexHubAccountManagementView: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, 8)
+        .onAppear {
+            self.managementOriginDraft = self.store.settings.openCodexHubManagementOrigin(for: self.provider)
+        }
+    }
+
+    private var validManagementOriginDraft: Bool {
+        let address = self.managementOriginDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        return address.isEmpty || OpenCodexHubManagement.isRemoteManagementOrigin(address)
+    }
+
+    private func saveManagementOrigin() {
+        if self.store.settings.setOpenCodexHubManagementOrigin(self.managementOriginDraft, for: self.provider) {
+            self.managementOriginDraft = self.store.settings.openCodexHubManagementOrigin(for: self.provider)
+        }
     }
 
     @ViewBuilder

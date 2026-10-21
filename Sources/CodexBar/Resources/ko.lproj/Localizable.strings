@@ -2825,3 +2825,8 @@
 "Account list checked. Verify your account is listed." = "계정 목록을 확인했습니다. 추가한 계정이 보이는지 확인하세요.";
 "Account list is not current. Check hub sync." = "계정 목록이 최신이 아닙니다. 허브 동기화를 확인하세요.";
 "Account management needs attention. Open Settings." = "계정 관리 상태를 확인해 주세요. 설정을 열어 확인하세요.";
+"Hub HTTPS management address" = "허브 HTTPS 관리 주소";
+"https://your-hub.example" = "https://your-hub.example";
+"Save address" = "주소 저장";
+"Use the hub's management address, not 127.0.0.1 or its data API address. For a Tailscale address, this Mac must be connected to the same tailnet." = "127.0.0.1이나 데이터 API 주소 대신 허브의 관리 주소를 입력하세요. Tailscale 주소는 이 Mac도 같은 Tailscale 네트워크에 연결되어 있어야 합니다.";
+"Set the hub's HTTPS management address in Settings. The local data tunnel cannot open the account manager." = "설정에서 허브의 HTTPS 관리 주소를 입력하세요. 로컬 데이터 터널로는 계정 관리 화면을 열 수 없습니다.";

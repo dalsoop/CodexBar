@@ -177,6 +177,65 @@ struct OpenCodexHubManagementFlowTests {
         URL(string: "https://hub.example/#codex-set")!
     }
 
+    @Test
+    func `management settings reject credential input and invalidate an in flight browser destination`() async throws {
+        let fixture = try self.fixture()
+        defer { fixture.cleanup() }
+        #expect(fixture.settings.setOpenCodexHubManagementOrigin("https://management.example", for: .codex))
+        #expect(!fixture.settings.setOpenCodexHubManagementOrigin("https://user:private@hub.example", for: .codex))
+        #expect(fixture.settings.openCodexHubManagementOrigin(for: .codex) == "https://management.example")
+        var continuation: CheckedContinuation<URL, any Error>?
+        var opens = 0
+        let task = Task { @MainActor in
+            await fixture.store.openHubAccountManagement(
+                .codex,
+                resolveURL: { _, _ in try await withCheckedThrowingContinuation { continuation = $0 } },
+                openURL: { _ in opens += 1; return true })
+        }
+        while continuation == nil {
+            await Task.yield()
+        }
+        #expect(fixture.settings.setOpenCodexHubManagementOrigin("https://other.example", for: .codex))
+        #expect(fixture.settings.setOpenCodexHubManagementOrigin("https://management.example", for: .codex))
+        continuation?.resume(returning: self.url)
+        await task.value
+        #expect(opens == 0)
+    }
+
+    @Test
+    func `a real shaped link status uses the saved management origin without opening the tunnel`() async throws {
+        let fixture = try self.fixture()
+        defer { fixture.cleanup() }
+        let executable = fixture.files.root.appendingPathComponent("ocx")
+        let status = #"""
+        {
+          "schemaVersion": 1,
+          "runtimeRole": "client",
+          "proxy": {
+            "running": true
+          },
+          "connection": {
+            "state": "connected",
+            "transport": "link",
+            "managementUrl": "http://127.0.0.1:65130"
+          }
+        }
+        """#
+        try "#!/bin/sh\nprintf '%s' '\(status)'\n".write(to: executable, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+        fixture.settings.codexOpenCodexHubExecutablePath = executable.path
+        var opened: [URL] = []
+        #expect(fixture.settings.setOpenCodexHubManagementOrigin("https://management.example", for: .codex))
+        let result = await fixture.store.openHubAccountManagement(.codex, openURL: { opened.append($0); return true })
+        #expect(result == nil)
+        #expect(opened.map(\.absoluteString) == ["https://management.example/#codex-set"])
+        #expect(fixture.settings.setOpenCodexHubManagementOrigin("", for: .codex))
+        let message = await fixture.store.openHubAccountManagement(.codex, openURL: { opened.append($0); return true })
+        #expect(message == L("Set the hub's HTTPS management address in Settings. " +
+                "The local data tunnel cannot open the account manager."))
+        #expect(opened.count == 1)
+    }
+
     private func fixture() throws -> CodexWorkspacesNavigationFixture {
         let fixture = try CodexWorkspacesNavigationFixture(userDefaults: InMemoryUserDefaults())
         fixture.settings.codexOpenCodexHubEnabled = true

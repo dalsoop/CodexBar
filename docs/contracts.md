@@ -4,7 +4,7 @@
 
 공급자의 허브 계정 소스를 켜면 일반 계정 추가·로그인 액션은 `Manage hub accounts...`로 바뀐다. 설정의 로컬 Codex 계정 편집도 숨긴다. 재인증 필요 카드의 액션 역시 같은 공급자의 허브 관리 화면을 연다. 이 경로는 데이터 API 키 관리와 별개이며 로컬 OAuth 홈이나 로그인 사본을 만들지 않는다.
 
-사용자 클릭마다 `ocx status --json`을 새로 읽는다. schemaVersion 1과 실행 중 proxy를 확인하고, hub는 `hub.managementPublicOrigin`, connected client는 `connection.managementUrl`, standalone은 `dashboard.url`의 정확한 loopback 주소만 쓴다. 데이터 주소나 옛 snapshot으로 관리 주소를 추정하지 않는다. URL에는 userinfo·query·기존 fragment·하위 경로를 허용하지 않고, 공통 대시보드 주소 검증의 HTTPS·loopback HTTP·유효한 port 규칙을 적용한다.
+사용자 클릭마다 `ocx status --json`을 새로 읽는다. schemaVersion 1과 실행 중 proxy를 확인하고, hub는 `hub.managementPublicOrigin`, connected client는 `connection.managementUrl`, standalone은 `dashboard.url`의 정확한 loopback 주소만 쓴다. 데이터 주소나 옛 snapshot으로 관리 주소를 추정하지 않는다. Remote Link client(`connection.transport == "link"`)의 `managementUrl`은 데이터 터널이므로 브라우저 주소로 쓰지 않는다. 이 경우 공급자 설정의 `openCodexHubManagementOrigin` 또는 배포본의 `CodexBarOpenCodexHubManagementOrigin`으로 명시한 원격 HTTPS origin만 사용한다. 그 밖의 client도 loopback 주소를 열지 않는다. 주소가 없으면 설정 안내를 내며 데이터 터널이나 로컬 대시보드를 대신 열지 않는다. 주소 변경은 대기 중 브라우저 동작을 무효화한다. URL에는 userinfo·query·기존 fragment·하위 경로를 허용하지 않고, 공통 대시보드 주소 검증의 HTTPS·loopback HTTP·유효한 port 규칙을 적용한다.
 
 Anthropic·xAI는 `#providers?provider=<공급자>&tab=accounts`, Codex는 `#codex-set`을 기본 브라우저로 연다. 기존 서버 UI가 기본 Codex 로그인과 추가 계정의 서로 다른 인증 흐름을 소유한다. 브라우저 열기를 인증 성공으로 표시하거나 계정 전환을 실행하지 않는다. 관리 세션·pairing grant·계정 토큰을 CodexBar에 가져오지 않으며 인증은 사용자가 정상 관리 화면에서 완료한다. client의 로컬 네이티브 키 관리·내장 대시보드 권한은 그대로 거절한다.
 

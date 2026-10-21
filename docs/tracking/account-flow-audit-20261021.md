@@ -10,6 +10,7 @@ At the start of this audit, m1m1 had version 0.78.0 build 17110, commit fcb1d1ab
 
 | Problem | Resulting behavior | Implementation |
 | --- | --- | --- |
+| A Remote Link data tunnel was treated as a browser management origin. | Connected links require a separately configured HTTPS browser origin; missing configuration explains the settings step and opens no browser. | `OpenCodexHubManagement`, provider settings and package metadata |
 | A generic management link opened the browser without explaining account addition or returning to the app. | Settings explains the handoff, provides an account-add/sign-in action and a separate account-list refresh, and displays the known accounts. Codex users see the existing server's device-code alternative for another Mac. | `OpenCodexHubAccountManagementView`, `PreferencesProvidersPane` |
 | Opening the browser had no app-owned continuation or progress and could be repeated while resolving the destination. | The app tracks opening, browser handoff, checking, checked, outdated copy and failure. Busy actions are deduplicated. Opening a browser never establishes OAuth success. | `UsageStore+OpenCodexHubManagement` |
 | Returning from the browser did not explicitly check the hub account list. | App activation or reopening the root menu checks once per handoff. Repeated activation does not keep polling. Manual refresh remains available. | `CodexbarApp`, `StatusItemController+Menu` |
@@ -27,7 +28,11 @@ The server behavior was read at opencodex v2.88.0, commit `6936d9885d8a9bda93017
 
 ## Boundaries and remaining operational work
 
-The current status-reported, validated management URL remains the browser destination. There is no guessed data-plane fallback, new OAuth implementation, credential copy, authentication automation or expanded native key-management permission. The server owns the actual account-add and reauthentication interaction. Native non-hub login entry points remain separate.
+A follow-up report exposed a role-contract mistake: Remote Link clients report the SSH data tunnel as `connection.managementUrl`. On m1m1 this was `http://127.0.0.1:65130`, whose root returned HTTP 404; m5m2 reported another loopback tunnel. The hub itself reported an HTTPS Tailscale management origin, whose root returned HTTP 200 with HTML from both m1m1 and m5m2. These probes read no accounts or credentials.
+
+Remote Link clients now require a separate HTTPS browser origin, supplied by the provider setting or fleet package metadata. Other connected clients reject loopback management addresses too; standalone remains restricted to its own loopback UI. Settings rejects credential-bearing URLs before persistence, and a changed management address invalidates a pending browser open. Without a usable origin the app explains how to configure it instead of opening the data tunnel. Fleet packaging accepts `CODEXBAR_OPENCODEX_HUB_MANAGEMENT_ORIGIN`; the release operator must supply the current hub-reported origin, rather than a hardcoded host. Tailscale origins require the same tailnet and are not public Internet access.
+
+The current role and connection are still read on every click. There is no guessed data-plane fallback, new OAuth implementation, credential copy, authentication automation or expanded native key-management permission. The server owns the actual account-add and reauthentication interaction. Native non-hub login entry points remain separate.
 
 Client snapshots are maintained by mac-infra jobs outside this application. The latest operational record says those jobs are intentionally unloaded pending actual quota recovery and their existing apply/check/idempotence procedure. A new account on the hub may therefore be absent from this Mac's list. Repeated local refreshes cannot restart that delivery mechanism. This patch identifies the stale/read-only result and does not resume those jobs or alter the proxy.
 
@@ -46,3 +51,9 @@ The two rendering tests ran with proof output enabled, producing six account-pan
 ![Synthetic hub account sign-in panel in Korean with a stale list](../images/hub-account-sign-in-ko.png)
 
 ![Synthetic Codex widget preserving the monthly title](../images/codex-monthly-usage.png)
+
+### Follow-up management-origin verification
+
+Build Pipeline job `6FBA3081-4468-434D-8A02-62E254019612` on m5m2 passed 49 focused tests (22 application Swift Testing cases, 26 shared Swift Testing cases and one proof-enabled XCTest rendering case). The added cases use a real-shaped Remote Link status document and a fake executable to verify both the missing-origin refusal and the saved-origin browser handoff. They also verify that invalid/credential-bearing addresses are never saved, that changing and restoring the address cancels a pending browser destination, that the provider config survives a Codable round trip, and that a configured origin cannot substitute for runtime authority. The package Info.plist test verifies propagation of the independent management-origin metadata. The updated Korean screenshot above comes from this run.
+
+The follow-up job also passed `make check`: SwiftLint reported zero violations in 3,111 files; app locales passed across 22 catalogs / 2,734 English keys; widget catalogs passed across 23 locales / 199 keys. The final full-index diff over `Sources`, `Tests`, `TestsLinux` and `Scripts` matches m5m2 with SHA-256 `68a76019dcc7087af44f3af10cf8ea11b08e776e5615e5c6b6f9e89b3cd70f0e`. This supersedes the earlier source fingerprint for the updated branch.

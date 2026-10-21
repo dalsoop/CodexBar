@@ -44,3 +44,9 @@ python3 Integrations/Linux/tests/test_package.py
 ```
 
 Qt runtime 검증은 합성 HOME/XDG·가짜 CLI와 QT_QPA_PLATFORM=offscreen·QT_QUICK_BACKEND=software 환경을 사용한다. 이 명령은 실제 설치·autostart·Omarchy shell 재시작을 수행하지 않는다. glibc 데스크톱과 musl CLI는 다른 산출물이므로 CLI 호환성으로 데스크톱 실행을 보장하지 않는다.
+
+## Remote Link account management
+
+A Remote Link client's `connection.managementUrl` is the SSH data tunnel and cannot host the account-management page. Set the provider's **Hub HTTPS management address** in Settings to the current hub's `hub.managementPublicOrigin`. Use an origin only, without a page path, query, fragment or credentials. CodexBar adds the appropriate provider page. The save action accepts HTTPS remote origins only. Clearing the override restores the packaged default.
+
+When preparing an approved fleet release on m5m1, provide `CODEXBAR_OPENCODEX_HUB_MANAGEMENT_ORIGIN` to `Scripts/package_app.sh` using the current hub-reported management origin. It is embedded as `CodexBarOpenCodexHubManagementOrigin`, independently of each client's tunnel port, so fleet clients can open management without entering the address individually. Do not substitute `dataPublicOrigin`, a tunnel origin or a guessed host. Verify the packaged Info.plist contains the intended credential-free origin before signing and publication. Packaging this metadata neither pairs the browser nor changes the hub's access controls. A Tailscale origin requires membership and connectivity in the same tailnet.

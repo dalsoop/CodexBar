@@ -69,9 +69,7 @@ extension UsageStore {
     @discardableResult
     func openHubAccountManagement(
         _ provider: UsageProvider,
-        resolveURL: @MainActor (String?, OpenCodexHubProvider) async throws -> URL = {
-            try await OpenCodexHubManagement.accountsURL(executablePath: $0, provider: $1)
-        },
+        resolveURL: (@MainActor (String?, OpenCodexHubProvider) async throws -> URL)? = nil,
         openURL: @MainActor (URL) -> Bool) async -> String?
     {
         guard self.settings.openCodexHubEnabled(for: provider),
@@ -81,7 +79,14 @@ extension UsageStore {
         var state = self.newHubManagementState(provider, phase: .opening)
         self.openCodexHubManagementStates[provider] = state
         do {
-            let url = try await resolveURL(state.executablePath, hubProvider)
+            let url: URL = if let resolveURL {
+                try await resolveURL(state.executablePath, hubProvider)
+            } else {
+                try await OpenCodexHubManagement.accountsURL(
+                    executablePath: state.executablePath,
+                    provider: hubProvider,
+                    managementOrigin: self.settings.openCodexHubManagementOrigin(for: provider))
+            }
             guard self.openCodexHubManagementState(for: provider)?.id == state.id else { return nil }
             guard !Task.isCancelled else {
                 self.openCodexHubManagementStates[provider] = nil
@@ -97,9 +102,14 @@ extension UsageStore {
                 self.openCodexHubManagementStates[provider] = nil
                 return nil
             }
-            let message = error is OpenCodexHubBrowserError
-                ? L("Could not open your browser. Try opening the account manager again.")
-                : L("Could not reach the account manager. Check the hub connection and try again.")
+            let message: String = if error is OpenCodexHubManagementError {
+                L("Set the hub's HTTPS management address in Settings. " +
+                    "The local data tunnel cannot open the account manager.")
+            } else if error is OpenCodexHubBrowserError {
+                L("Could not open your browser. Try opening the account manager again.")
+            } else {
+                L("Could not reach the account manager. Check the hub connection and try again.")
+            }
             state.phase = .failed(message)
             self.openCodexHubManagementStates[provider] = state
             return message

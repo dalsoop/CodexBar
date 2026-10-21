@@ -2857,3 +2857,8 @@
 "Account list checked. Verify your account is listed." = "Account list checked. Verify your account is listed.";
 "Account list is not current. Check hub sync." = "Account list is not current. Check hub sync.";
 "Account management needs attention. Open Settings." = "Account management needs attention. Open Settings.";
+"Hub HTTPS management address" = "Hub HTTPS management address";
+"https://your-hub.example" = "https://your-hub.example";
+"Save address" = "Save address";
+"Use the hub's management address, not 127.0.0.1 or its data API address. For a Tailscale address, this Mac must be connected to the same tailnet." = "Use the hub's management address, not 127.0.0.1 or its data API address. For a Tailscale address, this Mac must be connected to the same tailnet.";
+"Set the hub's HTTPS management address in Settings. The local data tunnel cannot open the account manager." = "Set the hub's HTTPS management address in Settings. The local data tunnel cannot open the account manager.";

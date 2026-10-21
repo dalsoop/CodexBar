@@ -42,10 +42,10 @@ final class OpenCodexHubAccountManagementRenderTests: XCTestCase {
                         store: fixture.store,
                         openAccounts: {})
                         .padding(24)
-                        .frame(width: 620, height: 420, alignment: .topLeading)
+                        .frame(width: 620, height: 540, alignment: .topLeading)
                         .background(Color(nsColor: .windowBackgroundColor))
                     let hosting = NSHostingView(rootView: view)
-                    hosting.frame = NSRect(x: 0, y: 0, width: 620, height: 420)
+                    hosting.frame = NSRect(x: 0, y: 0, width: 620, height: 540)
                     hosting.appearance = NSAppearance(named: .aqua)
                     hosting.layoutSubtreeIfNeeded()
                     RunLoop.main.run(until: Date().addingTimeInterval(0.1))

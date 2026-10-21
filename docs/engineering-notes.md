@@ -27,3 +27,5 @@ Xcode Python이 packaged-app 격리 테스트의 ambient-home에 Library/Caches/
 Codex 대화 제목의 DB 위치를 프로세스 전체에서 캐시하면 사용자 config 수정이나 새 state DB 버전을 놓친다. 한 번의 제목 보강 안에서만 탐색을 재사용하고 다음 호출에서 다시 확인한다. 임의 프로젝트 config는 신뢰하지 않는다. rollout 이후 유효 설정을 복원할 수 없고 악의적인 checkout이 다른 파일로 유도할 수 있기 때문에 사용자 config와 명시적 환경의 제한된 경로만 해석한다.
 
 문자열 lookup의 한국어 검사가 통과해도 AppKit이 Swift task 밖에서 Form을 늦게 그리면 일부 캡처가 영어로 나올 수 있다. 테스트 기본 언어는 영어이며 TaskLocal을 잡은 호출과 실제 그리기 callback의 범위가 다르기 때문이다. main-loop의 동기 TaskLocal 범위 안에서 실제 뷰를 만들고 촬영하며, MainActor 가짜 소스로 조회를 끝낸 상태를 확인한다. 공용 defaults를 바꾸지 않고 픽셀 OCR·접근성·isRefreshing false를 함께 확인한다. OCR의 공백 생략만 정규화하고 문구 자체를 삭제해 검사를 통과시키지 않는다.
+
+Opencodex 2.88.0의 Remote Link client는 `connection.managementUrl`에 `serverUrl`과 같은 loopback SSH 데이터 터널을 보고한다. m1m1의 65130과 m5m2의 52293에서 확인했으며 m1m1의 `/` GET은 404였다. 계정관리 화면으로 열지 않는다. 별도 HTTPS 관리 origin을 배포 또는 공급자 설정에서 주고, 패키징 시 `CODEXBAR_OPENCODEX_HUB_MANAGEMENT_ORIGIN`을 현재 허브의 검증된 `hub.managementPublicOrigin`으로 제공한다. 주소를 코드에서 호스트명으로 추정하지 않는다. Tailscale 관리 주소는 공개 인터넷 주소가 아니다.
