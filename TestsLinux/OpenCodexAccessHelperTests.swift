@@ -3,9 +3,13 @@ import Testing
 @testable import CodexBarCore
 
 struct OpenCodexAccessHelperTests {
-    @Test func `OpenCodexAccess helper uses exact id patch and contains package runtime and output`() async throws {
-        let node = try #require(ProcessInfo.processInfo.environment["PATH"]?.split(separator: ":")
-            .map { String($0) + "/node" }.first { FileManager.default.isExecutableFile(atPath: $0) })
+    /// The helper runs under Node; CI images without `node` on PATH skip this test instead of failing it.
+    static let nodePath: String? = ProcessInfo.processInfo.environment["PATH"]?.split(separator: ":")
+        .map { String($0) + "/node" }.first { FileManager.default.isExecutableFile(atPath: $0) }
+
+    @Test(.enabled(if: Self.nodePath != nil, "node is not on PATH"))
+    func `OpenCodexAccess helper uses exact id patch and contains package runtime and output`() async throws {
+        let node = try #require(Self.nodePath)
         let helper = try #require(OpenCodexAccessRenameInstallation.helperURL)
         let script = #"""
         import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, linkSync, symlinkSync, rmSync } from 'node:fs';
@@ -124,10 +128,11 @@ extension OpenCodexAccessHelperTests {
     private static let bundledBun =
         "/opt/homebrew/lib/node_modules/@bitkyc08/opencodex/node_modules/bun/bin/bun.exe"
 
-    @Test(.enabled(if: FileManager.default.isExecutableFile(atPath: Self.bundledBun)))
+    @Test(
+        .enabled(if: FileManager.default.isExecutableFile(atPath: Self.bundledBun)),
+        .enabled(if: Self.nodePath != nil, "node is not on PATH"))
     func `OpenCodexAccess actual Bun keeps synthetic module diagnostics out of native output`() async throws {
-        let node = try #require(ProcessInfo.processInfo.environment["PATH"]?.split(separator: ":")
-            .map { String($0) + "/node" }.first { FileManager.default.isExecutableFile(atPath: $0) })
+        let node = try #require(Self.nodePath)
         let helper = try #require(OpenCodexAccessRenameInstallation.helperURL)
         let script = #"""
         import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, copyFileSync, rmSync } from 'node:fs';
