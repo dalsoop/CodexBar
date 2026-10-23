@@ -108,7 +108,11 @@ extension StatusItemController {
         let dashboard = self.store.openAIDashboard
         let dashboardUsageBreakdown = OpenAIDashboardDailyBreakdown.removingSkillUsageServices(
             from: dashboard?.usageBreakdown ?? [])
+        let resetNews = CodexResetAnnouncementsPresentation.make(
+            store: self.store.codexResetAnnouncements,
+            now: Date())
         var parts = [
+            "resetNews=\(resetNews?.heightFingerprint ?? "disabled")",
             "costEnabled=\(self.settings.costUsageEnabled ? "1" : "0")",
             "codexLocalCost=\(self.settings.codexLocalSessionCostLedgerEnabled ? "1" : "0")",
             "costStyle=\(self.settings.costSummaryDisplayStyle.rawValue)",

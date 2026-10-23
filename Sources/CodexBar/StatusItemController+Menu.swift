@@ -681,7 +681,10 @@ extension StatusItemController {
         // A Codex or Grok card that reads an opencodex hub pool shows the hub's notices and accounts; its own
         // account rows are off (see `codexAccountMenuDisplay(for:)`). Several hub accounts follow the
         // multi-account layout; otherwise the active account's card renders below as usual.
-        self.addOpenCodexHubMenuItemsIfNeeded(provider: context.currentProvider, to: menu)
+        self.addOpenCodexHubMenuItemsIfNeeded(
+            provider: context.currentProvider,
+            to: menu,
+            width: context.menuWidth)
         if self.addOpenCodexHubAccountCards(
             provider: context.currentProvider,
             to: menu,
@@ -837,6 +840,10 @@ extension StatusItemController {
                 menu.addItem(.separator())
             }
         } else {
+            self.addCodexResetAnnouncementsSection(
+                to: menu,
+                provider: context.currentProvider,
+                width: context.menuWidth)
             let addedOpenAIWebItems = self.addMenuCards(to: menu, context: context, captureMenu: captureMenu)
             self.addOpenAIWebItemsIfNeeded(
                 to: menu,

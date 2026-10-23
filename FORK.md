@@ -16,6 +16,8 @@ This is a long-lived, self-managed fork of [steipete/CodexBar](https://github.co
 
 ## Fork-only features
 
+- Configurable public Codex reset news in Settings → Providers → Codex and the Codex menu
+  (`docs/reset-announcements.md`).
 - opencodex hub accounts for Claude, Codex and Grok (`docs/configuration.md`, "opencodex hub snapshot").
 - The app state mirror `~/.swift-app-state/codexbar.json` and `codexbar app-state [--json]` (`docs/app-state.md`), so scripts and agents can see what the menu shows.
 
