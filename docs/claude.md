@@ -36,6 +36,8 @@ same inline dashboard pattern used by the OpenAI API provider.
 
 Incomplete proxy records with an explicit null `stop_reason`, positive input, zero output, and no cache counters are excluded from token and cost totals until a completed record arrives. Their day and model stay visible with an **Incomplete** marker and an excluded-request count. Known usage remains a partial subtotal; an incomplete-only period stays unavailable rather than becoming zero. Older caches are rebuilt once to apply this distinction. Missing `stop_reason` alone retains compatibility with older complete logs.
 
+Completed requests for models without a known price keep their token usage and report unpriced coverage. Usage & Spend retains the priced subtotal from the other requests and days as a lower bound; unknown prices do not become zero. Fully priced history keeps its usual estimated totals.
+
 ## Data sources + selection order
 
 ### Default selection (debug menu disabled)
@@ -134,6 +136,10 @@ later requests. There is no recurring process scan; other process groups and oth
 This cleanup applies to the reusable PTY session, not the separate one-shot usage or auth-status commands.
 
 ## Keychain prompt policy (Claude OAuth)
+
+If CodexBar reports that its Claude OAuth cache is temporarily unavailable in macOS Keychain, check
+that the login keychain is unlocked in Keychain Access, then retry Refresh. This guidance does not
+change the existing prompt policy or switch to another credential source.
 
 - Preferences → Providers → Claude → Keychain prompt policy.
 - Options:
@@ -348,6 +354,8 @@ is stored on the token account in the config file and does not change quota fetc
 - Outputs:
   - Session + weekly + model-specific percent used.
   - A missing Web session stays absent instead of becoming a synthetic 0% session; measured weekly and extra windows stay visible. Older cached placeholders remain readable.
+  - A successful usage response that reports no quota window at all (Claude Free accounts return null `five_hour` and
+    `seven_day`) is reported as limits unavailable instead of “No usage yet”; spend and credit rows stay visible.
   - Daily Routines extra window when returned by the usage API.
   - Extra usage spend/limit (if enabled). Compact Overview keeps this section when no measured quota bars exist, including Enterprise accounts with unavailable limits.
   - Remaining Usage credits balance (if enabled). Custom menu bar layouts can show it with the **Balance** element
@@ -640,7 +648,7 @@ Model-scoped weekly-window proof (synthetic data, no real accounts or credential
   - Claude/Vertex filtering checks raw lines for possible metadata markers before walking decoded metadata. IDs and model names are checked in their decoded fields, so `@` and `_vrtx_` in tool content do not trigger that walk. Vertex-only scans skip decoding lines without any possible marker; escaped markers retain the full classifier and existing attribution rules.
   - Uses per-model token counts (input, cache read/create, output).
   - Oversized local token or cost values cannot crash history scanning. An overflowing token total stays unavailable while independent counts and finite dollar estimates remain visible; raw rows are retained for later repricing.
-  - Deduplicates cumulative streaming chunks by `message.id + requestId`. When `requestId` is absent,
+  - Deduplicates cumulative streaming chunks by `message.id + requestId`, accepting Cowork's `request_id` alias so audit and embedded transcript copies count once. When both request fields are absent,
     exact, nonblank `sessionId + message.id` (or Cowork's `session_id`) identifies repeated response snapshots. Distinct explicit request
     IDs and distinct fallback sessions remain separate. Rows without sufficient identity are counted individually.
     Within a file, the final complete cumulative chunk wins, including later appends. Copied records retain the
@@ -651,13 +659,14 @@ Model-scoped weekly-window proof (synthetic data, no real accounts or credential
   - Claude-swap history contributes to the combined Claude total, including when an explicit `$CLAUDE_CONFIG_DIR` is set. Shared-history symlinks are scanned once, copied responses use the same deduplication as native logs, and missing profile directories do not prevent other homes from contributing. Local cost records do not establish per-account attribution.
 - Quota-week menu cards reuse the immutable snapshot’s day projection, warmed in the background. New snapshots and changed bucket time zones rebuild it; reset observations and the current time remain live on every card build.
 - Cache:
+  - Bundled fallback pricing includes Claude Mythos 5.1 and Mythos 5 at [Anthropic's published rates](https://platform.claude.com/docs/en/about-claude/pricing). The report-semantics update reprices retained usage without rereading unchanged transcripts.
   - GPT usage recorded through Claude Code uses the bundled OpenAI model's long-context boundary (272K for supported models), while retaining catalog rates. Uncached input and cache-read/create tokens all contribute to the prompt length. Saved reports are recalculated after pricing corrections without discarding retained Codex history.
   - Native provider cache: `~/Library/Caches/CodexBar/cost-usage/claude-v6.json`. This is a small manifest; its sibling `claude-v6.json.fragments` directory holds immutable JSON shards grouped by transcript project/directory, including source identities and empty-file parse offsets.
   - Report memo: `~/Library/Caches/CodexBar/cost-usage/claude-v6.report-memo.json` stores the daily report and references project shards for source stamps. It is reused only while transcript inventory, cache/pricing artifacts, requested window, and report-semantics revision still match.
   - An unreadable transcript root or directory fails the refresh without replacing the last valid cache or report memo. Restoring access allows the next refresh to reuse that history; genuinely missing paths still count as removed sources.
   - A pricing catalog replacement during a refresh preserves certification of the parsed transcript window. The next refresh applies the replacement prices to cached rows without reparsing unchanged transcripts, including after a restart. Externally replaced transcript caches still require window certification again.
   - Unchanged sources reuse the memo even when a menu refresh bypasses the scan debounce. Explicit rescans still reparse transcripts, but byte-identical cache and report-memo content is not rewritten; an unchanged rebuild retains its previous scan timestamp.
-  - Changed refreshes write only affected project shards and the manifests. Report aggregates remain in the memo header; a large individual project or report can still require larger writes. Unchanged shards are neither read nor re-encoded while their snapshot remains in the bounded memory memo. The memo retains at most eight snapshots under a conservative encoded-size budget; schema, time-zone, source, window, filter, and pricing checks remain independent.
+  - Changed refreshes write only affected project shards and the manifests. Loaded usage dictionaries reserve capacity for their source files, and unchanged immutable file records are reused across refreshes to reduce peak memory on large histories. Report aggregates remain in the memo header; a large individual project or report can still require larger writes. Unchanged shards are neither read nor re-encoded while their snapshot remains in the bounded memory memo. The memo retains at most eight snapshots under a conservative encoded-size budget; schema, time-zone, source, window, filter, and pricing checks remain independent.
   - Writers commit shards before atomically replacing the manifest, then remove unreferenced shards under the same cross-process lock used by readers. A process interrupted before the manifest replacement leaves the previous snapshot intact. Missing or corrupt referenced shards reject the snapshot rather than returning partial totals. Clone-capable macOS volumes reuse unchanged blocks within a changed shard; other volumes use full shard writes.
   - Existing single-file JSON caches load and migrate on their next save. Migration itself does not require rereading transcripts, and compact row fields and parser revisions are unchanged. Older CodexBar builds can rebuild these caches from the original logs if downgraded. Public report JSON is unchanged.
   - The app's Usage & Spend refresh uses `claude-history-v6.json` and its own report memo. The two app refreshes do not replace each other's retained rows or restart each other's transcript scans. Once both have established their windows, same-day append refreshes read changed tails once per cache.

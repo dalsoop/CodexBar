@@ -773,6 +773,7 @@ struct LocalizationLanguageCatalogTests {
             "Pro",
             "SuperGrok OAuth",
             "Token",
+            "Trae CN",
             "Zed cookie",
             "ZeroGPU",
             "__raycast_session=…; csrf_token=…",
@@ -1031,7 +1032,7 @@ extension LocalizationLanguageCatalogTests {
     @Test
     func `settings sharing and sync prose do not fall back to English in supported languages`() {
         let keys = [
-            "Usage data will appear once the app refreshes.",
+            "%@ is unavailable. Edit the widget to choose a provider.",
             "No synced Macs yet.",
             "Sync settings and providers across your Macs via iCloud",
             "Hide native Codex when OpenCodex is present",

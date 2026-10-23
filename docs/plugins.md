@@ -145,7 +145,10 @@ defineProvider({
 - `topLevel` (optional, default `true`): gives an enabled plugin its own provider-switcher tab when Merge Icons is on. Set to `false` to keep an appended card.
   Plugin tabs show a quota gauge from the most constrained reported seven-day window, otherwise the first available
   primary, secondary, tertiary, or extra window. They follow the used/remaining display preference; unknown usage
-  stays unavailable. Enabled plugins can also be selected in **Settings → Menu Bar → Overview**; they share the
+  stays unavailable. Merged meter icons use the primary window for the thick lane and the secondary window for the
+  thin lane, following the used/remaining preference. When both are absent, the existing tertiary/extra-window
+  single-meter fallback remains. The switcher gauge and Icon & percent value retain their weekly-first selection.
+  Enabled plugins can also be selected in **Settings → Menu Bar → Overview**; they share the
   six-provider limit and render their existing usage card. Overview selections retain the same string-array format,
   so older builds can still read the built-in providers while ignoring unknown plugin IDs.
 - `endpoints`: 1–16 declared network origins. A fixed endpoint is a normalized HTTPS origin such as
@@ -376,6 +379,11 @@ Percentages must be finite and are clamped to 0–100. Window minutes are positi
 and a three-letter uppercase currency. Dates are JavaScript `Date` values or ISO-8601 strings. Snapshot identity is
 always scoped to the manifest's instance ID. Data confidence defaults to `unknown`. Details allow at most 8 sections, 24 rows per section, 120 chart points,
 and 120 characters per detail string. Wrong types and limit violations fail the whole fetch instead of truncating it.
+
+Rate windows may include `quotaLimit` (a positive finite number) and `quotaUnit` (`credits`, `requests`, or an
+ISO currency code) alongside `usedPercent`. Built-in provider cards use these units for monthly daily targets;
+without an absolute allowance it retains percentage units. Do not invent an allowance or reset date.
+
 Named extra windows accept an optional `usageKnown` boolean (default `true`). Set it to `false` for reset-only limits:
 the window remains visible as **Unavailable**, and its placeholder `usedPercent` is not presented as measured usage.
 Detail rows accept optional `progress` (a finite consumed fraction from 0 through 1) and `usageValue` (finite raw usage).
@@ -472,6 +480,9 @@ error and can also be deleted.
 
 ## Security and limitations
 
+User-plugin HTTP sessions are scoped to a single request and released after success or failure.
+Reloading or removing plugins does not leave inactive sessions retained by their delegates. Redirect and credential-isolation rules remain unchanged.
+
 Treat a plugin like code you run locally, even though its host capabilities are narrow. Read the manifest and source,
 verify every origin, and avoid installing files from untrusted repositories. Approval grants the listed origin network
 authority; DNS changes after approval are outside CodexBar's threat model. Secrets are never placed in URLs or logged,
@@ -564,6 +575,9 @@ evicts only the cached entry observed by that fetch (each domain is pinned for t
 are never erased. User plugins have no persistent cookie cache, so rejection is a validated no-op for them.
 
 ## Bundled provider examples
+
+[Trae CN](traecn.md) uses the shared browser-session broker and two read-only JSON POSTs. Its short-lived
+service token stays within one refresh; no native fetcher or parallel credential store is needed.
 
 Bundled scripts own requests, error classification, and snapshot mapping; Swift supplies registration, settings, and credential/origin validation. These examples illustrate contracts that differ from the minimal plugin:
 
