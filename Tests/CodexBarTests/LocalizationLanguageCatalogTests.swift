@@ -841,6 +841,10 @@ struct LocalizationLanguageCatalogTests {
             "~/.local/bin/cswap",
             "~/Library/Application Support/JetBrains/IntelliJIdea2024.3",
             "~/.swift-app-state/opencodex-hub-accounts.json",
+            // Product names and the example hub address are shared with English.
+            "Opencodex",
+            "Opencodex Dashboard",
+            "https://your-hub.example",
             // Measurement units and numeric formats are shared with English.
             "spend_performance_percent",
             "spend_performance_rate",
