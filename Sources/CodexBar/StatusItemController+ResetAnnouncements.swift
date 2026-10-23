@@ -11,10 +11,12 @@ extension StatusItemController {
                   now: Date())
         else { return }
         menu.addItem(self.makeMenuCardItem(
-            CodexResetAnnouncementsContent(presentation: presentation)
-                .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
-                .padding(.vertical, 6)
-                .frame(width: width, alignment: .leading),
+            { resolvedWidth in
+                CodexResetAnnouncementsContent(presentation: presentation)
+                    .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
+                    .padding(.vertical, 6)
+                    .frame(width: resolvedWidth, alignment: .leading)
+            },
             id: "codexResetAnnouncements",
             width: width,
             heightCacheScope: provider.rawValue,

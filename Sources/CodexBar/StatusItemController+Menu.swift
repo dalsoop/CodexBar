@@ -262,7 +262,8 @@ extension StatusItemController {
         let menuWidth = self.menuCardWidth(
             for: enabledProviders,
             selectedProvider: selectedProvider,
-            descriptor: descriptor)
+            descriptor: descriptor,
+            renderedMenu: menu)
 
         let hasTokenSwitcher = menu.items.contains { $0.view is TokenAccountSwitcherView }
         let hasCodexSwitcher = menu.items.contains { $0.view is CodexAccountSwitcherView }
@@ -284,7 +285,9 @@ extension StatusItemController {
         let providerSwitcherWidthMatches = (menu.items.first?.view as? ProviderSwitcherView).map { view in
             abs(view.frame.width - menuWidth) <= 0.5
         } ?? false
+        let switcherQuotaLayoutMatches = self.providerSwitcherHasCurrentQuotaLayout(in: menu)
         let canSmartUpdate = self.shouldMergeIcons &&
+            switcherQuotaLayoutMatches &&
             switcherProviderIDs.count > 1 &&
             !isOverviewSelected &&
             switcherProvidersMatch &&
@@ -326,6 +329,7 @@ extension StatusItemController {
         }
 
         let canPreserveProviderSwitcher = self.shouldMergeIcons &&
+            switcherQuotaLayoutMatches &&
             switcherProviderIDs.count > 1 &&
             switcherProvidersMatch &&
             switcherUsageBarsShowUsedMatch &&
@@ -561,6 +565,7 @@ extension StatusItemController {
         let t0 = CACurrentMediaTime()
         defer { self.logChartRenderDurationIfSlow("addOverviewRows(\(rows.count))", startedAt: t0) }
 
+        let overviewLayout = self.settings.mergedOverviewLayout
         let spendProviders = providerScopes.spend
         let spendModel = self.overviewSpendDashboardModel(providers: spendProviders)
         let spendProviderCount = self.overviewSpendSubscriptionCount(providers: spendProviders)
@@ -574,10 +579,12 @@ extension StatusItemController {
                 knownCostProviderCount: knownCounts.cost,
                 knownTokenProviderCount: knownCounts.tokens)
             let summaryItem = self.makeMenuCardItem(
-                OverviewSpendSummaryCardView(
-                    summary: spendSummary,
-                    days: spendModel.requestedDays,
-                    width: menuWidth),
+                { resolvedWidth in
+                    OverviewSpendSummaryCardView(
+                        summary: spendSummary,
+                        days: spendModel.requestedDays,
+                        width: resolvedWidth)
+                },
                 id: "overviewSpendSummary",
                 width: menuWidth,
                 heightCacheScope: "overviewSpendSummary",
@@ -626,11 +633,13 @@ extension StatusItemController {
                 model: model,
                 width: menuWidth) : nil
             let item = self.makeMenuCardItem(
-                OverviewMenuCardRowView(
-                    model: model,
-                    storageText: storageText,
-                    width: menuWidth,
-                    layout: self.settings.mergedOverviewLayout),
+                { resolvedWidth in
+                    OverviewMenuCardRowView(
+                        model: model,
+                        storageText: storageText,
+                        width: resolvedWidth,
+                        layout: overviewLayout)
+                },
                 id: identifier,
                 width: menuWidth,
                 heightCacheScope: provider.rawValue,
@@ -770,7 +779,9 @@ extension StatusItemController {
         }
 
         menu.addItem(self.makeMenuCardItem(
-            UsageMenuCardView(model: model, layoutModel: renderedModel, width: context.menuWidth),
+            { resolvedWidth in
+                UsageMenuCardView(model: model, layoutModel: renderedModel, width: resolvedWidth)
+            },
             id: "menuCard",
             width: context.menuWidth,
             heightCacheScope: context.currentProvider.rawValue,
@@ -997,62 +1008,6 @@ extension StatusItemController {
         menu.persistentActionDelegate = self
         StatusMenuAppearance.pin(menu)
         return menu
-    }
-
-    private func makeProviderSwitcherItem(
-        providers: [UsageProvider],
-        includesOverview: Bool,
-        selected: ProviderSwitcherSelection,
-        menu: NSMenu,
-        width: CGFloat) -> NSMenuItem
-    {
-        let view = ProviderSwitcherView(
-            providers: providers,
-            pluginProviders: self.topLevelUserProviderPlugins(),
-            selected: selected,
-            includesOverview: includesOverview,
-            width: width,
-            showsIcons: self.settings.switcherShowsIcons,
-            iconProvider: { [weak self] provider in
-                self?.switcherIcon(for: provider) ?? NSImage()
-            },
-            pluginIconProvider: { [weak self] plugin in
-                self?.userPluginSwitcherIcon(for: plugin) ?? NSImage()
-            },
-            weeklyRemainingProvider: { [weak self] provider in
-                self?.switcherWeeklyRemaining(for: provider)
-            },
-            onSelect: { [weak self, weak menu] selection in
-                guard let self, let menu else { return }
-                MenuSwitchFlickerProbe.debugLog("onSelect \(selection)")
-                var provider: UsageProvider?
-                self.preservingMergedSwitcherContentCachesDuringInvalidation {
-                    switch selection {
-                    case .overview:
-                        self.settings.mergedMenuLastSelectedWasOverview = true
-                        provider = self.resolvedMenuProvider()
-                    case let .provider(selectedProvider):
-                        self.settings.mergedMenuLastSelectedWasOverview = false
-                        self.selectedMenuProvider = selectedProvider
-                        provider = selectedProvider.firstPartyProvider
-                    }
-                    switch selection {
-                    case .overview:
-                        // Provider-specific by design: Codex is the persisted fallback for an empty overview.
-                        self.lastMenuProvider = (provider ?? .codex).instanceID
-                    case let .provider(provider):
-                        self.lastMenuProvider = provider
-                    }
-                    self.lastMergedSwitcherSelection = selection
-                    self.refreshProviderSelectionDependentUI(deferRendering: true)
-                }
-                self.requestProviderSwitcherMenuRebuild(menu, provider: provider)
-            })
-        let item = NSMenuItem()
-        item.title = ""
-        item.view = view
-        item.isEnabled = false
-        return item
     }
 
     private func makeTokenAccountSwitcherItem(
@@ -1317,18 +1272,22 @@ extension StatusItemController {
         }
 
         if layoutModel.hasUsageContent {
-            let usageView = UsageMenuCardHeaderAndUsageSectionView(
-                model: model,
-                layoutModel: layoutModel,
-                bottomPadding: bottomPadding,
-                width: width)
+            let usageView = { (resolvedWidth: CGFloat) in
+                UsageMenuCardHeaderAndUsageSectionView(
+                    model: model,
+                    layoutModel: layoutModel,
+                    bottomPadding: bottomPadding,
+                    width: resolvedWidth)
+            }
             let usageSubmenu = self.makeUsageSubmenu(
                 provider: provider,
                 webItems: webItems,
                 hasInlineCostDashboard: layoutModel.inlineUsageDashboard != nil,
                 width: width)
             menu.addItem(self.makeMenuCardItem(
-                usageView,
+                { resolvedWidth in
+                    usageView(resolvedWidth)
+                },
                 id: "menuCardUsage",
                 width: width,
                 heightCacheScope: provider.rawValue,
@@ -1336,12 +1295,16 @@ extension StatusItemController {
                 submenu: usageSubmenu,
                 containsInteractiveControls: true))
         } else {
-            let headerView = UsageMenuCardHeaderSectionView(
-                model: layoutModel,
-                showDivider: false,
-                width: width)
+            let headerView = { (resolvedWidth: CGFloat) in
+                UsageMenuCardHeaderSectionView(
+                    model: layoutModel,
+                    showDivider: false,
+                    width: resolvedWidth)
+            }
             menu.addItem(self.makeMenuCardItem(
-                headerView,
+                { resolvedWidth in
+                    headerView(resolvedWidth)
+                },
                 id: "menuCardHeader",
                 width: width,
                 heightCacheScope: provider.rawValue,
@@ -1357,15 +1320,19 @@ extension StatusItemController {
 
         if hasCredits {
             addSectionSeparator()
-            let creditsView = UsageMenuCardCreditsSectionView(
-                model: model,
-                showBottomDivider: false,
-                topPadding: sectionSpacing,
-                bottomPadding: creditsBottomPadding,
-                width: width)
+            let creditsView = { (resolvedWidth: CGFloat) in
+                UsageMenuCardCreditsSectionView(
+                    model: model,
+                    showBottomDivider: false,
+                    topPadding: sectionSpacing,
+                    bottomPadding: creditsBottomPadding,
+                    width: resolvedWidth)
+            }
             let creditsSubmenu = webItems.hasCreditsHistory ? self.makeCreditsHistorySubmenu(width: width) : nil
             menu.addItem(self.makeMenuCardItem(
-                creditsView,
+                { resolvedWidth in
+                    creditsView(resolvedWidth)
+                },
                 id: "menuCardCredits",
                 width: width,
                 heightCacheScope: provider.rawValue,
@@ -1378,13 +1345,17 @@ extension StatusItemController {
         if hasExtraUsage {
             addSectionSeparator()
             let extraUsageSubmenu = self.makeOpenAIAPIUsageSubmenu(provider: provider, width: width)
-            let extraUsageView = UsageMenuCardExtraUsageSectionView(
-                model: model,
-                topPadding: sectionSpacing,
-                bottomPadding: bottomPadding,
-                width: width)
+            let extraUsageView = { (resolvedWidth: CGFloat) in
+                UsageMenuCardExtraUsageSectionView(
+                    model: model,
+                    topPadding: sectionSpacing,
+                    bottomPadding: bottomPadding,
+                    width: resolvedWidth)
+            }
             menu.addItem(self.makeMenuCardItem(
-                extraUsageView,
+                { resolvedWidth in
+                    extraUsageView(resolvedWidth)
+                },
                 id: "menuCardExtraUsage",
                 width: width,
                 heightCacheScope: provider.rawValue,
@@ -1409,7 +1380,7 @@ extension StatusItemController {
         }
     }
 
-    private func switcherIcon(for provider: UsageProvider) -> NSImage {
+    func switcherIcon(for provider: UsageProvider) -> NSImage {
         if let brand = ProviderBrandIcon.image(for: provider) {
             return brand
         }
