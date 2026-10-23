@@ -707,13 +707,6 @@ struct LocalizationLanguageCatalogTests {
         #expect(miniMaxLabel == "45% kullanıldı")
     }
 
-    /// The fork's product names and example hub address, shared with English in the Italian catalog.
-    private static let italianForkSharedLabels: Set = [
-        "Opencodex",
-        "Opencodex Dashboard",
-        "https://your-hub.example",
-    ]
-
     @Test
     func `italian localization matches English catalog and includes current UI labels`() throws {
         let root = URL(fileURLWithPath: #filePath)
@@ -857,7 +850,7 @@ struct LocalizationLanguageCatalogTests {
             "spend_tools_milliseconds",
         ]
         let unchanged = Set(english.keys.filter { italian[$0] == english[$0] })
-        #expect(unchanged == intentionallyUnchanged.union(Self.italianForkSharedLabels))
+        #expect(unchanged == intentionallyUnchanged)
 
         let warningFormat = try #require(italian["quota_warning_notification_body"])
         let warning = String(
