@@ -100,11 +100,9 @@
 "Monthly" = "Місячний";
 "Monthly Bobcoins" = "Bobcoins на місяць";
 "Monthly budget" = "Місячний бюджет";
-"Monthly credits" = "Щомісяця Кредити";
-"Monthly quota" = "Щомісяця Квота";
-"Monthly usage" = "Monthly usage";
 "Monthly credits" = "Щомісячні кредити";
 "Monthly quota" = "Місячна квота";
+"Monthly usage" = "Monthly usage";
 "No data" = "Немає даних";
 "Not reported by %@" = "Не повідомляє %@";
 "On-demand" = "Використання за вимогою";
@@ -181,11 +179,9 @@
 "Weekly" = "Тижневий";
 "Weekly (7-day)" = "Тижневий (7 днів)";
 "Weekly Window" = "Тижневе вікно";
-"Weekly quota" = "Щотижня Квота";
-"Weekly tokens" = "Щотижня жетони";
-"Weekly usage" = "Щотижневе використання";
 "Weekly quota" = "Тижнева квота";
 "Weekly tokens" = "Токени за тиждень";
+"Weekly usage" = "Тижневе використання";
 "Window" = "Вікно використання";
 "ZeroGPU" = "ZeroGPU";
 "after reset" = "після скидання";
