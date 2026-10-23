@@ -91,7 +91,7 @@ public struct OpenCodexAccessRenameInstallation: Equatable, Sendable {
     public let helper: String
 
     static var helperURL: URL? {
-        Bundle.module.url(forResource: "rename", withExtension: "mjs")
+        CodexBarCoreResources.bundle?.url(forResource: "rename", withExtension: "mjs")
     }
 
     public static func resolve(executable: String) throws -> Self {

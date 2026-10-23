@@ -1,5 +1,11 @@
 # 확인된 함정
 
+SwiftPM's generated `Bundle.module` accessor can look only in the app root and the original build
+directory, while packaged resources live in `Contents/Resources`. The OpenCodex rename helper must use
+`CodexBarCoreResources.bundle`, just like other Core resources. The packaged launch smoke test catches
+this startup trap by denying access to the checkout; a successful launch on the build machine alone
+does not verify resource portability.
+
 WebKit의 `.linkActivated`는 실제 사용자 입력의 증거가 아니다. 외부 리소스가 없는 합성 페이지의 로드 타이머에서 `navigator.userActivation.isActive == false`를 기록한 뒤 DOM `.click()`을 실행해도 이 탐색 유형이 관찰됐다. 이 값으로 사용자 동작을 판정하던 대시보드 컨트롤러는 네트워크 탐색을 취소하면서도 외부 브라우저 기록 클로저를 한 번 호출했다. `evaluateJavaScript`가 입력 컨텍스트에 영향을 줄 수 있으므로 API에서 직접 실행한 `.click()`만으로 무제스처 재현을 주장하지 않는다. 웹 탐색 정책은 항상 사용자 동작 증거 없이 origin을 분류하고 외부 주소를 안내 상태에 보류한다. 외부 브라우저는 네이티브 안내 버튼 콜백에서만 연다. 회귀 검증은 실제 WKNavigationAction을 생산 세션과 컨트롤러로 전달해 일반 링크·새 창 링크·페이지 타이머의 자동 클릭 모두 확인 전 브라우저 호출 0회, 버튼 콜백 후 정확한 주소 1회를 확인한다. 기본 설정의 자동 팝업은 WebKit이 먼저 막으므로 실행 결과와 후속 동일 origin 탐색으로 검증하며, 무제스처 nil-target 탐색이 생산 정책에 도달했다고 주장하지 않는다.
 
 Opencodex 2.88.0의 rename CLI는 ID가 없으면 같은 문자열을 이름으로 다시 찾는다. 선택 뒤 대상이 삭제되고 다른 키의 이름이 그 ID와 같아지면 잘못된 키를 변경할 수 있다. 사전 목록 조회와 사후 응답 검증만으로는 경쟁 상태를 막을 수 없다. 정확한 ID PATCH 경로를 사용하고 해당 충돌을 가짜 관리 모듈로 재현한다. 지원하지 않는 설치에서는 CLI로 되돌아가지 않는다.
