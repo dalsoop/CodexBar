@@ -148,6 +148,24 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
         }
     }
 
+    func test_switcherQuotasKeepHubInventoryOrderAndUnknownAccounts() {
+        var accounts = Self.pool(.openai).accounts
+        accounts[0] = OpenCodexHubAccount(
+            idSuffix: "0001", label: nil, email: "a***a@example.com", isActive: false)
+        let pool = OpenCodexHubPool(provider: .openai, accounts: accounts, switchable: true, origin: .hubLocal)
+        let (controller, _) = self.makeController(provider: .codex, pool: pool, layout: .stacked)
+        defer { controller.releaseStatusItemsForTesting() }
+        let quotas = controller.switcherAccountQuotas(for: .codex)
+        XCTAssertEqual(quotas.map(\.id), ["opencodex-hub:1", "opencodex-hub:2", "opencodex-hub:3"])
+        XCTAssertEqual(quotas.map(\.isActive), [false, true, false])
+        XCTAssertNil(quotas[0].percent)
+        XCTAssertEqual(quotas[1].percent, 47)
+        XCTAssertEqual(quotas[2].percent, 90)
+        controller.settings.usageBarsShowUsed = true
+        XCTAssertEqual(controller.switcherAccountQuotas(for: .codex)[1].percent, 53)
+        XCTAssertTrue(controller.switcherAccountQuotas(for: .grok).isEmpty)
+    }
+
     func test_longHubNoticeWrapsInsideTheProviderMenuWidth() throws {
         let (controller, _) = self.makeController(provider: .codex, pool: Self.pool(.openai), layout: .stacked)
         defer { controller.releaseStatusItemsForTesting() }

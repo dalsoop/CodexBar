@@ -16,6 +16,9 @@ This is a long-lived, self-managed fork of [steipete/CodexBar](https://github.co
 
 ## Fork-only features
 
+- Per-account quota meters and responsive rows in the merged provider switcher
+  (`docs/provider-switcher-accounts.md`).
+
 - Configurable public Codex reset news in Settings → Providers → Codex and the Codex menu
   (`docs/reset-announcements.md`).
 - opencodex hub accounts for Claude, Codex and Grok (`docs/configuration.md`, "opencodex hub snapshot").

@@ -128,12 +128,16 @@ extension StatusItemController {
 
         for provider in self.store.enabledFirstPartyProvidersForDisplay() {
             let tokenSignature = self.tokenSnapshotReadinessSignature(for: provider)
+            let accountQuotas = self.switcherAccountQuotas(for: provider.instanceID).map {
+                "\($0.id.count):\($0.id):\($0.percent.map(String.init(describing:)) ?? "unknown"):\($0.isActive)"
+            }.joined(separator: "|")
             let usageHistoryVisible = self.store.supportsPlanUtilizationHistory(for: provider) &&
                 !self.store.shouldHidePlanUtilizationMenuItem(for: provider)
             parts.append(
                 [
                     provider.rawValue,
                     "token=\(tokenSignature)",
+                    "switcherAccounts=\(accountQuotas)",
                     "hubPending=\(self.store.openCodexHubCardState(for: provider)?.switchStatus.isPending == true)",
                     "statusComponents=\(self.statusComponentsRenderSignature(for: provider))",
                     "refreshing=\(self.store.shouldShowRefreshingMenuCardIndicator(for: provider) ? "1" : "0")",
