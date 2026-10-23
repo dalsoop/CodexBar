@@ -25,3 +25,14 @@ m5m1·m5m2·m1m1 모두 최신 머지본 149dee234의 빌드 17113을 설치했�
 ## Remote Link account-management address in installed build 17113
 
 The installed client's `connection.managementUrl` is a loopback SSH data tunnel, not the hub's browser UI. m1m1's `http://127.0.0.1:65130/` returned HTTP 404. The central HTTPS management origin reported by the hub returned HTML / HTTP 200 from both m1m1 and m5m2 through Tailscale. Source changes and tests are prepared in PR #2; the installed build still needs the separately approved integration, publication and installation. See [the follow-up audit](account-flow-audit-20261021.md). This is independent of the intentionally unloaded account-snapshot watcher jobs, which remain subject to their existing recovery conditions.
+
+## Optimized local preview startup failure
+
+On 2026-10-24, a locally rebuilt optimized app passed the isolated packaged-launch check but aborted
+under the existing user settings shortly after startup. The crash stack includes `swift_task_dealloc`
+and `UsageStore.scheduleDebouncedSharedSpendDashboardObservation()` in
+`UsageStore+SpendDashboardPublication.swift`. The root cause is not isolated. This does not establish
+that the reset feed or an optimizer defect caused the failure. The installer restored the previous
+app automatically. A signed local preview using the debug main executable from the same source
+passed the packaged-launch check and remained running after installation. This debug preview is a
+local UI verification workaround; the optimized startup failure remains unresolved.
