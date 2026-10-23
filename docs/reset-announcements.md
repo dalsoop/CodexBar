@@ -45,7 +45,7 @@ eligibility or current limits. Check the account's own usage view before acting.
 ## Verification
 
 ```sh
-make test-fast FILTER='CodexResetAnnouncements'
+make test-fast FILTER='CodexResetAnnouncements|StatusMenuOpenCodexHubAccountsTests'
 make check
 ```
 

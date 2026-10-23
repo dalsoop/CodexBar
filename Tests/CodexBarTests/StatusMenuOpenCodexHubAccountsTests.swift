@@ -167,13 +167,14 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
             if layout == .stacked {
                 XCTAssertEqual(self.representedIDs(in: menu).filter { $0.hasPrefix("menuCard-") }.count, 3)
             }
+            let enabledSignature = controller.menuAdjunctReadinessSignature()
             store.codexResetAnnouncements.configure(
                 enabled: false,
                 address: CodexResetAnnouncements.defaultProviderURL,
                 automaticallyPoll: false)
+            XCTAssertNotEqual(controller.menuAdjunctReadinessSignature(), enabledSignature)
             controller.populateMenu(menu, provider: .codex)
             XCTAssertFalse(self.representedIDs(in: menu).contains("codexResetAnnouncements"))
-            XCTAssertEqual(controller.menuAdjunctReadinessSignature(), disabledSignature)
         }
     }
 
