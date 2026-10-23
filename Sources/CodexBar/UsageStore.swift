@@ -22,6 +22,11 @@ extension UsageStore {
         _ = self.claudeSwapRevision
         _ = self.openCodexHubCardStates
         _ = self.openCodexHubManagementStates
+        _ = self.codexResetAnnouncements.snapshot
+        _ = self.codexResetAnnouncements.error
+        _ = self.codexResetAnnouncements.isRefreshing
+        _ = self.codexResetAnnouncements.isEnabled
+        _ = self.codexResetAnnouncements.providerURL
         _ = self.tokenSnapshotPublications
         _ = self.tokenErrors
         _ = self.tokenRefreshInFlight
@@ -178,6 +183,7 @@ final class UsageStore {
     /// Codex and Grok cards that read an opencodex hub pool.
     var openCodexHubCardStates: [UsageProvider: OpenCodexHubCardState] = [:]
     var openCodexHubManagementStates: [UsageProvider: OpenCodexHubManagementState] = [:]
+    let codexResetAnnouncements = CodexResetAnnouncementsStore()
     @ObservationIgnored var _test_openCodexHubRefreshOverride: (@MainActor (UsageProvider) async -> Void)?
     /// Hub-enabled Codex and Grok cards that read their own sources because this Mac has no hub source.
     var openCodexHubNativeFallbacks: Set<UsageProvider> = []

@@ -108,7 +108,7 @@ extension UsageStore {
         let throughputScope: ProviderModelRateLimitScope? = isLive
             ? self.settings.modelRateLimitScope(for: provider)
             : account?.tokenAccountID.map { .tokenAccount($0) }
-        return UsageMenuCardView.Model.Input(
+        var input = UsageMenuCardView.Model.Input(
             provider: provider,
             throughputPresentation: snapshot?.throughput.flatMap {
                 var presentation = ProviderCatalog.implementation(for: provider)?.throughputPresentation(
@@ -181,6 +181,11 @@ extension UsageStore {
                     historySelection: account?.historySelection,
                     usesLiveAccount: isLive)
                 : [])
+        if provider == .codex {
+            input.resetAnnouncements = CodexResetAnnouncementsPresentation.make(
+                store: self.codexResetAnnouncements, now: now)
+        }
+        return input
     }
 
     private func menuCardSessionEquivalentForecast(

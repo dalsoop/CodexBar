@@ -195,6 +195,7 @@ struct UsageMenuCardView: View {
         var creditsHintText: String?
         var creditsHintCopyText: String?
         var limitResetCredits: LimitResetCreditsPresentation?
+        var resetAnnouncements: CodexResetAnnouncementsPresentation?
         var cloudCredits: ProviderCostSection?
         var providerCost: ProviderCostSection?
         let tokenUsage: TokenUsageSection?
@@ -678,6 +679,10 @@ private struct UsageMenuCardUsageContentView: View {
                 }
                 LimitResetCreditsContent(presentation: resetCredits)
             }
+            if let announcements = self.model.resetAnnouncements {
+                if self.showsSectionDividers { Divider() }
+                CodexResetAnnouncementsContent(presentation: announcements)
+            }
             if self.model.showsOverviewSupplementalContent(compact: self.compactMetrics) {
                 self.supplementalContent
             }
@@ -1002,6 +1007,7 @@ extension UsageMenuCardView.Model {
             creditsHintText: codexCreditLimitDetail ?? redacted.creditsHintText,
             creditsHintCopyText: codexCreditLimitDetail ?? redacted.creditsHintCopyText,
             limitResetCredits: Self.limitResetCredits(input: input),
+            resetAnnouncements: input.provider == .codex ? input.resetAnnouncements : nil,
             cloudCredits: Self.cloudCreditsSection(input: input),
             providerCost: providerCost,
             tokenUsage: tokenUsage,
