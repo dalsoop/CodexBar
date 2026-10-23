@@ -7,7 +7,8 @@ read_when:
 # Provider switcher account meters
 
 Each provider tab shows a separate mini-meter for each cached account in its selected account source.
-Meter order follows the account cards. The active account's fill is fully opaque; other fills are dimmed.
+Paused hub registrations are omitted from both usage cards and meters; the hub management inventory
+retains them. Masked emails are never used to merge account identities. Meter order follows the account cards. The active account's fill is fully opaque; other fills are dimmed.
 An account with unavailable usage keeps a dim empty track and an unavailable-usage tooltip. Hovering a
 meter identifies the account by its ordinal and marks the active account.
 

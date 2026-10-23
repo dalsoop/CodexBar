@@ -107,20 +107,20 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
         menu.items.compactMap { $0.representedObject as? String }
     }
 
-    func test_projectionCarriesEveryAccountsQuotaAndGatesSwitching() {
+    func test_projectionCarriesAvailableAccountsQuotaAndGatesSwitching() {
         let pool = Self.pool(.openai)
         let accounts = OpenCodexHubAccountProjection.accounts(for: pool, allowsSwitching: true)
-        XCTAssertEqual(accounts.map(\.id.opaqueID), ["1", "2", "3"])
-        XCTAssertEqual(accounts.map(\.provider), [.codex, .codex, .codex])
+        XCTAssertEqual(accounts.map(\.id.opaqueID), ["1", "2"])
+        XCTAssertEqual(accounts.map(\.provider), [.codex, .codex])
         XCTAssertEqual(accounts.map(\.displayLabel), [
-            "m***n@example.com (go)", "a***e@example.com (pro)", "c***c@example.com",
+            "m***n@example.com (go)", "a***e@example.com (pro)",
         ])
-        XCTAssertEqual(accounts.map(\.isActive), [false, true, false])
+        XCTAssertEqual(accounts.map(\.isActive), [false, true])
         // Only an inactive, unpaused account of a switchable pool can be switched to.
-        XCTAssertEqual(accounts.map(\.canActivate), [true, false, false])
+        XCTAssertEqual(accounts.map(\.canActivate), [true, false])
         XCTAssertEqual(accounts[0].snapshot?.primary?.windowMinutes, 30 * 24 * 60)
         XCTAssertEqual(accounts[1].snapshot?.primary?.usedPercent, 53)
-        XCTAssertEqual(accounts[2].error, L("Disabled"))
+        XCTAssertTrue(accounts.allSatisfy { $0.error == nil })
         XCTAssertEqual(
             ClaudeSwapAccountMenuDisplay.label(for: accounts[0], hidePersonalInfo: true),
             L("Account %@", "1"))
@@ -131,7 +131,7 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
             for: Self.pool(.openai, switchable: false, origin: .snapshot(hubName: "hub-mac", updatedAt: Date())),
             allowsSwitching: true)
         XCTAssertTrue(hubOnly.allSatisfy { !$0.canActivate })
-        XCTAssertEqual(hubOnly.count, 3)
+        XCTAssertEqual(hubOnly.count, 2)
     }
 
     func test_stackedLayoutShowsEveryHubAccountCardInsteadOfTheSubmenu() {
@@ -142,7 +142,7 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
             let menu = controller.makeMenu(for: provider)
             controller.menuWillOpen(menu)
             let ids = self.representedIDs(in: menu)
-            XCTAssertEqual(ids.filter { $0.hasPrefix("menuCard") }, ["menuCard-0", "menuCard-1", "menuCard-2"])
+            XCTAssertEqual(ids.filter { $0.hasPrefix("menuCard") }, ["menuCard-0", "menuCard-1"])
             XCTAssertFalse(menu.items.contains { $0.title == L("Switch opencodex hub account") })
             XCTAssertFalse(ids.contains("openCodexHubSwitcher"))
         }
@@ -156,14 +156,52 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
         let (controller, _) = self.makeController(provider: .codex, pool: pool, layout: .stacked)
         defer { controller.releaseStatusItemsForTesting() }
         let quotas = controller.switcherAccountQuotas(for: .codex)
-        XCTAssertEqual(quotas.map(\.id), ["opencodex-hub:1", "opencodex-hub:2", "opencodex-hub:3"])
-        XCTAssertEqual(quotas.map(\.isActive), [false, true, false])
+        XCTAssertEqual(quotas.map(\.id), ["opencodex-hub:1", "opencodex-hub:2"])
+        XCTAssertEqual(quotas.map(\.isActive), [false, true])
         XCTAssertNil(quotas[0].percent)
         XCTAssertEqual(quotas[1].percent, 47)
-        XCTAssertEqual(quotas[2].percent, 90)
         controller.settings.usageBarsShowUsed = true
         XCTAssertEqual(controller.switcherAccountQuotas(for: .codex)[1].percent, 53)
         XCTAssertTrue(controller.switcherAccountQuotas(for: .grok).isEmpty)
+    }
+
+    func test_pausedRegistrationDoesNotDuplicateUsageCardsOrMeters() {
+        let pool = OpenCodexHubPool(
+            provider: .openai,
+            accounts: [
+                .init(
+                    idSuffix: "in__",
+                    label: "Team",
+                    email: "a***e@example.com",
+                    isActive: false,
+                    isPaused: true),
+                .init(idSuffix: "1111", label: "Team", email: "a***e@example.com", isActive: true),
+                .init(idSuffix: "2222", label: "Team", email: "a***e@example.com", isActive: false),
+            ],
+            switchable: true,
+            origin: .hubLocal)
+        let projected = OpenCodexHubAccountProjection.accounts(for: pool, allowsSwitching: true)
+        // Equal masked identities are not proof of a duplicate: both unpaused registrations remain.
+        XCTAssertEqual(projected.map(\.id.opaqueID), ["2", "3"])
+        XCTAssertEqual(projected.map(\.canActivate), [false, true])
+        XCTAssertEqual(projected.map {
+            OpenCodexHubAccountProjection.hubAccount(for: $0, in: pool)?.idSuffix
+        }, ["1111", "2222"])
+        XCTAssertEqual(pool.accounts.count, 3)
+        for layout in [MultiAccountMenuLayout.stacked, .segmented] {
+            let (controller, _) = self.makeController(provider: .codex, pool: pool, layout: layout)
+            defer { controller.releaseStatusItemsForTesting() }
+            XCTAssertEqual(controller.switcherAccountQuotas(for: .codex).map(\.id), [
+                "opencodex-hub:2", "opencodex-hub:3",
+            ])
+            let menu = controller.makeMenu(for: .codex)
+            controller.menuWillOpen(menu)
+            if layout == .stacked {
+                XCTAssertEqual(self.representedIDs(in: menu).filter { $0.hasPrefix("menuCard-") }.count, 2)
+            } else {
+                XCTAssertEqual(menu.items.count(where: { $0.view is ClaudeSwapAccountSwitcherView }), 1)
+            }
+        }
     }
 
     func test_longHubNoticeWrapsInsideTheProviderMenuWidth() throws {
@@ -204,7 +242,7 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
             controller.populateMenu(menu, provider: .codex)
             XCTAssertEqual(self.representedIDs(in: menu).filter { $0 == "codexResetAnnouncements" }.count, 1)
             if layout == .stacked {
-                XCTAssertEqual(self.representedIDs(in: menu).filter { $0.hasPrefix("menuCard-") }.count, 3)
+                XCTAssertEqual(self.representedIDs(in: menu).filter { $0.hasPrefix("menuCard-") }.count, 2)
             }
             let enabledSignature = controller.menuAdjunctReadinessSignature()
             store.codexResetAnnouncements.configure(
