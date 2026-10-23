@@ -148,6 +148,27 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
         }
     }
 
+    func test_longHubNoticeWrapsInsideTheProviderMenuWidth() throws {
+        let (controller, _) = self.makeController(provider: .codex, pool: Self.pool(.openai), layout: .stacked)
+        defer { controller.releaseStatusItemsForTesting() }
+        let text = String(repeating: "Account switches are managed on the hub. 계정 전환은 허브에서 관리합니다. ", count: 3)
+        let native = NSMenu()
+        native.addItem(NSMenuItem(title: text, action: nil, keyEquivalent: ""))
+        for width: CGFloat in [310, 380] {
+            let menu = NSMenu()
+            controller.addOpenCodexHubNotice(text, to: menu, width: width)
+            let item = try XCTUnwrap(menu.items.first)
+            let view = try XCTUnwrap(item.view)
+            XCTAssertEqual(view.frame.width, width, accuracy: 0.5)
+            XCTAssertGreaterThan(view.frame.height, NSFont.smallSystemFontSize * 2)
+            XCTAssertLessThanOrEqual(menu.size.width, width + 32)
+            XCTAssertLessThan(menu.size.width, native.size.width)
+            XCTAssertEqual(item.toolTip, text)
+            XCTAssertTrue(item.title.isEmpty)
+            XCTAssertFalse(item.isEnabled)
+        }
+    }
+
     func test_resetNewsAppearsOnceAcrossAccountLayoutsAndMenuRebuilds() {
         for layout in [MultiAccountMenuLayout.stacked, .segmented] {
             let (controller, store) = self.makeController(
