@@ -773,6 +773,7 @@ struct LocalizationLanguageCatalogTests {
             "Pro",
             "SuperGrok OAuth",
             "Token",
+            "Trae CN",
             "Zed cookie",
             "ZeroGPU",
             "__raycast_session=…; csrf_token=…",
@@ -840,6 +841,10 @@ struct LocalizationLanguageCatalogTests {
             "~/.local/bin/cswap",
             "~/Library/Application Support/JetBrains/IntelliJIdea2024.3",
             "~/.swift-app-state/opencodex-hub-accounts.json",
+            // Product names and the example hub address are shared with English.
+            "Opencodex",
+            "Opencodex Dashboard",
+            "https://your-hub.example",
             // Measurement units and numeric formats are shared with English.
             "spend_performance_percent",
             "spend_performance_rate",
@@ -1031,7 +1036,7 @@ extension LocalizationLanguageCatalogTests {
     @Test
     func `settings sharing and sync prose do not fall back to English in supported languages`() {
         let keys = [
-            "Usage data will appear once the app refreshes.",
+            "%@ is unavailable. Edit the widget to choose a provider.",
             "No synced Macs yet.",
             "Sync settings and providers across your Macs via iCloud",
             "Hide native Codex when OpenCodex is present",
