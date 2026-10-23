@@ -52,7 +52,6 @@ extension UsageMenuCardView.Model {
         let costUsageBucketCalendar: Calendar
         let now: Date
         let observedWeeklyResets: [CostUsageQuotaResetObservation]
-        var resetAnnouncements: CodexResetAnnouncementsPresentation?
 
         init(
             provider: UsageProvider,

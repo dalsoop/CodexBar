@@ -23,6 +23,7 @@ extension UsageStore {
         _ = self.openCodexHubCardStates
         _ = self.openCodexHubManagementStates
         _ = self.codexResetAnnouncements.snapshot
+        _ = self.codexResetAnnouncements.checkedAt
         _ = self.codexResetAnnouncements.error
         _ = self.codexResetAnnouncements.isRefreshing
         _ = self.codexResetAnnouncements.isEnabled

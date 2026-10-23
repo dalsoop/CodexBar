@@ -9,7 +9,9 @@ read_when:
 
 In **Settings → Providers → Codex**, enable **Codex reset news**. This opt-in adds community
 reports to the Codex menu, independently of account quota, banked reset credits, and quota notifications.
-It never redeems a reset, changes an account, or resumes work.
+It appears once in a shared provider section, above the account cards, for both stacked and segmented
+account layouts. Account cards do not carry copies of the public feed. Settings and this section use
+the same app-owned feed store. It never redeems a reset, changes an account, or resumes work.
 
 **Provider URL** takes the full HTTPS JSON endpoint. Choose **Save URL and check** to apply it;
 an empty field restores the default. Supported response formats:

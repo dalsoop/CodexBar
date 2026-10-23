@@ -148,6 +148,47 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
         }
     }
 
+    func test_resetNewsAppearsOnceAcrossAccountLayoutsAndMenuRebuilds() {
+        for layout in [MultiAccountMenuLayout.stacked, .segmented] {
+            let (controller, store) = self.makeController(
+                provider: .codex, pool: Self.pool(.openai), layout: layout)
+            defer { controller.releaseStatusItemsForTesting() }
+            let disabledSignature = controller.menuAdjunctReadinessSignature()
+            store.codexResetAnnouncements.configure(
+                enabled: true,
+                address: CodexResetAnnouncements.defaultProviderURL,
+                automaticallyPoll: false)
+            XCTAssertNotEqual(controller.menuAdjunctReadinessSignature(), disabledSignature)
+            let menu = controller.makeMenu(for: .codex)
+            controller.menuWillOpen(menu)
+            XCTAssertEqual(self.representedIDs(in: menu).filter { $0 == "codexResetAnnouncements" }.count, 1)
+            controller.populateMenu(menu, provider: .codex)
+            XCTAssertEqual(self.representedIDs(in: menu).filter { $0 == "codexResetAnnouncements" }.count, 1)
+            if layout == .stacked {
+                XCTAssertEqual(self.representedIDs(in: menu).filter { $0.hasPrefix("menuCard-") }.count, 3)
+            }
+            store.codexResetAnnouncements.configure(
+                enabled: false,
+                address: CodexResetAnnouncements.defaultProviderURL,
+                automaticallyPoll: false)
+            controller.populateMenu(menu, provider: .codex)
+            XCTAssertFalse(self.representedIDs(in: menu).contains("codexResetAnnouncements"))
+            XCTAssertEqual(controller.menuAdjunctReadinessSignature(), disabledSignature)
+        }
+    }
+
+    func test_resetNewsDoesNotAppearInAnotherProviderMenu() {
+        let (controller, store) = self.makeController(provider: .grok, pool: Self.pool(.xai), layout: .stacked)
+        defer { controller.releaseStatusItemsForTesting() }
+        store.codexResetAnnouncements.configure(
+            enabled: true,
+            address: CodexResetAnnouncements.defaultProviderURL,
+            automaticallyPoll: false)
+        let menu = controller.makeMenu(for: .grok)
+        controller.menuWillOpen(menu)
+        XCTAssertFalse(self.representedIDs(in: menu).contains("codexResetAnnouncements"))
+    }
+
     func test_segmentedLayoutShowsTabsAndInspectsAnotherAccountWithoutSwitching() {
         let (controller, store) = self.makeController(provider: .codex, pool: Self.pool(.openai), layout: .segmented)
         defer { controller.releaseStatusItemsForTesting() }

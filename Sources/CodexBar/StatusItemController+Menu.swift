@@ -837,6 +837,10 @@ extension StatusItemController {
                 menu.addItem(.separator())
             }
         } else {
+            self.addCodexResetAnnouncementsSection(
+                to: menu,
+                provider: context.currentProvider,
+                width: context.menuWidth)
             let addedOpenAIWebItems = self.addMenuCards(to: menu, context: context, captureMenu: captureMenu)
             self.addOpenAIWebItemsIfNeeded(
                 to: menu,

@@ -147,34 +147,6 @@ struct CodexResetAnnouncementsStoreTests {
     }
 
     @Test
-    func `reset news is Codex only and invalidates the tracked menu layout`() throws {
-        let news = try CodexResetAnnouncementsPresentation(
-            rows: [.init(
-                id: "one",
-                title: "A public reset",
-                detail: nil,
-                sourceURL: nil)],
-            statusText: "Updated",
-            sourceURL: #require(URL(string: "https://example.com")),
-            isStale: false)
-        let codex = try Self.model(
-            provider: .codex,
-            news: news)
-        let claude = try Self.model(
-            provider: .claude,
-            news: news)
-        let empty = try Self.model(
-            provider: .codex,
-            news: nil)
-        #expect(codex.resetAnnouncements != nil)
-        #expect(codex.hasUsageContent)
-        #expect(!codex.isOverviewErrorOnly)
-        #expect(claude.resetAnnouncements == nil)
-        #expect(!codex.hasCompatibleTrackedLayout(with: empty))
-        #expect(codex.heightFingerprint(section: "usage") != empty.heightFingerprint(section: "usage"))
-    }
-
-    @Test
     func `render reset news with synthetic data when a screenshot directory is provided`() async throws {
         guard let directory = ProcessInfo.processInfo.environment["CODEXBAR_RESET_NEWS_SCREENSHOT_DIR"] else { return }
         let store = try CodexResetAnnouncementsStore(
@@ -249,34 +221,6 @@ struct CodexResetAnnouncementsStoreTests {
           "active_watch":{"text":"Expired outlook","expires_at":"2026-10-22T17:00:00Z"}},
           "meta":{"generated_at":"2026-10-23T17:00:00Z"}}
         """.utf8))
-    }
-
-    private static func model(
-        provider: UsageProvider,
-        news: CodexResetAnnouncementsPresentation?) throws -> UsageMenuCardView.Model
-    {
-        var input = try UsageMenuCardView.Model.Input(
-            provider: provider,
-            metadata: #require(ProviderDefaults.metadata[provider]),
-            snapshot: nil,
-            credits: nil,
-            creditsError: nil,
-            dashboardError: nil,
-            tokenSnapshot: nil,
-            tokenError: nil,
-            account: AccountInfo(
-                email: nil,
-                plan: nil),
-            isRefreshing: false,
-            lastError: "Unavailable",
-            usageBarsShowUsed: false,
-            resetTimeDisplayStyle: .countdown,
-            tokenCostUsageEnabled: false,
-            showOptionalCreditsAndExtraUsage: false,
-            hidePersonalInfo: false,
-            now: Self.now)
-        input.resetAnnouncements = news
-        return UsageMenuCardView.Model.make(input)
     }
 
     private static func fixture() -> (

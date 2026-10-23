@@ -71,8 +71,10 @@ struct CodexResetAnnouncementsPresentation: Equatable {
     }
 
     var heightFingerprint: String {
-        "\(self.rows.map { "\($0.id):\($0.title):\($0.detail ?? "")" }.joined(separator: "|"))" +
-            "|\(self.statusText)|\(self.isStale)"
+        let rows = self.rows.map {
+            "\($0.id):\($0.title):\($0.detail ?? ""):\($0.sourceURL?.absoluteString ?? "")"
+        }.joined(separator: "|")
+        return "\(rows)|\(self.statusText)|\(self.isStale)|\(self.sourceURL.absoluteString)"
     }
 }
 
