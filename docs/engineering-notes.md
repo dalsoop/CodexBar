@@ -12,6 +12,11 @@ Opencodex 2.88.0의 rename CLI는 ID가 없으면 같은 문자열을 이름으�
 
 Bun의 기본 console 출력은 process.stdout.write·process.stderr.write 재정의를 우회할 수 있다. Node 대체 실행기로만 테스트하면 비밀값 진단 출력 누출을 놓친다. 관리 모듈 import 전에 별도 결과 descriptor를 보관하고 표준 출력·오류 descriptor를 /dev/null로 전환한다. 실제 번들 Bun과 가짜 관리 모듈로 console·별도 Console·직접 fd 쓰기까지 차단되는지 확인한다. 실제 관리 모듈이나 토큰을 테스트에 import하지 않는다.
 
+Node's `child_process` uses Unix sockets for piped stdout on Linux. The rename helper cannot reopen
+that socket through `/dev/fd/1` (`ENXIO`), so synthetic helper tests pass a private mode-0600 output file
+descriptor and read it after the child exits. They still check the complete result envelope, successful
+exit, and empty stderr. The production descriptor isolation stays intact.
+
 허브 목록 응답이나 읽기용 snapshot은 로컬 소유권 증거가 아니다. client도 허브 목록에 응답할 수 있다. status의 runtimeRole을 확인하고 변경 직전 재확인하는 테스트를 유지한다.
 
 새 키 발급 후 비밀값은 목록 조회로 다시 얻을 수 없다. 생성 후 새로고침 실패를 생성 실패로 합치면 사용자가 키를 중복 발급할 수 있다. 변경 성공과 목록 갱신 실패를 분리하고 불명확한 응답은 자동 재시도 없이 확인 필요로 남긴다.

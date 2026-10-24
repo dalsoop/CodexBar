@@ -42,6 +42,8 @@
 
 - 공급자 신원·계정·자격은 다른 공급자의 카드에 섞지 않는다.
 - 실제 Keychain이나 실계정 조회는 명시적 요청 없이 실행하지 않는다. 가짜 저장소와 억제된 테스트 환경을 사용한다.
+- Never run tests/checks or ad-hoc validation that can display macOS Keychain prompts;
+  use parser tests, stubs, test stores, or `KeychainNoUIQuery`.
 - API 키 비밀값과 관리 자격을 로그·설정·미러·검증 이미지에 남기지 않는다. 역할이 불명확하면 관리를 허용하지 않는다.
 - 포크 수정은 포크에서만 준비한다. 원본 저장소 쓰기, 운영 앱 교체, 배포는 별도 승인 없이 실행하지 않는다.
 

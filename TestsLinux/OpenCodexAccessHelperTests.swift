@@ -13,9 +13,10 @@ struct OpenCodexAccessHelperTests {
         let helper = try #require(OpenCodexAccessRenameInstallation.helperURL)
         let script = #"""
         import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, linkSync, symlinkSync, rmSync } from 'node:fs';
+        import { readFileSync, openSync, closeSync } from 'node:fs';
         import { tmpdir } from 'node:os';
         import { join, dirname } from 'node:path';
-        import { execFileSync } from 'node:child_process';
+        import { spawnSync } from 'node:child_process';
         import { pathToFileURL } from 'node:url';
         import assert from 'node:assert/strict';
         const helper = process.argv[2];
@@ -65,9 +66,20 @@ struct OpenCodexAccessHelperTests {
           return { cli, runtime, pkg };
         }
         function run(f, input = JSON.stringify({ id: 'gone-id', name: 'new' })) {
-          const output = execFileSync(f.runtime, [helper, f.cli], { input, encoding: 'utf8',
-            env: { PATH: process.env.PATH, HOME: root, NODE_NO_WARNINGS: '1',
-                DYLD_LIBRARY_PATH: join(dirname(process.execPath), '../lib') } });
+          // Node uses a socket for piped child stdout on Linux; /dev/fd/1 cannot reopen that socket.
+          // A private file keeps the helper's descriptor isolation and complete output checks portable.
+          const outputPath = join(f.pkg, 'result.json');
+          const outputFD = openSync(outputPath, 'w', 0o600);
+          let child;
+          try {
+            child = spawnSync(f.runtime, [helper, f.cli], { input, encoding: 'utf8', timeout: 15000,
+              stdio: ['pipe', outputFD, 'pipe'],
+              env: { PATH: process.env.PATH, HOME: root, NODE_NO_WARNINGS: '1',
+                  DYLD_LIBRARY_PATH: join(dirname(process.execPath), '../lib') } });
+          } finally { closeSync(outputFD); }
+          assert(!child.error && child.status === 0, 'synthetic helper must exit successfully');
+          assert.equal(child.stderr, '', 'synthetic helper must not emit diagnostics');
+          const output = readFileSync(outputPath, 'utf8');
           assert(!output.includes('synthetic-secret') && !output.includes('synthetic-module-secret'));
           return JSON.parse(output);
         }
