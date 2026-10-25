@@ -754,7 +754,10 @@ extension UsageStore {
                 backfilled: backfilled,
                 result: result,
                 context: context)
-            self.emitUsageUpdatedHook(provider: provider, snapshot: backfilled, rateKey: notifications.account)
+            self.emitUsageUpdatedHook(
+                provider: provider.instanceID,
+                snapshot: backfilled,
+                rateKey: notifications.account)
             return (backfilled, notifications.sessionRestored)
         }
         guard let publication else { return }
@@ -1405,7 +1408,7 @@ extension UsageStore {
                 self.snapshots.removeValue(forKey: provider.instanceID)
                 self.lastKnownResetSnapshots.removeValue(forKey: provider.instanceID)
                 self.clearSessionQuotaTransitionState(provider: provider)
-                self.quotaWarningState = self.quotaWarningState.filter { $0.key.provider != provider }
+                self.quotaWarningState = self.quotaWarningState.filter { $0.key.provider != provider.instanceID }
                 self.lastSourceLabels.removeValue(forKey: provider.instanceID)
                 self.errors[provider.instanceID] = nil
                 self.knownLimitsAvailabilityByProvider[provider.instanceID] = .unavailable
@@ -1471,7 +1474,7 @@ extension UsageStore {
                 }
                 self.emitHook(
                     .refreshFailed,
-                    provider: provider,
+                    provider: provider.instanceID,
                     status: Self.refreshFailureHookStatus(error))
             } else {
                 self.errors[provider.instanceID] = nil
