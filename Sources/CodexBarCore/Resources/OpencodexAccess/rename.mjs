@@ -1,7 +1,7 @@
 // Limited 2.88.0 adapter. No CLI import, name lookup, config writes, or authentication export.
 import { realpath, readFile, stat, access } from "node:fs/promises";
 import { constants, openSync, closeSync, writeSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
 const LIMIT = 262144;
@@ -218,4 +218,6 @@ async function main() {
   writeResult(output, result);
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
+// Node canonicalizes import.meta.url; compare the same physical path for symlinked checkouts.
+const entryPoint = process.argv[1] ? await realpath(process.argv[1]).catch(() => null) : null;
+if (entryPoint === fileURLToPath(import.meta.url)) await main();
