@@ -748,7 +748,7 @@ struct LocalizationLanguageCatalogTests {
         #expect(title == "Quota settimanale di Codex quasi esaurita")
     }
 
-    // Brands, protocol examples, pure format strings and accepted Italian cognates.
+    /// Brands, protocol examples, pure format strings and accepted Italian cognates.
     private static let italianUnchangedLabels: Set<String> = [
         "/Applications/TcrBar.app/Contents/MacOS/tcr",
         "/opt/homebrew/bin/ocx",
