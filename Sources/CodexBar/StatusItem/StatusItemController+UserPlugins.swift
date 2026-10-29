@@ -109,6 +109,7 @@ extension StatusItemController {
         let error = self.store.errors[plugin.manifest.id]
         let isRefreshing = self.store.refreshingProviders.contains(plugin.manifest.id)
         let showUsed = self.settings.usageBarsShowUsed
+        let paceVisible = self.settings.paceVisible
         let resetStyle = self.settings.resetTimeDisplayStyle
         let onRefresh: () -> Void = { [weak self] in
             self?.startManualRefresh(
@@ -124,6 +125,7 @@ extension StatusItemController {
                     error: error,
                     isRefreshing: isRefreshing,
                     showUsed: showUsed,
+                    paceVisible: paceVisible,
                     resetStyle: resetStyle,
                     width: resolvedWidth,
                     onRefresh: onRefresh)
@@ -282,6 +284,7 @@ struct UserPluginMenuCardView: View {
     let error: String?
     let isRefreshing: Bool
     let showUsed: Bool
+    var paceVisible: Bool = true
     let resetStyle: ResetTimeDisplayStyle
     let width: CGFloat
     let onRefresh: () -> Void
@@ -338,7 +341,8 @@ struct UserPluginMenuCardView: View {
                 }
                 if !snapshot.details.isEmpty {
                     Divider()
-                    ProviderDetailSectionsContent(sections: snapshot.details, chartColor: self.tint)
+                    ProviderDetailSectionsContent(
+                        sections: snapshot.details, chartColor: self.tint, paceVisible: self.paceVisible)
                 }
                 if let identity = snapshot.identity(for: self.plugin.manifest.id) {
                     self.identity(identity)
