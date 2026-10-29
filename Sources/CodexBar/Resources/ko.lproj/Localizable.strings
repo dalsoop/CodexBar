@@ -2865,6 +2865,8 @@
 "reset_news_stale" = "최신 정보가 아닐 수 있음";
 "reset_news_attribution" = "데이터 출처: %@";
 "reset_news_disclaimer" = "커뮤니티 소식입니다. 실제 한도는 계정에서 확인하세요.";
+"reset_news_average_cycle" = "평균 %@일 주기";
+"reset_news_community" = "커뮤니티 정보";
 
 // Session usage browser
 "Search sessions" = "세션 검색";

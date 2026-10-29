@@ -2901,6 +2901,8 @@
 "reset_news_stale" = "Data may be outdated";
 "reset_news_attribution" = "Data from %@";
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
+"reset_news_average_cycle" = "Ciclo medio di %@ giorni";
+"reset_news_community" = "Info dalla community";
 
 // Session usage browser
 "Search sessions" = "Cerca sessioni";

@@ -25,6 +25,8 @@ public struct CodexResetAnnouncements: Equatable, Sendable {
     public let scheduled: Event?
     public let watch: Watch?
     public let generatedAt: Date?
+    /// Average days between reported resets, when the provider publishes it.
+    public let averageIntervalDays: Double?
 
     public static let defaultProviderURL = "https://codex-resets.com/api/v1/status"
 
@@ -65,7 +67,8 @@ public struct CodexResetAnnouncements: Equatable, Sendable {
                 latest: self.newest(events),
                 scheduled: nil,
                 watch: nil,
-                generatedAt: self.date(root["lastPolledAt"]))
+                generatedAt: self.date(root["lastPolledAt"]),
+                averageIntervalDays: nil)
         }
         if let posts = root["events"] as? [[String: Any]] {
             let events = try posts.map { post in
@@ -88,7 +91,8 @@ public struct CodexResetAnnouncements: Equatable, Sendable {
                 latest: self.newest(events),
                 scheduled: scheduled,
                 watch: nil,
-                generatedAt: self.date(root["generated_at"]))
+                generatedAt: self.date(root["generated_at"]),
+                averageIntervalDays: nil)
         }
         throw CodexResetAnnouncementsError.unsupportedResponse
     }
@@ -125,7 +129,8 @@ public struct CodexResetAnnouncements: Equatable, Sendable {
             latest: latest,
             scheduled: scheduled,
             watch: watch,
-            generatedAt: self.date(meta?["generated_at"]))
+            generatedAt: self.date(meta?["generated_at"]),
+            averageIntervalDays: self.intervalDays((status["stats"] as? [String: Any])?["avg_interval_days"]))
     }
 
     private static func event(
@@ -148,6 +153,11 @@ public struct CodexResetAnnouncements: Equatable, Sendable {
 
     private static func link(_ post: [String: Any]) -> URL? {
         self.sourceURL((post["source"] as? [String: Any])?["url"] as? String ?? post["url"] as? String)
+    }
+
+    private static func intervalDays(_ value: Any?) -> Double? {
+        guard let days = (value as? NSNumber)?.doubleValue, days.isFinite, days > 0, days <= 365 else { return nil }
+        return days
     }
 
     private static func newest(_ events: [Event]) -> Event? {

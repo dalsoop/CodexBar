@@ -5,6 +5,7 @@
 ### Gujo fork — 2026-10-30
 
 - Turn Codex reset news on by default. Turning it off in Settings → Providers → Codex is kept.
+- Show Codex reset news as a cycle bar: time since the newest report against the provider's average interval, one line of the post, and the details in a tooltip.
 
 ### Gujo fork — 2026-10-25
 

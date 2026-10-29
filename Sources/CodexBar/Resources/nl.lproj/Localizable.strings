@@ -2894,6 +2894,8 @@
 "reset_news_stale" = "Data may be outdated";
 "reset_news_attribution" = "Data from %@";
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
+"reset_news_average_cycle" = "Gem. cyclus van %@ dagen";
+"reset_news_community" = "Community-informatie";
 
 // Session usage browser
 "Search sessions" = "Sessies zoeken";
