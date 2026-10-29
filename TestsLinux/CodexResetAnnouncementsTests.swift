@@ -18,6 +18,23 @@ struct CodexResetAnnouncementsTests {
     }
 
     @Test
+    func `the provider's average reset interval is read only when it is plausible`() throws {
+        func average(_ stats: String) throws -> Double? {
+            try CodexResetAnnouncements.decode(Data("""
+            {"data":{"latest_reset":null,"stats":\(stats)},"meta":{}}
+            """.utf8)).averageIntervalDays
+        }
+        #expect(try average(#"{"avg_interval_days":6}"#) == 6)
+        #expect(try average(#"{"avg_interval_days":5.5}"#) == 5.5)
+        #expect(try average(#"{"avg_interval_days":0}"#) == nil)
+        #expect(try average(#"{"avg_interval_days":-2}"#) == nil)
+        #expect(try average(#"{"avg_interval_days":400}"#) == nil)
+        #expect(try average(#"{"avg_interval_days":"6"}"#) == nil)
+        #expect(try average("null") == nil)
+        #expect(try CodexResetAnnouncements.decode(Data(#"{"resets":[]}"#.utf8)).averageIntervalDays == nil)
+    }
+
+    @Test
     func `tokenusage posts remain announcements and use the upstream poll time`() throws {
         let data = Data("""
         {"generatedAt":"2026-10-23T16:00:00Z","lastPolledAt":"2026-10-23T15:00:00Z","resets":[
@@ -67,14 +84,14 @@ struct CodexResetAnnouncementsTests {
     @Test
     func `provider settings survive a JSON round trip`() throws {
         var config = ProviderConfig(id: .codex)
-        config.codexResetAnnouncementsEnabled = true
+        config.codexResetAnnouncementsEnabled = false
         config.codexResetAnnouncementsProviderURL = "https://tokenusage.dev/api/resets"
         let decoded = try JSONDecoder().decode(
             ProviderConfig.self,
             from: JSONEncoder().encode(config))
-        #expect(decoded.codexResetAnnouncementsEnabled)
+        #expect(!decoded.codexResetAnnouncementsEnabled)
         #expect(decoded.codexResetAnnouncementsProviderURL == "https://tokenusage.dev/api/resets")
-        #expect(!ProviderConfig(id: .codex).codexResetAnnouncementsEnabled)
+        #expect(ProviderConfig(id: .codex).codexResetAnnouncementsEnabled)
     }
 
     @Test

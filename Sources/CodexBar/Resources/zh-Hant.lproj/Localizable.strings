@@ -2875,6 +2875,8 @@
 "reset_news_stale" = "Data may be outdated";
 "reset_news_attribution" = "Data from %@";
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
+"reset_news_average_cycle" = "平均 %@ 天週期";
+"reset_news_community" = "社群資訊";
 
 // Session usage browser
 "Search sessions" = "搜尋對話";

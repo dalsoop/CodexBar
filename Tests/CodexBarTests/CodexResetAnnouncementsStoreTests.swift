@@ -10,11 +10,11 @@ struct CodexResetAnnouncementsStoreTests {
     private static let now = Date(timeIntervalSince1970: 1_792_774_800)
 
     @Test
-    func `settings default off and invalid addresses never replace the saved URL`() {
+    func `settings default on and invalid addresses never replace the saved URL`() {
         let settings = testSettingsStore(
             suiteName: "CodexResetAnnouncementsStoreTests-settings",
             userDefaults: InMemoryUserDefaults())
-        #expect(!settings.codexResetAnnouncementsEnabled)
+        #expect(settings.codexResetAnnouncementsEnabled)
         #expect(settings.setCodexResetAnnouncementsProviderURL("https://tokenusage.dev/api/resets"))
         #expect(!settings.setCodexResetAnnouncementsProviderURL("https://name:secret@example.com/feed"))
         #expect(settings.codexResetAnnouncementsProviderURL == "https://tokenusage.dev/api/resets")
@@ -107,7 +107,7 @@ struct CodexResetAnnouncementsStoreTests {
         let presentation = try #require(CodexResetAnnouncementsPresentation.make(
             store: store,
             now: Self.now))
-        #expect(presentation.rows.first?.id == "latest")
+        #expect(presentation.latest != nil)
         #expect(presentation.isStale)
         #expect(store.snapshot != nil)
     }
@@ -125,13 +125,62 @@ struct CodexResetAnnouncementsStoreTests {
             store: store,
             now: Self.now))
         #expect(!view.rows.contains { $0.id == "watch" })
-        #expect(view.rows.first { $0.id == "scheduled" }?.detail == L("reset_news_awaiting"))
+        let scheduled = try #require(view.rows.first { $0.id == "scheduled" })
+        #expect(scheduled.detail == nil)
         #expect(view.rows.first { $0.id == "scheduled" }?.title == L("reset_news_scheduled"))
+    }
+
+    @Test
+    func `the newest reset shows elapsed time, its cycle, and one line of the post`() async throws {
+        let store = try CodexResetAnnouncementsStore(
+            client: ResetNewsQueueClient(results: [.success(Self.snapshot())]))
+        store.configure(
+            enabled: true,
+            address: CodexResetAnnouncements.defaultProviderURL,
+            automaticallyPoll: false)
+        await store.refresh(now: Self.now)
+        let presentation = try #require(CodexResetAnnouncementsPresentation.make(
+            store: store,
+            now: Self.now))
+        let latest = try #require(presentation.latest)
+        #expect(latest.elapsedText == String(format: L("%dd ago"), 1))
+        #expect(latest.quote == "And it's done. See you tomorrow")
+        #expect(latest.sourceURL?.absoluteString == "https://x.com/example/status/1")
+        let cycle = try #require(presentation.cycle)
+        #expect(abs(cycle.percent - 100.0 / 6) < 0.001)
+        #expect(cycle.label == L("reset_news_average_cycle", "6"))
+        #expect(!cycle.isOverdue)
+        #expect(presentation.helpText.contains(L("reset_news_disclaimer")))
+    }
+
+    @Test
+    func `the cycle fills and turns overdue after the average interval`() {
+        let start = Self.now
+        let early = CodexResetAnnouncementsPresentation.cycle(
+            since: start,
+            averageDays: 4,
+            now: start.addingTimeInterval(86400))
+        #expect(early.percent == 25)
+        #expect(!early.isOverdue)
+        let late = CodexResetAnnouncementsPresentation.cycle(
+            since: start,
+            averageDays: 4,
+            now: start.addingTimeInterval(86400 * 9))
+        #expect(late.percent == 100)
+        #expect(late.isOverdue)
+        #expect(CodexResetAnnouncementsPresentation.elapsedText(
+            since: start,
+            now: start.addingTimeInterval(20)) == String(format: L("%dm ago"), 1))
+        #expect(CodexResetAnnouncementsPresentation.elapsedText(
+            since: start,
+            now: start.addingTimeInterval(3 * 3600)) == String(format: L("%dh ago"), 3))
+        #expect(CodexResetAnnouncementsPresentation.quote("https://t.co/only \n ") == nil)
     }
 
     @Test
     func `the Codex setting exposes a saved provider URL and Korean labels`() async throws {
         let fixture = Self.fixture()
+        fixture.settings.codexResetAnnouncementsEnabled = false
         let context = fixture.context
         let toggle = CodexResetAnnouncementsSettings.toggle(context: context)
         #expect(toggle.id == "codex-reset-news")
@@ -216,9 +265,11 @@ struct CodexResetAnnouncementsStoreTests {
     private static func snapshot(id: String = "one") throws -> CodexResetAnnouncements {
         try CodexResetAnnouncements.decode(Data("""
         {"data":{"latest_reset":{"id":"\(id)","reset_type":"regular",
-          "announced_at":"2026-10-22T17:00:00Z","source":{"url":"https://x.com/example/status/1"}},
+          "announced_at":"2026-10-22T17:00:00Z","text":"And it's done.\\nSee you tomorrow https://t.co/example",
+          "source":{"url":"https://x.com/example/status/1"}},
           "scheduled_reset":{"id":"next","scheduled_for":"2026-10-23T16:00:00Z"},
-          "active_watch":{"text":"Expired outlook","expires_at":"2026-10-22T17:00:00Z"}},
+          "active_watch":{"text":"Expired outlook","expires_at":"2026-10-22T17:00:00Z"},
+          "stats":{"avg_interval_days":6}},
           "meta":{"generated_at":"2026-10-23T17:00:00Z"}}
         """.utf8))
     }

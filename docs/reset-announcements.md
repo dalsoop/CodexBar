@@ -7,8 +7,8 @@ read_when:
 
 # Public Codex reset news
 
-In **Settings → Providers → Codex**, enable **Codex reset news**. This opt-in adds community
-reports to the Codex menu, independently of account quota, banked reset credits, and quota notifications.
+**Codex reset news** is on by default and can be turned off in **Settings → Providers → Codex**. It adds
+community reports to the Codex menu, independently of account quota, banked reset credits, and quota notifications.
 It appears once in a shared provider section, above the account cards, for both stacked and segmented
 account layouts. Account cards do not carry copies of the public feed. Settings and this section use
 the same app-owned feed store. It never redeems a reset, changes an account, or resumes work.
@@ -30,8 +30,15 @@ fragment. Invalid input leaves the saved URL intact. Turning the feature off cle
 Enabled Codex instances poll every five minutes. Manual checks are limited to once a minute and also
 respect `Retry-After` on HTTP 429/503 responses. Requests use an isolated ephemeral session without
 account credentials or browser cookies and bypass the local HTTP cache. The provider's edge cache can
-still delay updates. The menu links the data provider for attribution and links each original source
-when available. It shows the source's update time separately from the last successful local check.
+still delay updates.
+
+The section header shows how long ago the newest report was posted and opens its original source. When
+the provider publishes an average interval (Codex Resets: `stats.avg_interval_days`), a bar in the same
+shape as the usage meters shows the time since that report against the average and turns orange once it
+is exceeded; without it, the report's label and date take that line. One line of the post's text
+follows, without links. The footer names the provider host, linked for attribution, and marks the data
+as community information. The report's exact date, the source's update time, the stale notice and the
+disclaimer are in the section's tooltip.
 
 Forecasts are unofficial and disappear after their expiry. A scheduled reset stays pending when its
 ETA passes; time alone never proves execution. Observed reports have their own label. tokenusage.dev
