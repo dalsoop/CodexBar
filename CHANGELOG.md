@@ -2,6 +2,10 @@
 
 ## 0.81.0 — 2026-10-24
 
+### Gujo fork — 2026-10-30
+
+- Turn Codex reset news on by default. Turning it off in Settings → Providers → Codex is kept.
+
 ### Gujo fork — 2026-10-25
 
 - Merge upstream v0.81.0 while retaining Opencodex hub account management, provider-isolated account cards, and the fork's signed Sparkle update channel.

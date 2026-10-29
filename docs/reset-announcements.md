@@ -7,8 +7,8 @@ read_when:
 
 # Public Codex reset news
 
-In **Settings → Providers → Codex**, enable **Codex reset news**. This opt-in adds community
-reports to the Codex menu, independently of account quota, banked reset credits, and quota notifications.
+**Codex reset news** is on by default and can be turned off in **Settings → Providers → Codex**. It adds
+community reports to the Codex menu, independently of account quota, banked reset credits, and quota notifications.
 It appears once in a shared provider section, above the account cards, for both stacked and segmented
 account layouts. Account cards do not carry copies of the public feed. Settings and this section use
 the same app-owned feed store. It never redeems a reset, changes an account, or resumes work.

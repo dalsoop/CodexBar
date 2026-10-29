@@ -10,11 +10,11 @@ struct CodexResetAnnouncementsStoreTests {
     private static let now = Date(timeIntervalSince1970: 1_792_774_800)
 
     @Test
-    func `settings default off and invalid addresses never replace the saved URL`() {
+    func `settings default on and invalid addresses never replace the saved URL`() {
         let settings = testSettingsStore(
             suiteName: "CodexResetAnnouncementsStoreTests-settings",
             userDefaults: InMemoryUserDefaults())
-        #expect(!settings.codexResetAnnouncementsEnabled)
+        #expect(settings.codexResetAnnouncementsEnabled)
         #expect(settings.setCodexResetAnnouncementsProviderURL("https://tokenusage.dev/api/resets"))
         #expect(!settings.setCodexResetAnnouncementsProviderURL("https://name:secret@example.com/feed"))
         #expect(settings.codexResetAnnouncementsProviderURL == "https://tokenusage.dev/api/resets")
@@ -132,6 +132,7 @@ struct CodexResetAnnouncementsStoreTests {
     @Test
     func `the Codex setting exposes a saved provider URL and Korean labels`() async throws {
         let fixture = Self.fixture()
+        fixture.settings.codexResetAnnouncementsEnabled = false
         let context = fixture.context
         let toggle = CodexResetAnnouncementsSettings.toggle(context: context)
         #expect(toggle.id == "codex-reset-news")

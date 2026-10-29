@@ -173,7 +173,7 @@ public enum CodexResetAnnouncementsError: Error, Equatable, Sendable {
 
 extension ProviderConfig {
     public var codexResetAnnouncementsEnabled: Bool {
-        get { self.extensionValue(forKey: "codexResetAnnouncementsEnabled") ?? false }
+        get { self.extensionValue(forKey: "codexResetAnnouncementsEnabled") ?? true }
         set { self.setExtensionValue(
             newValue,
             forKey: "codexResetAnnouncementsEnabled") }

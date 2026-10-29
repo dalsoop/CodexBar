@@ -67,14 +67,14 @@ struct CodexResetAnnouncementsTests {
     @Test
     func `provider settings survive a JSON round trip`() throws {
         var config = ProviderConfig(id: .codex)
-        config.codexResetAnnouncementsEnabled = true
+        config.codexResetAnnouncementsEnabled = false
         config.codexResetAnnouncementsProviderURL = "https://tokenusage.dev/api/resets"
         let decoded = try JSONDecoder().decode(
             ProviderConfig.self,
             from: JSONEncoder().encode(config))
-        #expect(decoded.codexResetAnnouncementsEnabled)
+        #expect(!decoded.codexResetAnnouncementsEnabled)
         #expect(decoded.codexResetAnnouncementsProviderURL == "https://tokenusage.dev/api/resets")
-        #expect(!ProviderConfig(id: .codex).codexResetAnnouncementsEnabled)
+        #expect(ProviderConfig(id: .codex).codexResetAnnouncementsEnabled)
     }
 
     @Test
