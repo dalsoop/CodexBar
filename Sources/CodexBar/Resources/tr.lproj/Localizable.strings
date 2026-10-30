@@ -2905,9 +2905,10 @@
 "reset_news_average_cycle" = "Ortalama %@ günlük döngü";
 "reset_news_community" = "Topluluk bilgisi";
 "hub_plan_next_billing" = "Sonraki fatura %@";
-"hub_plan_billing_unknown" = "Fatura tarihi bilinmiyor";
 "codex_plan_prices_title" = "Plan fiyatları (USD)";
 "codex_plan_prices_help" = "Hub hesaplarının planlarının yanında gösterilen aylık fiyatlar; virgülle ayrılmış plan=fiyat çiftleri olarak (örneğin go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Fatura günleri";
+"codex_billing_days_help" = "Her hub hesabının aylık fatura günü; virgülle ayrılmış kod=gün çiftleri olarak. Kod, hesap kartında e-postadan sonraki #koddur (örneğin 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Oturum ara";

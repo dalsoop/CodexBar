@@ -23,6 +23,7 @@ struct CodexProviderImplementation: ProviderImplementation {
         _ = settings.codexOpenCodexHubExecutablePath
         _ = settings.codexOpenCodexHubSnapshotPath
         _ = settings.codexPlanPrices
+        _ = settings.codexBillingDays
         _ = settings.codexResetAnnouncementsEnabled
         _ = settings.codexResetAnnouncementsProviderURL
     }
@@ -91,15 +92,26 @@ struct CodexProviderImplementation: ProviderImplementation {
                 executablePath: \.codexOpenCodexHubExecutablePath,
                 snapshotPath: \.codexOpenCodexHubSnapshotPath,
                 context: context,
-                extraFields: [ProviderSettingsFieldDescriptor(
-                    id: "codex-plan-prices",
-                    title: "codex_plan_prices_title",
-                    subtitle: "codex_plan_prices_help",
-                    kind: .plain,
-                    placeholder: "go=8, \(OpenCodexHubPlan.defaultPrices)",
-                    binding: context.binding(\.codexPlanPrices),
-                    actions: [],
-                    isVisible: nil)]),
+                extraFields: [
+                    ProviderSettingsFieldDescriptor(
+                        id: "codex-plan-prices",
+                        title: "codex_plan_prices_title",
+                        subtitle: "codex_plan_prices_help",
+                        kind: .plain,
+                        placeholder: "go=8, \(OpenCodexHubPlan.defaultPrices)",
+                        binding: context.binding(\.codexPlanPrices),
+                        actions: [],
+                        isVisible: nil),
+                    ProviderSettingsFieldDescriptor(
+                        id: "codex-billing-days",
+                        title: "codex_billing_days_title",
+                        subtitle: "codex_billing_days_help",
+                        kind: .plain,
+                        placeholder: OpenCodexHubPlan.billingDaysExample,
+                        binding: context.binding(\.codexBillingDays),
+                        actions: [],
+                        isVisible: nil),
+                ]),
             ProviderSettingsToggleDescriptor(
                 id: "codex-local-session-cost-ledger",
                 title: "Local session cost estimates",

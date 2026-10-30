@@ -2902,9 +2902,10 @@
 "reset_news_average_cycle" = "Ciclo médio de %@ dias";
 "reset_news_community" = "Informação da comunidade";
 "hub_plan_next_billing" = "Próxima cobrança %@";
-"hub_plan_billing_unknown" = "Data de cobrança desconhecida";
 "codex_plan_prices_title" = "Preços dos planos (USD)";
 "codex_plan_prices_help" = "Preços mensais exibidos ao lado dos planos das contas do hub, como pares plano=preço separados por vírgulas (por exemplo go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Dias de cobrança";
+"codex_billing_days_help" = "O dia de cobrança mensal de cada conta do hub, como pares código=dia separados por vírgulas. O código é o #código após o e-mail no cartão da conta (por exemplo 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Pesquisar sessões";

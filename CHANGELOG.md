@@ -38,7 +38,7 @@
 
 ### Gujo fork — 2026-10-30
 
-- Title Codex hub account cards with the plan, its monthly price and the next billing date, with the email below; set plan prices in Settings → Providers → Codex.
+- Title Codex hub account cards with the plan, its monthly price and the next billing date, with the email and the account's `#code` below; set plan prices and each account's billing day in Settings → Providers → Codex.
 - Turn Codex reset news on by default. Turning it off in Settings → Providers → Codex is kept.
 - Show Codex reset news as a cycle bar: time since the newest report against the provider's average interval, one line of the post, and the details in a tooltip.
 

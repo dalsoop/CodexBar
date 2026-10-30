@@ -203,6 +203,7 @@ extension StatusItemController {
             OpenCodexHubPlanTitle.title(
                 for: $0,
                 prices: OpenCodexHubPlan.prices(self.settings.codexPlanPrices),
+                billingDays: OpenCodexHubPlan.billingDays(self.settings.codexBillingDays),
                 now: Date())
         } : nil
         let actionLabel: String? = if needsReauth {
@@ -214,8 +215,13 @@ extension StatusItemController {
         } else {
             nil
         }
-        // With a plan title the plan leaves the email line, which then shows only the (redactable) email.
-        let email = planTitle == nil ? account.displayLabel : (account.accountEmail ?? "")
+        // With a plan title the plan leaves the email line, which then shows the (redactable) email and the
+        // account's hub code, the key of the billing-day setting.
+        let email = if planTitle != nil, let hubAccount {
+            OpenCodexHubPlanTitle.emailLine(for: hubAccount, email: account.accountEmail ?? "")
+        } else {
+            account.displayLabel
+        }
         guard var model = self.menuCardModel(
             for: provider,
             context: .account(.init(

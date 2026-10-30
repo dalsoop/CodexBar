@@ -97,6 +97,16 @@ extension SettingsStore {
         }
     }
 
+    /// Each Codex hub account's billing day of the month (`code=day` pairs, keyed by the code on its card).
+    var codexBillingDays: String {
+        get { self.configSnapshot.providerConfig(for: UsageProvider.codex.instanceID)?.codexBillingDays ?? "" }
+        set {
+            self.updateProviderConfig(provider: .codex) { entry in
+                entry.codexBillingDays = self.normalizedConfigValue(newValue)
+            }
+        }
+    }
+
     var grokOpenCodexHubEnabled: Bool {
         get { self.openCodexHubEnabled(for: .grok) }
         set { self.setOpenCodexHubEnabled(newValue, for: .grok) }

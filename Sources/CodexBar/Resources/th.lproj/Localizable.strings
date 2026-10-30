@@ -2904,9 +2904,10 @@
 "reset_news_average_cycle" = "รอบเฉลี่ย %@ วัน";
 "reset_news_community" = "ข้อมูลจากชุมชน";
 "hub_plan_next_billing" = "เรียกเก็บครั้งถัดไป %@";
-"hub_plan_billing_unknown" = "ไม่ทราบวันเรียกเก็บเงิน";
 "codex_plan_prices_title" = "ราคาแพ็กเกจ (USD)";
 "codex_plan_prices_help" = "ราคารายเดือนที่แสดงข้างแพ็กเกจของบัญชีฮับ ในรูปแบบคู่ แพ็กเกจ=ราคา คั่นด้วยจุลภาค (เช่น go=8, plus=20, pro=200)";
+"codex_billing_days_title" = "วันเรียกเก็บเงิน";
+"codex_billing_days_help" = "วันเรียกเก็บเงินรายเดือนของแต่ละบัญชีฮับ ในรูปแบบคู่ รหัส=วัน คั่นด้วยจุลภาค รหัสคือ #รหัส หลังอีเมลบนการ์ดบัญชี (เช่น 0f0f=18, 1a2b=2)";
 
 // Session usage browser
 "Search sessions" = "ค้นหาเซสชัน";

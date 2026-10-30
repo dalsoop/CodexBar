@@ -2901,9 +2901,10 @@
 "reset_news_average_cycle" = "Cycle moyen de %@ jours";
 "reset_news_community" = "Info communautaire";
 "hub_plan_next_billing" = "Prochaine facturation %@";
-"hub_plan_billing_unknown" = "Date de facturation inconnue";
 "codex_plan_prices_title" = "Prix des forfaits (USD)";
 "codex_plan_prices_help" = "Prix mensuels affichés à côté des forfaits des comptes du hub, sous forme de paires forfait=prix séparées par des virgules (par exemple go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Jours de facturation";
+"codex_billing_days_help" = "Le jour de facturation mensuel de chaque compte du hub, sous forme de paires code=jour séparées par des virgules. Le code est le #code après l'e-mail sur la carte du compte (par exemple 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Rechercher des sessions";

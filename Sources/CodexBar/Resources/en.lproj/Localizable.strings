@@ -2909,9 +2909,10 @@
 "reset_news_average_cycle" = "Avg. %@-day cycle";
 "reset_news_community" = "Community info";
 "hub_plan_next_billing" = "Next billing %@";
-"hub_plan_billing_unknown" = "Billing date unknown";
 "codex_plan_prices_title" = "Plan prices (USD)";
 "codex_plan_prices_help" = "Monthly prices shown next to hub account plans, as plan=price pairs separated by commas (for example go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Billing days";
+"codex_billing_days_help" = "Each hub account's billing day of the month, as code=day pairs separated by commas. The code is the #code after the email on the account's card (for example 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Search sessions";
