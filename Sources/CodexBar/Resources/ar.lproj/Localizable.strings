@@ -2906,9 +2906,10 @@
 "reset_news_average_cycle" = "دورة متوسطها %@ يوم";
 "reset_news_community" = "معلومة من المجتمع";
 "hub_plan_next_billing" = "الفوترة التالية %@";
-"hub_plan_billing_unknown" = "تاريخ الفوترة غير معروف";
 "codex_plan_prices_title" = "أسعار الخطط (USD)";
 "codex_plan_prices_help" = "الأسعار الشهرية المعروضة بجانب خطط حسابات المركز، بصيغة plan=price مفصولة بفواصل (مثل go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "أيام الفوترة";
+"codex_billing_days_help" = "يوم الفوترة الشهري لكل حساب في المركز، بصيغة code=day مفصولة بفواصل. الرمز هو #code بعد البريد الإلكتروني في بطاقة الحساب (مثل 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "البحث في الجلسات";

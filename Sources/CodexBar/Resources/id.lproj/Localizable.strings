@@ -2904,9 +2904,10 @@
 "reset_news_average_cycle" = "Siklus rata-rata %@ hari";
 "reset_news_community" = "Info komunitas";
 "hub_plan_next_billing" = "Tagihan berikutnya %@";
-"hub_plan_billing_unknown" = "Tanggal tagihan tidak diketahui";
 "codex_plan_prices_title" = "Harga paket (USD)";
 "codex_plan_prices_help" = "Harga bulanan yang ditampilkan di samping paket akun hub, sebagai pasangan paket=harga dipisahkan koma (misalnya go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Tanggal tagihan";
+"codex_billing_days_help" = "Tanggal tagihan bulanan setiap akun hub, sebagai pasangan kode=tanggal dipisahkan koma. Kode adalah #kode setelah email pada kartu akun (misalnya 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Cari sesi";

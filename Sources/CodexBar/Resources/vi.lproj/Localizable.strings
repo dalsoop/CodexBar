@@ -2903,9 +2903,10 @@
 "reset_news_average_cycle" = "Chu kỳ trung bình %@ ngày";
 "reset_news_community" = "Thông tin cộng đồng";
 "hub_plan_next_billing" = "Lần thanh toán tiếp theo %@";
-"hub_plan_billing_unknown" = "Không rõ ngày thanh toán";
 "codex_plan_prices_title" = "Giá gói (USD)";
 "codex_plan_prices_help" = "Giá hằng tháng hiển thị cạnh gói của các tài khoản hub, dưới dạng cặp gói=giá cách nhau bằng dấu phẩy (ví dụ go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Ngày thanh toán";
+"codex_billing_days_help" = "Ngày thanh toán hằng tháng của từng tài khoản hub, dưới dạng cặp mã=ngày cách nhau bằng dấu phẩy. Mã là #mã sau email trên thẻ tài khoản (ví dụ 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Tìm phiên";

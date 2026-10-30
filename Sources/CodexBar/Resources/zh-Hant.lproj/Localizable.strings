@@ -2880,9 +2880,10 @@
 "reset_news_average_cycle" = "平均 %@ 天週期";
 "reset_news_community" = "社群資訊";
 "hub_plan_next_billing" = "下次扣款 %@";
-"hub_plan_billing_unknown" = "扣款日期不明";
 "codex_plan_prices_title" = "方案價格 (USD)";
 "codex_plan_prices_help" = "顯示在中心帳戶方案旁的月費，格式為以逗號分隔的 方案=價格（例如 go=8, plus=20, pro=200）。";
+"codex_billing_days_title" = "扣款日";
+"codex_billing_days_help" = "每個中心帳戶每月的扣款日，格式為以逗號分隔的 代碼=日期。代碼是帳戶卡片上電子郵件後面的 #代碼（例如 0f0f=18, 1a2b=2）。";
 
 // Session usage browser
 "Search sessions" = "搜尋對話";

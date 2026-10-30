@@ -2903,9 +2903,10 @@
 "reset_news_average_cycle" = "Середній цикл: %@ дн.";
 "reset_news_community" = "Дані спільноти";
 "hub_plan_next_billing" = "Наступне списання %@";
-"hub_plan_billing_unknown" = "Дата списання невідома";
 "codex_plan_prices_title" = "Ціни тарифів (USD)";
 "codex_plan_prices_help" = "Щомісячні ціни поруч із тарифами акаунтів хаба у вигляді пар тариф=ціна через кому (наприклад go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Дні списання";
+"codex_billing_days_help" = "Щомісячний день списання для кожного акаунта хаба у вигляді пар код=день через кому. Код — це #код після адреси пошти на картці акаунта (наприклад 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Пошук сеансів";

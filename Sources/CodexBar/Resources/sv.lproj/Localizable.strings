@@ -2901,9 +2901,10 @@
 "reset_news_average_cycle" = "Snittcykel %@ dagar";
 "reset_news_community" = "Communityinfo";
 "hub_plan_next_billing" = "Nästa debitering %@";
-"hub_plan_billing_unknown" = "Debiteringsdatum okänt";
 "codex_plan_prices_title" = "Planpriser (USD)";
 "codex_plan_prices_help" = "Månadspriser som visas bredvid hubbkontonas planer, som par plan=pris separerade med kommatecken (till exempel go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Debiteringsdagar";
+"codex_billing_days_help" = "Varje hubbkontos debiteringsdag i månaden, som par kod=dag separerade med kommatecken. Koden är #koden efter e-postadressen på kontots kort (till exempel 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Sök sessioner";

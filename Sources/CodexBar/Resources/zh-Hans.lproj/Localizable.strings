@@ -2894,9 +2894,10 @@
 "reset_news_average_cycle" = "平均 %@ 天周期";
 "reset_news_community" = "社区信息";
 "hub_plan_next_billing" = "下次扣费 %@";
-"hub_plan_billing_unknown" = "扣费日期未知";
 "codex_plan_prices_title" = "套餐价格 (USD)";
 "codex_plan_prices_help" = "显示在中心账户套餐旁的月费，格式为以逗号分隔的 套餐=价格（例如 go=8, plus=20, pro=200）。";
+"codex_billing_days_title" = "扣费日";
+"codex_billing_days_help" = "每个中心账户每月的扣费日，格式为以逗号分隔的 代码=日期。代码是账户卡片上邮箱后面的 #代码（例如 0f0f=18, 1a2b=2）。";
 
 // Session usage browser
 "Search sessions" = "搜索会话";

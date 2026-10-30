@@ -180,6 +180,9 @@ All provider fields are optional unless noted.
 - `codexPlanPrices`: Codex; monthly plan prices in US dollars as `plan=price` pairs separated by commas
   (`go=8, plus=20, pro=200`), shown in hub account card titles. Unset means `plus=20, pro=200`; Go has no default
   because its price differs by country. Malformed pairs are ignored.
+- `codexBillingDays`: Codex; each hub account's billing day of the month as `code=day` pairs (`0f0f=18, 1a2b=2`).
+  The code is the account's hub id suffix, shown as `#code` after the email on its card. The card title then ends
+  with the next date on that day (today included; the month's last day in shorter months). Malformed pairs are ignored.
 - `claudeSwapShowSingleAccount`: prefer a claude-swap card when exactly one account is available. Defaults to
   `false`; multiple claude-swap accounts retain their existing precedence.
 
@@ -216,9 +219,10 @@ CodexBar reads only the fields below; the file never contains tokens or full acc
   `monthlyPercent/ResetAt` and `customWindows` (`[{label, percent, resetAt}]`), with times in epoch milliseconds or
   ISO 8601. Schema 1 (`state.accounts`, Anthropic only) is read as a read-only Claude pool.
 - `subscription` (optional, `openai` accounts): `{activeStart, activeUntil, lastChecked}` as ISO 8601, from the
-  account's stored ChatGPT sign-in. A Codex hub account card is titled with its plan, the price from
-  `codexPlanPrices` and `activeUntil` as the next billing date (`Go ($8) · Next billing Nov 18`), with the email on
-  the line below. A date in the past means the sign-in predates the last renewal and is shown as unknown.
+  account's stored ChatGPT sign-in. It is parsed but not shown: pool accounts usually lack it and the sign-in can
+  carry a period that already ended. A Codex hub account card is titled with its plan, the price from
+  `codexPlanPrices` and the next billing date from `codexBillingDays` (`Go ($8) · Next billing Nov 18`), with the
+  email and `#code` on the line below.
 - On the hub, an account id is passed to `ocx account use` as one argument when it is printable ASCII without
   whitespace, at most 128 characters and does not start with `-` (opencodex lists the Codex App's own login as
   `__main__`). A row with any other id, or a repeated id, is listed without a switch instead of failing the pool.

@@ -2899,9 +2899,10 @@
 "reset_news_average_cycle" = "Gem. cyclus van %@ dagen";
 "reset_news_community" = "Community-informatie";
 "hub_plan_next_billing" = "Volgende facturering %@";
-"hub_plan_billing_unknown" = "Factuurdatum onbekend";
 "codex_plan_prices_title" = "Abonnementsprijzen (USD)";
 "codex_plan_prices_help" = "Maandprijzen naast de abonnementen van hub-accounts, als paren abonnement=prijs gescheiden door komma's (bijvoorbeeld go=8, plus=20, pro=200).";
+"codex_billing_days_title" = "Factuurdagen";
+"codex_billing_days_help" = "De maandelijkse factuurdag van elk hub-account, als paren code=dag gescheiden door komma's. De code is de #code na het e-mailadres op de accountkaart (bijvoorbeeld 0f0f=18, 1a2b=2).";
 
 // Session usage browser
 "Search sessions" = "Sessies zoeken";
