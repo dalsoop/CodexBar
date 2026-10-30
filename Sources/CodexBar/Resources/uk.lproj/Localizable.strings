@@ -2902,6 +2902,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "Середній цикл: %@ дн.";
 "reset_news_community" = "Дані спільноти";
+"hub_plan_next_billing" = "Наступне списання %@";
+"hub_plan_billing_unknown" = "Дата списання невідома";
+"codex_plan_prices_title" = "Ціни тарифів (USD)";
+"codex_plan_prices_help" = "Щомісячні ціни поруч із тарифами акаунтів хаба у вигляді пар тариф=ціна через кому (наприклад go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "Пошук сеансів";

@@ -12,6 +12,7 @@ extension UsageMenuCardView.Model {
             "localization=\(codexBarLocalizationSignature())",
             MenuCardHeightFingerprint.field("name", self.providerName),
             MenuCardHeightFingerprint.field("email", self.email),
+            "emailBelowTitle=\(self.emailBelowTitle)",
             MenuCardHeightFingerprint.field("subtitle", self.subtitleText),
             MenuCardHeightFingerprint.field("lastKnownUsage", self.lastKnownUsageText),
             "subtitleStyle=\(self.subtitleStyle.heightFingerprint)",

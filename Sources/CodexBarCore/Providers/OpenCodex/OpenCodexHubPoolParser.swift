@@ -190,7 +190,8 @@ public enum OpenCodexHubPoolParser {
             needsReauth: row["needsReauth"] as? Bool ?? false,
             health: self.trimmed(row["health"]),
             quotaUnavailable: row["quotaUnavailable"] as? Bool ?? false,
-            quota: self.quota(row["quota"] as? [String: Any]))
+            quota: self.quota(row["quota"] as? [String: Any]),
+            subscriptionActiveUntil: self.date((row["subscription"] as? [String: Any])?["activeUntil"]))
     }
 
     private static func quota(_ raw: [String: Any]?) -> OpenCodexHubQuota {

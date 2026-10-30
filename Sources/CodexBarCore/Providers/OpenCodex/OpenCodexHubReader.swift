@@ -425,7 +425,8 @@ public enum OpenCodexHubReader {
                     weekly: quota.weekly,
                     monthly: quota.monthly,
                     custom: quota.custom,
-                    updatedAt: capturedAt))
+                    updatedAt: capturedAt),
+                subscriptionActiveUntil: account.subscriptionActiveUntil)
         }
     }
 

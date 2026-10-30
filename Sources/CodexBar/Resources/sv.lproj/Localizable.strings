@@ -2900,6 +2900,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "Snittcykel %@ dagar";
 "reset_news_community" = "Communityinfo";
+"hub_plan_next_billing" = "Nästa debitering %@";
+"hub_plan_billing_unknown" = "Debiteringsdatum okänt";
+"codex_plan_prices_title" = "Planpriser (USD)";
+"codex_plan_prices_help" = "Månadspriser som visas bredvid hubbkontonas planer, som par plan=pris separerade med kommatecken (till exempel go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "Sök sessioner";

@@ -197,8 +197,14 @@ extension StatusItemController {
         pool: OpenCodexHubPool,
         provider: UsageProvider) -> UsageMenuCardView.Model?
     {
-        let needsReauth = OpenCodexHubAccountProjection.hubAccount(for: account, in: pool)?
-            .requiresReauthentication == true
+        let hubAccount = OpenCodexHubAccountProjection.hubAccount(for: account, in: pool)
+        let needsReauth = hubAccount?.requiresReauthentication == true
+        let planTitle = provider == .codex ? hubAccount.flatMap {
+            OpenCodexHubPlanTitle.title(
+                for: $0,
+                prices: OpenCodexHubPlan.prices(self.settings.codexPlanPrices),
+                now: Date())
+        } : nil
         let actionLabel: String? = if needsReauth {
             L("Re-authenticate")
         } else if account.isActive {
@@ -208,16 +214,24 @@ extension StatusItemController {
         } else {
             nil
         }
-        return self.menuCardModel(
+        // With a plan title the plan leaves the email line, which then shows only the (redactable) email.
+        let email = planTitle == nil ? account.displayLabel : (account.accountEmail ?? "")
+        guard var model = self.menuCardModel(
             for: provider,
             context: .account(.init(
                 snapshot: account.snapshot,
                 error: account.error,
-                info: AccountInfo(email: account.displayLabel, plan: nil),
+                info: AccountInfo(email: email, plan: nil),
                 privacyOrdinal: OpenCodexHubAccountProjection.privacyOrdinal(for: account),
                 plan: .label(actionLabel),
                 planEmphasis: account.isActive ? .active : .none,
                 sourceLabel: account.sourceLabel)))
+        else { return nil }
+        if let planTitle {
+            model.providerName = planTitle
+            model.emailBelowTitle = true
+        }
+        return model
     }
 
     private func openCodexHubSwitchAction(

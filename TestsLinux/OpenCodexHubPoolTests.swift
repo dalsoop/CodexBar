@@ -27,7 +27,9 @@ struct OpenCodexHubPoolTests {
         "openai": {"switchable": false, "switchReason": "Automation on hub-mac uses this pool.", "accounts": [
           {"idSuffix": "0f0f", "label": "go", "email": "b***b@example.com", "active": false, "paused": false,
            "needsReauth": false, "health": "Healthy", "quotaUnavailable": false,
-           "quota": {"monthlyPercent": 0, "monthlyResetAt": 1794978623000, "updatedAt": 1792386000000}},
+           "quota": {"monthlyPercent": 0, "monthlyResetAt": 1794978623000, "updatedAt": 1792386000000},
+           "subscription": {"activeStart": "2026-10-18T17:15:31+00:00", "activeUntil": "2026-11-18T17:15:31+00:00",
+                            "lastChecked": "2026-10-19T00:00:00+00:00"}},
           {"idSuffix": "1a2b", "label": "pro", "email": "a***e@example.com", "active": true, "paused": false,
            "needsReauth": false, "health": "Healthy", "quotaUnavailable": false,
            "quota": {"weeklyPercent": 51, "weeklyResetAt": 1792889538000, "updatedAt": 1792386000000}}
@@ -130,6 +132,8 @@ struct OpenCodexHubPoolTests {
             usedPercent: 0, resetsAt: Date(timeIntervalSince1970: 1_794_978_623)))
         #expect(openai.accounts[0].quota.weekly == nil)
         #expect(openai.accounts[1].quota.weekly?.usedPercent == 51)
+        #expect(openai.accounts[0].subscriptionActiveUntil == Date(timeIntervalSince1970: 1_795_022_131))
+        #expect(openai.accounts[1].subscriptionActiveUntil == nil)
         #expect(openai.lastRequests.isEmpty)
 
         let xai = try OpenCodexHubPoolParser.parseSnapshot(data, provider: .xai).pool
@@ -433,7 +437,7 @@ struct OpenCodexHubPoolTests {
     }
 
     @Test
-    func `snapshot suffixes of opencodex ids address requests`() throws {
+    func `snapshot suffixes of opencodex ids address requests`() {
         #expect(OpenCodexHubPoolParser.isValidIDSuffix("in__"))
         #expect(OpenCodexHubPoolParser.isValidIDSuffix("-123"))
         #expect(!OpenCodexHubPoolParser.isValidIDSuffix("a b"))

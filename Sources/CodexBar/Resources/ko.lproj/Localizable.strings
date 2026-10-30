@@ -2869,6 +2869,10 @@
 "reset_news_disclaimer" = "커뮤니티 소식입니다. 실제 한도는 계정에서 확인하세요.";
 "reset_news_average_cycle" = "평균 %@일 주기";
 "reset_news_community" = "커뮤니티 정보";
+"hub_plan_next_billing" = "다음 결제 %@";
+"hub_plan_billing_unknown" = "결제일 확인 필요";
+"codex_plan_prices_title" = "요금제 가격 (USD)";
+"codex_plan_prices_help" = "허브 계정의 요금제 옆에 표시할 월 가격입니다. 요금제=가격 쌍을 쉼표로 구분해 입력합니다(예: go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "세션 검색";

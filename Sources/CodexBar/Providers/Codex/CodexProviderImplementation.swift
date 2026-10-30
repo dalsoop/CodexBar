@@ -22,6 +22,7 @@ struct CodexProviderImplementation: ProviderImplementation {
         _ = settings.codexOpenCodexHubEnabled
         _ = settings.codexOpenCodexHubExecutablePath
         _ = settings.codexOpenCodexHubSnapshotPath
+        _ = settings.codexPlanPrices
         _ = settings.codexResetAnnouncementsEnabled
         _ = settings.codexResetAnnouncementsProviderURL
     }
@@ -89,7 +90,16 @@ struct CodexProviderImplementation: ProviderImplementation {
                 enabled: \.codexOpenCodexHubEnabled,
                 executablePath: \.codexOpenCodexHubExecutablePath,
                 snapshotPath: \.codexOpenCodexHubSnapshotPath,
-                context: context),
+                context: context,
+                extraFields: [ProviderSettingsFieldDescriptor(
+                    id: "codex-plan-prices",
+                    title: "codex_plan_prices_title",
+                    subtitle: "codex_plan_prices_help",
+                    kind: .plain,
+                    placeholder: "go=8, \(OpenCodexHubPlan.defaultPrices)",
+                    binding: context.binding(\.codexPlanPrices),
+                    actions: [],
+                    isVisible: nil)]),
             ProviderSettingsToggleDescriptor(
                 id: "codex-local-session-cost-ledger",
                 title: "Local session cost estimates",

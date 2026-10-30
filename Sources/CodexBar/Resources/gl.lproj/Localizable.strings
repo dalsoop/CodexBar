@@ -2900,6 +2900,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "Ciclo medio de %@ días";
 "reset_news_community" = "Información da comunidade";
+"hub_plan_next_billing" = "Próxima facturación %@";
+"hub_plan_billing_unknown" = "Data de facturación descoñecida";
+"codex_plan_prices_title" = "Prezos dos plans (USD)";
+"codex_plan_prices_help" = "Prezos mensuais que se amosan xunto aos plans das contas do hub, como pares plan=prezo separados por comas (por exemplo go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "Buscar sesións";

@@ -108,6 +108,9 @@ public struct OpenCodexHubAccount: Equatable, Sendable {
     public let health: String?
     public let quotaUnavailable: Bool
     public let quota: OpenCodexHubQuota
+    /// End of the paid period the account's ChatGPT sign-in last reported; the next billing date when the
+    /// subscription renews. It comes from the stored sign-in and can be older than the real renewal.
+    public let subscriptionActiveUntil: Date?
 
     public init(
         idSuffix: String?,
@@ -118,7 +121,8 @@ public struct OpenCodexHubAccount: Equatable, Sendable {
         needsReauth: Bool = false,
         health: String? = nil,
         quotaUnavailable: Bool = false,
-        quota: OpenCodexHubQuota = OpenCodexHubQuota())
+        quota: OpenCodexHubQuota = OpenCodexHubQuota(),
+        subscriptionActiveUntil: Date? = nil)
     {
         self.idSuffix = idSuffix
         self.label = label
@@ -129,6 +133,7 @@ public struct OpenCodexHubAccount: Equatable, Sendable {
         self.health = health
         self.quotaUnavailable = quotaUnavailable
         self.quota = quota
+        self.subscriptionActiveUntil = subscriptionActiveUntil
     }
 
     /// The label when it says more than the email (for example a plan or seat name).

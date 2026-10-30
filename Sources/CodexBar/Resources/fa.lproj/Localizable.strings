@@ -2905,6 +2905,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "چرخهٔ میانگین %@ روزه";
 "reset_news_community" = "اطلاعات جامعه";
+"hub_plan_next_billing" = "صورتحساب بعدی %@";
+"hub_plan_billing_unknown" = "تاریخ صورتحساب نامشخص";
+"codex_plan_prices_title" = "قیمت طرح‌ها (USD)";
+"codex_plan_prices_help" = "قیمت‌های ماهانه کنار طرح حساب‌های هاب، به‌صورت جفت‌های plan=price جداشده با ویرگول (مثلاً go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "جستجوی نشست‌ها";

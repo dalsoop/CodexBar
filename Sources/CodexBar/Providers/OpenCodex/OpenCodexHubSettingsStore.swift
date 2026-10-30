@@ -84,6 +84,19 @@ extension SettingsStore {
         set { self.setOpenCodexHubSnapshotPath(newValue, for: .codex) }
     }
 
+    /// Monthly plan prices (`plan=price` pairs) shown next to Codex hub account plans.
+    var codexPlanPrices: String {
+        get {
+            self.configSnapshot.providerConfig(for: UsageProvider.codex.instanceID)?.codexPlanPrices
+                ?? OpenCodexHubPlan.defaultPrices
+        }
+        set {
+            self.updateProviderConfig(provider: .codex) { entry in
+                entry.codexPlanPrices = self.normalizedConfigValue(newValue)
+            }
+        }
+    }
+
     var grokOpenCodexHubEnabled: Bool {
         get { self.openCodexHubEnabled(for: .grok) }
         set { self.setOpenCodexHubEnabled(newValue, for: .grok) }

@@ -2908,6 +2908,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "Avg. %@-day cycle";
 "reset_news_community" = "Community info";
+"hub_plan_next_billing" = "Next billing %@";
+"hub_plan_billing_unknown" = "Billing date unknown";
+"codex_plan_prices_title" = "Plan prices (USD)";
+"codex_plan_prices_help" = "Monthly prices shown next to hub account plans, as plan=price pairs separated by commas (for example go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "Search sessions";
