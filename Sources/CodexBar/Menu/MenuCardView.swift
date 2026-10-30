@@ -170,8 +170,10 @@ struct UsageMenuCardView: View {
         }
 
         let provider: UsageProvider
-        let providerName: String
+        var providerName: String
         var email: String
+        /// Draws the email on its own line under the title, for titles that carry account details.
+        var emailBelowTitle = false
         var accountIdentityFingerprint: String?
         let subtitleText: String
         let subtitleStyle: SubtitleStyle
@@ -349,14 +351,25 @@ private struct UsageMenuCardHeaderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: UsageMenuCardLayout.headerLineSpacing) {
-            HStack(alignment: .firstTextBaseline, spacing: UsageMenuCardLayout.headerColumnSpacing) {
+            if self.model.emailBelowTitle {
                 Text(self.model.providerName).font(.headline)
                     .fontWeight(.semibold)
-                    .lineLimit(1).truncationMode(.tail).layoutPriority(1)
-                Spacer()
-                Text(self.model.email).font(.subheadline)
-                    .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
-                    .lineLimit(1).truncationMode(.middle)
+                    .lineLimit(1).truncationMode(.tail)
+                if !self.model.email.isEmpty {
+                    Text(self.model.email).font(.subheadline)
+                        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+                        .lineLimit(1).truncationMode(.middle)
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: UsageMenuCardLayout.headerColumnSpacing) {
+                    Text(self.model.providerName).font(.headline)
+                        .fontWeight(.semibold)
+                        .lineLimit(1).truncationMode(.tail).layoutPriority(1)
+                    Spacer()
+                    Text(self.model.email).font(.subheadline)
+                        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+                        .lineLimit(1).truncationMode(.middle)
+                }
             }
             let liveSubtitle = self.liveSubtitle
             let displayed = liveSubtitle.displayed(reservesStaleRow: self.model.lastKnownUsageText != nil)

@@ -2904,6 +2904,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "Ortalama %@ günlük döngü";
 "reset_news_community" = "Topluluk bilgisi";
+"hub_plan_next_billing" = "Sonraki fatura %@";
+"hub_plan_billing_unknown" = "Fatura tarihi bilinmiyor";
+"codex_plan_prices_title" = "Plan fiyatları (USD)";
+"codex_plan_prices_help" = "Hub hesaplarının planlarının yanında gösterilen aylık fiyatlar; virgülle ayrılmış plan=fiyat çiftleri olarak (örneğin go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "Oturum ara";

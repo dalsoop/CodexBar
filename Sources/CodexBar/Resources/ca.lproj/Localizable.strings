@@ -2903,6 +2903,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "Cicle mitjà de %@ dies";
 "reset_news_community" = "Informació de la comunitat";
+"hub_plan_next_billing" = "Propera facturació %@";
+"hub_plan_billing_unknown" = "Data de facturació desconeguda";
+"codex_plan_prices_title" = "Preus dels plans (USD)";
+"codex_plan_prices_help" = "Preus mensuals que es mostren al costat dels plans dels comptes del hub, com a parelles pla=preu separades per comes (per exemple go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "Cerca sessions";

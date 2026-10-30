@@ -2901,6 +2901,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "平均%@日周期";
 "reset_news_community" = "コミュニティ情報";
+"hub_plan_next_billing" = "次回請求 %@";
+"hub_plan_billing_unknown" = "請求日不明";
+"codex_plan_prices_title" = "プラン料金 (USD)";
+"codex_plan_prices_help" = "ハブアカウントのプランの横に表示する月額料金です。プラン=料金の組をカンマで区切って入力します（例: go=8, plus=20, pro=200）。";
 
 // Session usage browser
 "Search sessions" = "セッションを検索";

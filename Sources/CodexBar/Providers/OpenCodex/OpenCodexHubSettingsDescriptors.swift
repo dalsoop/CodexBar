@@ -9,7 +9,8 @@ enum OpenCodexHubSettingsDescriptors {
         enabled: ReferenceWritableKeyPath<SettingsStore, Bool>,
         executablePath: ReferenceWritableKeyPath<SettingsStore, String>,
         snapshotPath: ReferenceWritableKeyPath<SettingsStore, String>,
-        context: ProviderSettingsContext) -> ProviderSettingsToggleDescriptor
+        context: ProviderSettingsContext,
+        extraFields: [ProviderSettingsFieldDescriptor] = []) -> ProviderSettingsToggleDescriptor
     {
         let executableField = ProviderSettingsFieldDescriptor(
             id: "\(provider.rawValue)-opencodex-executable-path",
@@ -39,7 +40,7 @@ enum OpenCodexHubSettingsDescriptors {
             binding: context.binding(enabled),
             statusText: { Self.statusText(provider: provider, store: context.store) },
             actions: [],
-            inlineFields: [executableField, snapshotField],
+            inlineFields: [executableField, snapshotField] + extraFields,
             isVisible: nil,
             isEnabled: nil,
             onChange: { _ in await context.store.refreshProvider(provider) },

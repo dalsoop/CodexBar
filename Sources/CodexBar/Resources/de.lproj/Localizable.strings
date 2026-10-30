@@ -2899,6 +2899,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "Ø-Zyklus %@ Tage";
 "reset_news_community" = "Community-Info";
+"hub_plan_next_billing" = "Nächste Abrechnung %@";
+"hub_plan_billing_unknown" = "Abrechnungsdatum unbekannt";
+"codex_plan_prices_title" = "Tarifpreise (USD)";
+"codex_plan_prices_help" = "Monatspreise neben den Tarifen der Hub-Konten, als Paare tarif=preis durch Kommas getrennt (zum Beispiel go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "Sitzungen suchen";

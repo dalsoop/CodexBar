@@ -2900,6 +2900,10 @@
 "reset_news_disclaimer" = "Community reports. Check your account for actual limits.";
 "reset_news_average_cycle" = "Cycle moyen de %@ jours";
 "reset_news_community" = "Info communautaire";
+"hub_plan_next_billing" = "Prochaine facturation %@";
+"hub_plan_billing_unknown" = "Date de facturation inconnue";
+"codex_plan_prices_title" = "Prix des forfaits (USD)";
+"codex_plan_prices_help" = "Prix mensuels affichés à côté des forfaits des comptes du hub, sous forme de paires forfait=prix séparées par des virgules (par exemple go=8, plus=20, pro=200).";
 
 // Session usage browser
 "Search sessions" = "Rechercher des sessions";
