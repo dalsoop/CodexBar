@@ -86,6 +86,9 @@ public enum OpenCodexHubManagement {
 
     public static func isRemoteManagementOrigin(_ address: String) -> Bool {
         guard let origin = self.trimmedManagementOrigin(address),
+              let host = URLComponents(string: origin)?.host,
+              // Reject scoped IPv6 before URL normalization can discard its interface identifier.
+              !(host.contains(":") && host.contains("%")),
               let url = self.originComponents(origin)
         else { return false }
         return url.scheme?.lowercased() == "https" && !self.isRemoteLoopback(url)
