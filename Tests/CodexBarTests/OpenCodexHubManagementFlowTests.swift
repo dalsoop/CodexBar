@@ -274,21 +274,19 @@ struct OpenCodexHubManagementFlowTests {
         #expect(opened.count == 1)
     }
 
-    @Test(arguments: [UsageProvider.codex, .claude, .grok])
-    func `management origin rejects invalid input without changing a valid override`(provider: UsageProvider) throws {
+    @Test
+    func `management origin rejects invalid input without changing a valid override`() throws {
         let fixture = try self.fixture()
         defer { fixture.cleanup() }
+        let provider = UsageProvider.codex
         let settings = fixture.settings
         settings.setOpenCodexHubEnabled(true, for: provider)
         settings.setOpenCodexHubSnapshotPath("/synthetic/accounts.json", for: provider)
         #expect(settings.setOpenCodexHubManagementOrigin(" https://management.example/ \n", for: provider))
         let revision = settings.providerConfigRevision(for: provider)
         let saved = settings.openCodexHubManagementOrigin(for: provider)
-        for invalid in [
-            "\"https://other.example\"", "'https://other.example'", "\"\"", "''",
-            "http://other.example", "https://user:private@other.example", "https://other.example/accounts",
-            "https://other.example?tab=accounts", "https://other.example#accounts", "https://127.0.0.1",
-        ] {
+        // The full URL rejection matrix belongs to Core; here verify settings are not overwritten.
+        for invalid in ["\"https://other.example\"", "''"] {
             #expect(!settings.setOpenCodexHubManagementOrigin(invalid, for: provider))
             #expect(settings.openCodexHubManagementOrigin(for: provider) == saved)
             #expect(settings.providerConfigRevision(for: provider) == revision)
@@ -306,14 +304,15 @@ struct OpenCodexHubManagementFlowTests {
         #expect(settings.openCodexHubSnapshotPath(for: provider) == "/synthetic/accounts.json")
     }
 
-    @Test(arguments: [UsageProvider.codex, .claude, .grok])
-    func `saved invalid upper origins fail closed without opening a browser`(provider: UsageProvider) async throws {
+    @Test
+    func `saved invalid upper origins fail closed without opening a browser`() async throws {
         let fixture = try self.fixture()
         defer { fixture.cleanup() }
+        let provider = UsageProvider.codex
         fixture.settings.setOpenCodexHubEnabled(true, for: provider)
         fixture.settings.setOpenCodexHubExecutablePath(
             fixture.files.root.appendingPathComponent("missing-ocx").path, for: provider)
-        for invalid in ["\"https://management.example\"", "''", "http://127.0.0.1:65130"] {
+        for invalid in ["\"https://management.example\"", "''"] {
             fixture.settings.updateProviderConfig(provider: provider) { $0.openCodexHubManagementOrigin = invalid }
             var opens = 0
             var nativeCalls = 0

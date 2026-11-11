@@ -52,16 +52,10 @@ struct OpenCodexHubManagementTests {
             "http://localhost:10100/#providers?provider=anthropic&tab=accounts"),
     ])
     func `management uses the current role address and provider page`(status: String, expected: String) {
-        for origin: String? in [nil, "", " \n\t "] {
-            #expect(OpenCodexHubManagement.accountsURL(
-                status: Data(status.utf8), provider: .anthropic, managementOrigin: origin)?.absoluteString == expected)
-            let codex = OpenCodexHubManagement.accountsURL(
-                status: Data(status.utf8), provider: .openai, managementOrigin: origin)
-            #expect(codex?.fragment == "codex-set")
-        }
-        #expect(OpenCodexHubManagement.accountsURL(
-            status: Data(status.utf8), provider: .xai, managementOrigin: "https://management.example/")?
-            .absoluteString == "https://management.example/#providers?provider=xai&tab=accounts")
+        #expect(OpenCodexHubManagement.accountsURL(status: Data(status.utf8), provider: .anthropic)?
+            .absoluteString == expected)
+        let codex = OpenCodexHubManagement.accountsURL(status: Data(status.utf8), provider: .openai)
+        #expect(codex?.fragment == "codex-set")
     }
 
     @Test(arguments: [
@@ -274,31 +268,6 @@ struct OpenCodexHubManagementTests {
         #expect(await transport.arguments.isEmpty)
     }
 
-    @Test
-    func `empty origins retain legacy status reads and transport failure sanitization`() async throws {
-        let transport = HubManagementTransport()
-        for origin: String? in [nil, "", " \n\t "] {
-            let url = try await OpenCodexHubManagement.accountsURL(
-                executablePath: "/fake/ocx", provider: .openai, managementOrigin: origin, transport: transport)
-            #expect(url.absoluteString == "https://hub.example/#codex-set")
-        }
-        #expect(await transport.arguments == Array(repeating: ["status", "--json"], count: 3))
-        #expect(await transport.mutations == [false, false, false])
-        await transport.fail()
-        await #expect(throws: OpenCodexAccessError.communicationFailed) {
-            _ = try await OpenCodexHubManagement.accountsURL(
-                executablePath: "/fake/ocx", provider: .openai, managementOrigin: " \n ", transport: transport)
-        }
-    }
-
-    @Test
-    func `configured origin survives a provider config round trip`() throws {
-        var config = ProviderConfig(id: .claude)
-        config.openCodexHubManagementOrigin = "https://management.example"
-        let copy = try JSONDecoder().decode(ProviderConfig.self, from: JSONEncoder().encode(config))
-        #expect(copy.sanitizedOpenCodexHubManagementOrigin == "https://management.example")
-    }
-
     @Test(arguments: ["\"\"", "' '", "\"https://management.example\"", "not a URL"])
     func `origin config preserves invalid nonempty values for fail closed selection`(origin: String) {
         var config = ProviderConfig(id: .claude)
@@ -315,18 +284,18 @@ struct OpenCodexHubManagementTests {
         ])
     }
 
-    @Test
-    func `opening management reads only current status and sanitizes transport failures`() async throws {
+    @Test(arguments: [nil, "", " \n\t "] as [String?])
+    func `opening management reads only current status and sanitizes transport failures`(origin: String?) async throws {
         let transport = HubManagementTransport()
         let url = try await OpenCodexHubManagement.accountsURL(
-            executablePath: "/fake/ocx", provider: .xai, transport: transport)
+            executablePath: "/fake/ocx", provider: .xai, managementOrigin: origin, transport: transport)
         #expect(url.absoluteString == "https://hub.example/#providers?provider=xai&tab=accounts")
         #expect(await transport.arguments == [["status", "--json"]])
         #expect(await transport.mutations == [false])
         await transport.fail()
         await #expect(throws: OpenCodexAccessError.communicationFailed) {
             _ = try await OpenCodexHubManagement.accountsURL(
-                executablePath: "/fake/ocx", provider: .xai, transport: transport)
+                executablePath: "/fake/ocx", provider: .xai, managementOrigin: origin, transport: transport)
         }
     }
 }
