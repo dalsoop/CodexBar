@@ -1,4 +1,11 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#endif
 
 public enum OpenCodexHubManagementError: Error, Equatable, Sendable {
     case managementAddressRequired
@@ -12,6 +19,12 @@ public enum OpenCodexHubManagement {
         managementOrigin: String? = nil,
         transport: any OpenCodexAccessTransport = OpenCodexAccessProcessTransport()) async throws -> URL
     {
+        if let origin = self.trimmedManagementOrigin(managementOrigin) {
+            guard let url = self.remoteAccountsURL(origin: origin, provider: provider) else {
+                throw OpenCodexHubManagementError.managementAddressRequired
+            }
+            return url
+        }
         guard let binary = OpenCodexHubReader.resolvedExecutablePath(executablePath) else {
             throw OpenCodexHubReaderError.noHubSource("no ocx executable")
         }
@@ -41,6 +54,9 @@ public enum OpenCodexHubManagement {
         provider: OpenCodexHubProvider,
         managementOrigin: String? = nil) -> URL?
     {
+        if let origin = self.trimmedManagementOrigin(managementOrigin) {
+            return self.remoteAccountsURL(origin: origin, provider: provider)
+        }
         guard status.count <= OpenCodexHubReader.maxOutputBytes,
               let object = try? JSONSerialization.jsonObject(with: status) as? [String: Any],
               OpenCodexAccessParser.number(object["schemaVersion"]) == 1,
@@ -53,14 +69,8 @@ public enum OpenCodexHubManagement {
             let connection = object["connection"] as? [String: Any]
             guard connection?["state"] as? String == "connected" else { return nil }
             // Remote Link reports its data tunnel as managementUrl. It serves no browser UI.
-            // Use only an explicitly configured browser origin for this transport.
-            if connection?["transport"] as? String == "link" {
-                address = managementOrigin
-            } else {
-                let reported = connection?["managementUrl"] as? String
-                // Older status documents can omit transport; a loopback address still cannot be the hub UI.
-                address = reported.map(self.isRemoteManagementOrigin) == true ? reported : managementOrigin
-            }
+            guard connection?["transport"] as? String != "link" else { return nil }
+            address = connection?["managementUrl"] as? String
         case .hub:
             address = (object["hub"] as? [String: Any])?["managementPublicOrigin"] as? String
         case .standalone:
@@ -68,17 +78,52 @@ public enum OpenCodexHubManagement {
         case .unknown:
             return nil
         }
-        guard let address, var url = self.originComponents(address) else { return nil }
+        guard let address, let url = self.originComponents(address) else { return nil }
         // Remote management must be an HTTPS origin. Only standalone owns a local browser UI.
         guard role == .standalone ? self.isLoopback(url) : self.isRemoteManagementOrigin(address) else { return nil }
+        return self.accountsURL(origin: url, provider: provider)
+    }
+
+    public static func isRemoteManagementOrigin(_ address: String) -> Bool {
+        guard let origin = self.trimmedManagementOrigin(address),
+              let url = self.originComponents(origin)
+        else { return false }
+        return url.scheme?.lowercased() == "https" && !self.isRemoteLoopback(url)
+    }
+
+    /// Do not unquote or validate here: invalid nonempty overrides must never become absent defaults.
+    static func trimmedManagementOrigin(_ address: String?) -> String? {
+        guard let origin = address?.trimmingCharacters(in: .whitespacesAndNewlines), !origin.isEmpty else { return nil }
+        return origin
+    }
+
+    private static func remoteAccountsURL(origin: String, provider: OpenCodexHubProvider) -> URL? {
+        guard self.isRemoteManagementOrigin(origin), let url = self.originComponents(origin) else { return nil }
+        return self.accountsURL(origin: url, provider: provider)
+    }
+
+    private static func accountsURL(origin: URLComponents, provider: OpenCodexHubProvider) -> URL? {
+        var url = origin
         url.path = "/"
         url.fragment = provider == .openai ? "codex-set" : "providers?provider=\(provider.rawValue)&tab=accounts"
         return url.url
     }
 
-    public static func isRemoteManagementOrigin(_ address: String) -> Bool {
-        guard let url = self.originComponents(address) else { return false }
-        return url.scheme?.lowercased() == "https" && !self.isLoopback(url)
+    private static func isRemoteLoopback(_ url: URLComponents) -> Bool {
+        let host = (url.host ?? "").lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "[]."))
+        if host == "localhost" { return true }
+        var ipv4 = in_addr()
+        if inet_aton(host, &ipv4) == 1 {
+            return UInt32(bigEndian: ipv4.s_addr) >> 24 == 127
+        }
+        var ipv6 = in6_addr()
+        guard inet_pton(AF_INET6, host, &ipv6) == 1 else { return false }
+        return withUnsafeBytes(of: &ipv6) { bytes in
+            let loopback = bytes.prefix(15).allSatisfy { $0 == 0 } && bytes[15] == 1
+            let mappedIPv4 = bytes.prefix(10).allSatisfy { $0 == 0 }
+                && bytes[10] == 0xFF && bytes[11] == 0xFF && bytes[12] == 127
+            return loopback || mappedIPv4
+        }
     }
 
     private static func originComponents(_ address: String) -> URLComponents? {
