@@ -115,6 +115,9 @@ enum BurnProviderChoice: String, AppEnum {
     case traecn
     case chatbox
     case abliteration
+    case opendesign
+    case siliconflow
+    case tripo
 
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Provider")
 
@@ -232,6 +235,9 @@ enum BurnProviderChoice: String, AppEnum {
         .traecn: DisplayRepresentation(title: "Trae CN"),
         .chatbox: DisplayRepresentation(title: "Chatbox AI"),
         .abliteration: DisplayRepresentation(title: "abliteration.ai"),
+        .opendesign: DisplayRepresentation(title: "OpenDesign"),
+        .siliconflow: DisplayRepresentation(title: "SiliconFlow"),
+        .tripo: DisplayRepresentation(title: "Tripo"),
     ]
 
     var provider: UsageProvider {
@@ -510,7 +516,8 @@ struct BurnDownTimelineProvider: AppIntentTimelineProvider {
             date: Date(),
             provider: configuration.provider.provider,
             window: configuration.window,
-            snapshot: WidgetSnapshotStore.load() ?? WidgetPreviewData.snapshot())
+            snapshot: WidgetSnapshotStore.load(provider: configuration.provider.provider) ?? WidgetPreviewData
+                .snapshot())
     }
 
     func timeline(
@@ -521,7 +528,8 @@ struct BurnDownTimelineProvider: AppIntentTimelineProvider {
             date: Date(),
             provider: configuration.provider.provider,
             window: configuration.window,
-            snapshot: WidgetSnapshotStore.load() ?? WidgetPreviewData.emptySnapshot())
+            snapshot: WidgetSnapshotStore.load(provider: configuration.provider.provider) ?? WidgetPreviewData
+                .emptySnapshot())
         let refresh = BurnDownRefreshSchedule.nextRefresh(snapshot: entry.snapshot, provider: entry.provider)
         return Timeline(entries: [entry], policy: .after(refresh))
     }
@@ -542,7 +550,8 @@ struct CombinedBurnDownTimelineProvider: AppIntentTimelineProvider {
         CombinedBurnDownEntry(
             date: Date(),
             provider: configuration.provider.provider,
-            snapshot: WidgetSnapshotStore.load() ?? WidgetPreviewData.snapshot())
+            snapshot: WidgetSnapshotStore.load(provider: configuration.provider.provider) ?? WidgetPreviewData
+                .snapshot())
     }
 
     func timeline(
@@ -552,7 +561,8 @@ struct CombinedBurnDownTimelineProvider: AppIntentTimelineProvider {
         let entry = CombinedBurnDownEntry(
             date: Date(),
             provider: configuration.provider.provider,
-            snapshot: WidgetSnapshotStore.load() ?? WidgetPreviewData.emptySnapshot())
+            snapshot: WidgetSnapshotStore.load(provider: configuration.provider.provider) ?? WidgetPreviewData
+                .emptySnapshot())
         let refresh = BurnDownRefreshSchedule.nextRefresh(snapshot: entry.snapshot, provider: entry.provider)
         return Timeline(entries: [entry], policy: .after(refresh))
     }
