@@ -20,7 +20,7 @@ final class CLIEntryTests: XCTestCase {
     func test_dashboardCommandIsRegisteredAndParsesOptions() throws {
         let program = Program(descriptors: CodexBarCLI.commandDescriptors())
         let invocation = try program.resolve(
-            argv: ["dashboard", "--pretty", "--timeout", "45", "--output", "/tmp/snapshot.json"])
+            arguments: ["dashboard", "--pretty", "--timeout", "45", "--output", "/tmp/snapshot.json"])
 
         XCTAssertEqual(invocation.path, ["dashboard"])
         XCTAssertTrue(invocation.parsedValues.flags.contains("pretty"))
@@ -53,6 +53,19 @@ final class CLIEntryTests: XCTestCase {
         XCTAssertNotEqual(result.status, 0)
         XCTAssertTrue(result.stdout.isEmpty)
         XCTAssertFalse(result.stderr.isEmpty)
+    }
+
+    func test_costRejectsMalformedDaysInsteadOfUsingSavedPeriod() throws {
+        for days in ["banana", "1.5", "99999999999999999999999999999"] {
+            let result = try Self.runCLI(
+                arguments: ["cost", "--provider", "codex", "--provider-native-only", "--days", days, "--json"],
+                environment: ["CODEXBAR_DISABLE_KEYCHAIN_ACCESS": "1"])
+            XCTAssertEqual(result.status, 1, days)
+            let rows = try XCTUnwrap(JSONSerialization.jsonObject(with: result.stdout) as? [[String: Any]])
+            let error = try XCTUnwrap(rows.first?["error"] as? [String: Any])
+            XCTAssertEqual(error["kind"] as? String, "args", days)
+            XCTAssertEqual(error["message"] as? String, "Error: --days must be an integer.", days)
+        }
     }
 
     /// `Program.resolve` throws before `ParsedValues` (and `resolveUsageOutputPreferences`) exist, so
@@ -965,5 +978,22 @@ extension CodexBarCLI {
             claudeFetcher: ClaudeUsageFetcher(browserDetection: browserDetection),
             browserDetection: browserDetection)
         return await self.sourceModeRequiresWebSupport(provider: provider, context: context)
+    }
+}
+
+extension CLIEntryTests {
+    func test_missingOptionValuesPreserveArgumentExitCodes() throws {
+        let cases: [(arguments: [String], expectedStatus: Int32)] = [
+            (["usage", "--provider"], 1),
+            (["guard", "--provider"], 64),
+            (["dashboard", "--output"], 1),
+        ]
+        for testCase in cases {
+            let result = try Self.runCLI(arguments: testCase.arguments)
+            XCTAssertEqual(result.status, testCase.expectedStatus)
+            XCTAssertTrue(result.stdout.isEmpty)
+            let stderr = try XCTUnwrap(String(bytes: result.stderr, encoding: .utf8))
+            XCTAssertTrue(stderr.contains("Missing value for option"))
+        }
     }
 }
