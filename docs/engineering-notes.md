@@ -48,8 +48,10 @@ gate (for example `openpty` in the PTY runners) can still reach a concurrently l
 launch path uses the gate rather than calling `Process.run()` or `Pipe()` directly. The one ungated Core launch is
 the cost scanner's one-second `git worktree list`: any edit under `Vendored/CostUsage` changes
 `CodexParserHash` and makes every user rescan their cost logs, and that child lives too briefly to hide another
-launch for long. Darwin spawns with
-`POSIX_SPAWN_CLOEXEC_DEFAULT` and is not affected; the gate does nothing there.
+launch for long. The reverse still happens: a long-running gated child (a Codex or Grok RPC session) launched while
+that `git` starts can hold its exit socket, and the scanner then gives up after its one-second wait and treats the
+project as having no worktree list. Darwin spawns with `POSIX_SPAWN_CLOEXEC_DEFAULT` and is not affected; the gate
+does nothing there.
 
 compile_and_run.sh는 기존 CodexBar를 중단하고 새 앱을 띄운다. 운영 앱을 보존하는 검증에서는 이 명령을 사용하지 않는다. 서명이 달라진 ad-hoc 앱은 기존 Keychain 허가를 그대로 얻지 못할 수 있으므로 반복 재시작으로 허가를 해결하려 하지 않는다.
 
