@@ -269,8 +269,28 @@ struct OpenCodexHubManagementFlowTests {
         #expect(opened.map(\.absoluteString) == ["https://management.example/#codex-set"])
         #expect(fixture.settings.setOpenCodexHubManagementOrigin("", for: .codex))
         let message = await fixture.store.openHubAccountManagement(.codex, openURL: { opened.append($0); return true })
-        #expect(message == L("Set the hub's HTTPS management address in Settings. " +
-                "The local data tunnel cannot open the account manager."))
+        let addressRequired = L("Set the hub's HTTPS management address in Settings. " +
+            "The local data tunnel cannot open the account manager.")
+        #expect(message == addressRequired)
+        // Without an address the local role picks the guidance, even from a stopped runtime or a failing exit.
+        let unreachable = L("Could not reach the account manager. Check the hub connection and try again.")
+        let cases: [(status: String, exitCode: Int, expected: String)] = [
+            (#"{"schemaVersion":1,"runtimeRole":"hub","proxy":{"running":false}}"#, 0, addressRequired),
+            (#"{"schemaVersion":1,"runtimeRole":"hub","proxy":{"running":false}}"#, 1, addressRequired),
+            (#"{"schemaVersion":1,"runtimeRole":"client","proxy":{"running":true}}"#, 0, addressRequired),
+            (#"{"schemaVersion":1,"runtimeRole":"standalone","proxy":{"running":false}}"#, 0, unreachable),
+            ("not json", 1, unreachable),
+        ]
+        for (status, exitCode, expected) in cases {
+            try "#!/bin/sh\nprintf '%s' '\(status)'\nexit \(exitCode)\n"
+                .write(to: executable, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+            let result = await fixture.store.openHubAccountManagement(.codex, openURL: { _ in true })
+            #expect(result == expected)
+        }
+        fixture.settings.codexOpenCodexHubExecutablePath = fixture.files.root.appendingPathComponent("missing-ocx").path
+        let missing = await fixture.store.openHubAccountManagement(.codex, openURL: { opened.append($0); return true })
+        #expect(missing == addressRequired)
         #expect(opened.count == 1)
     }
 
@@ -302,6 +322,26 @@ struct OpenCodexHubManagementFlowTests {
         #expect(settings.openCodexHubManagementOrigin(for: provider) == (OpenCodexHubDefaults.managementOrigin ?? ""))
         #expect(settings.openCodexHubEnabled(for: provider))
         #expect(settings.openCodexHubSnapshotPath(for: provider) == "/synthetic/accounts.json")
+        // Saving the packaged default (compared canonically) clears the override instead of pinning a copy.
+        let packaged = "https://central.example"
+        func stored() -> String? {
+            settings.configSnapshot.providerConfig(for: provider.instanceID)?.openCodexHubManagementOrigin
+        }
+        for variant in [packaged, "HTTPS://Central.Example:443/", " https://central.example/\n"] {
+            #expect(settings.setOpenCodexHubManagementOrigin(
+                "https://other.example", for: provider, packagedDefault: packaged))
+            #expect(stored() == "https://other.example")
+            #expect(settings.setOpenCodexHubManagementOrigin(variant, for: provider, packagedDefault: packaged))
+            #expect(stored() == nil)
+        }
+        #expect(settings.setOpenCodexHubManagementOrigin(
+            "https://central.example:8443", for: provider, packagedDefault: packaged))
+        #expect(stored() == "https://central.example:8443")
+        #expect(!settings.setOpenCodexHubManagementOrigin(
+            "http://central.example", for: provider, packagedDefault: packaged))
+        #expect(stored() == "https://central.example:8443")
+        #expect(settings.setOpenCodexHubManagementOrigin("", for: provider, packagedDefault: packaged))
+        #expect(stored() == nil)
     }
 
     @Test

@@ -25,28 +25,48 @@ public enum OpenCodexHubManagement {
             }
             return url
         }
+        // Without a local ocx only an explicit central address can open the account manager.
         guard let binary = OpenCodexHubReader.resolvedExecutablePath(executablePath) else {
-            throw OpenCodexHubReaderError.noHubSource("no ocx executable")
+            throw OpenCodexHubManagementError.managementAddressRequired
         }
         let data: Data
         do {
+            // A stopped or failing runtime still reports its role, so the document is read on any exit code.
             data = try await transport.run(.init(
                 binary: binary,
                 arguments: OpenCodexRuntimeRoleProbe.statusArguments,
                 mutation: false,
                 timeout: OpenCodexRuntimeRoleProbe.timeout,
-                maxOutputBytes: OpenCodexHubReader.maxOutputBytes))
+                maxOutputBytes: OpenCodexHubReader.maxOutputBytes,
+                acceptsNonZeroExit: true))
+        } catch OpenCodexAccessError.executableMissing {
+            throw OpenCodexHubManagementError.managementAddressRequired
         } catch {
             throw OpenCodexAccessError.communicationFailed
         }
+        if let url = self.accountsURL(status: data, provider: provider, managementOrigin: managementOrigin) {
+            return url
+        }
         // Deliberately do not include command output in errors: status contains unrelated private fields.
-        guard let url = self.accountsURL(status: data, provider: provider, managementOrigin: managementOrigin) else {
-            if self.connectedClient(data) {
-                throw OpenCodexHubManagementError.managementAddressRequired
-            }
+        switch OpenCodexRuntimeRoleProbe.parseRole(data) {
+        case .hub, .client:
+            // The hub or a client's tunnel has no usable browser UI here; the central address is the fix.
+            throw OpenCodexHubManagementError.managementAddressRequired
+        case .standalone, .unknown:
             throw OpenCodexHubReaderError.noHubSource("no connected, secure management address")
         }
-        return url
+    }
+
+    /// The comparable form of a valid remote management origin (lowercased, default port and root path dropped).
+    public static func canonicalManagementOrigin(_ address: String?) -> String? {
+        guard let origin = self.trimmedManagementOrigin(address),
+              self.isRemoteManagementOrigin(origin),
+              var url = self.originComponents(origin)
+        else { return nil }
+        if url.port == 443 { url.port = nil }
+        url.path = ""
+        // Only scheme, host and port remain, so lowercasing cannot change a path, query or credential.
+        return url.string?.lowercased()
     }
 
     public static func accountsURL(
@@ -139,15 +159,5 @@ public enum OpenCodexHubManagement {
 
     private static func isLoopback(_ url: URLComponents) -> Bool {
         ["localhost", "127.0.0.1", "[::1]", "::1"].contains(url.host?.lowercased() ?? "")
-    }
-
-    private static func connectedClient(_ data: Data) -> Bool {
-        guard data.count <= OpenCodexHubReader.maxOutputBytes,
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              OpenCodexAccessParser.number(object["schemaVersion"]) == 1,
-              OpenCodexAccessParser.bool((object["proxy"] as? [String: Any])?["running"]) == true,
-              OpenCodexRuntimeRoleProbe.parseRole(data) == .client
-        else { return false }
-        return (object["connection"] as? [String: Any])?["state"] as? String == "connected"
     }
 }

@@ -196,6 +196,7 @@ struct OpenCodexHubManagementTests {
     ])
     func `configured browser origins reject data paths credentials and loopback`(origin: String) throws {
         #expect(!OpenCodexHubManagement.isRemoteManagementOrigin(origin))
+        #expect(OpenCodexHubManagement.canonicalManagementOrigin(origin) == nil)
         #expect(try OpenCodexHubManagement.accountsURL(
             status: self.linkStatus(), provider: .openai, managementOrigin: origin) == nil)
     }
@@ -240,6 +241,11 @@ struct OpenCodexHubManagementTests {
             #expect(url.absoluteString == "https://management.example/#\(fragment)")
         }
         #expect(await transport.arguments.isEmpty)
+        for variant in [origin, "HTTPS://Management.Example:443/"] {
+            #expect(OpenCodexHubManagement.canonicalManagementOrigin(variant) == "https://management.example")
+        }
+        #expect(OpenCodexHubManagement.canonicalManagementOrigin("https://management.example:8443/")
+            == "https://management.example:8443")
     }
 
     @Test(arguments: [
@@ -297,20 +303,76 @@ struct OpenCodexHubManagementTests {
             _ = try await OpenCodexHubManagement.accountsURL(
                 executablePath: "/fake/ocx", provider: .xai, managementOrigin: origin, transport: transport)
         }
+        // Hub and client roles need the central address; the role is read even from a failing exit.
+        func document(_ role: String, running: Bool, _ extra: [String: Any] = [:]) throws -> String {
+            let object = extra.merging(["schemaVersion": 1, "runtimeRole": role, "proxy": ["running": running]]) {
+                $1
+            }
+            return try String(decoding: JSONSerialization.data(withJSONObject: object), as: UTF8.self)
+        }
+        let addressRequired: [(status: String?, exitCode: Int32)] = try [
+            (nil, 0),
+            (document("hub", running: false, ["token": "synthetic-private-output"]), 0),
+            (document("hub", running: false), 1),
+            (#"{"runtimeRole":"hub","hub":{"managementPublicOrigin":"https://hub.example"}}"#, 0),
+            (document("hub", running: true, ["hub": [:]]), 0),
+            (document("client", running: false), 0),
+            (document("client", running: true, ["connection": ["state": "disconnected"]]), 2),
+            (String(decoding: self.linkStatus(), as: UTF8.self), 0),
+        ]
+        for (status, exitCode) in addressRequired {
+            await transport.respond(status, exitCode: exitCode)
+            await #expect(throws: OpenCodexHubManagementError.managementAddressRequired) {
+                _ = try await OpenCodexHubManagement.accountsURL(
+                    executablePath: "/fake/ocx", provider: .xai, managementOrigin: origin, transport: transport)
+            }
+        }
+        let unreachable: [(status: String, exitCode: Int32)] = try [
+            (document("standalone", running: false), 0),
+            (document("standalone", running: true, ["dashboard": ["url": "https://remote.example/"]]), 1),
+            (document("unknown", running: true), 0),
+            (document("future", running: true), 0),
+            ("synthetic-private-output", 1), ("[]", 0), ("", 0),
+        ]
+        for (status, exitCode) in unreachable {
+            await transport.respond(status, exitCode: exitCode)
+            await #expect(throws: OpenCodexHubReaderError.noHubSource("no connected, secure management address")) {
+                _ = try await OpenCodexHubManagement.accountsURL(
+                    executablePath: "/fake/ocx", provider: .xai, managementOrigin: origin, transport: transport)
+            }
+        }
+        #expect(await transport.acceptedNonZeroExit.allSatisfy(\.self))
     }
 }
 
 private actor HubManagementTransport: OpenCodexAccessTransport {
     var arguments: [[String]] = []
     var mutations: [Bool] = []
+    var acceptedNonZeroExit: [Bool] = []
     private var failing = false
+    /// nil models a configured executable that does not exist.
+    private var response: (status: String?, exitCode: Int32)?
 
     func fail() { self.failing = true }
+
+    func respond(_ status: String?, exitCode: Int32) {
+        self.failing = false
+        self.response = (status, exitCode)
+    }
 
     func run(_ request: OpenCodexAccessRequest) async throws -> Data {
         self.arguments.append(request.arguments)
         self.mutations.append(request.mutation)
+        self.acceptedNonZeroExit.append(request.acceptsNonZeroExit)
         if self.failing { throw NSError(domain: "synthetic-private-output", code: 1) }
+        if let response {
+            guard let status = response.status else { throw OpenCodexAccessError.executableMissing }
+            // Mirrors the process transport: a non-zero exit throws unless the request accepts it.
+            guard response.exitCode == 0 || request.acceptsNonZeroExit else {
+                throw OpenCodexAccessError.communicationFailed
+            }
+            return Data(status.utf8)
+        }
         return Data(
             #"""
             {
