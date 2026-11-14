@@ -25,6 +25,16 @@ exit, and empty stderr. The production descriptor isolation stays intact.
 
 테스트용 UUID UserDefaults는 기본 설정 검색 영역이나 기존 홈 파일을 격리하지 않는다. 테스트에서는 사전형 defaults·합성 홈·파일 URL·기록용 FileManager를 모두 주입한다. 직접 swift test를 실행하면 저장소의 환경 정리 스크립트가 자동 적용되지 않으므로 먼저 불러온다.
 
+`UserDefaults(suiteName:)` suites are written by `cfprefsd` to the real account's `~/Library/Preferences`, even
+under the runners' temporary `HOME` and `CFFIXED_USER_HOME`. `removePersistentDomain(forName:)` leaves an empty
+plist, and `cfprefsd` writes a change up to about 9 s later, so a plist deleted sooner comes back. Every run
+therefore left one plist per suite, thousands per Mac by November 2026. The test target's
+`TestUserDefaultsSuites.swift` shadows `init?(suiteName:)` for non-optional names, records each suite and, at
+process exit, deletes its plist until 12 s after the process's last defaults change. A test process can therefore
+take up to 12 s longer to exit, and one killed by a signal (a runner timeout) skips the cleanup. Keep creating suites with
+`UserDefaults(suiteName:)`. An explicitly optional name, a designated `super.init(suiteName:)`, or a suite that only
+production code opens is not recorded.
+
 compile_and_run.sh는 기존 CodexBar를 중단하고 새 앱을 띄운다. 운영 앱을 보존하는 검증에서는 이 명령을 사용하지 않는다. 서명이 달라진 ad-hoc 앱은 기존 Keychain 허가를 그대로 얻지 못할 수 있으므로 반복 재시작으로 허가를 해결하려 하지 않는다.
 
 LaunchServices가 제출한 `application.net.ranode.codexbar.*` 작업은 `launchctl list`·`print`·`kickstart -p`가 성공해도 재시작 가능하다는 뜻이 아니다. m5m2의 jetsam 작업에 `kickstart -k -p`를 호출하자 기존 프로세스가 종료된 뒤 종료 코드 102로 실패했다. 기존 설치본과 실행을 복구한 뒤, 최종 배포는 정확한 앱 PID에 SIGTERM을 보내 정상 종료를 기다리고 검증된 서명 실행 파일을 분리 실행했다. 설치 파일과 실제 프로세스의 실행 파일 매핑·지속 실행·리소스 검사를 따로 확인했다. 이 프로세스 검증은 원격 설정 화면의 증거가 아니며, opencodex 프록시나 mac-infra 작업 재시작과도 별개다.
