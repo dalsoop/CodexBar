@@ -15,7 +15,8 @@ struct CLIServeHeapTrimmerTests {
             binary: "/usr/bin/python3",
             arguments: [script.path, binary.path],
             environment: ["PATH": "/usr/bin:/bin"],
-            timeout: 300,
+            // Above the fixture's own bounds: 30 s readiness, three 300 s requests, 75 s idle wait, 20 s shutdown.
+            timeout: 1200,
             label: "serve-heap-fixture")
         #expect(result.stdout.contains("heap-relief-ok"))
     }
