@@ -176,8 +176,8 @@ public enum SubprocessRunner {
             launchEnvironment
         process.currentDirectoryURL = currentDirectoryURL
 
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
+        let stdoutPipe = ProcessLaunchGate.makePipe()
+        let stderrPipe = ProcessLaunchGate.makePipe()
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
         process.standardInput = standardInput
@@ -194,7 +194,7 @@ public enum SubprocessRunner {
         }
 
         do {
-            try process.run()
+            try ProcessLaunchGate.run(process)
         } catch {
             process.terminationHandler = nil
             stdoutCapture.stop()

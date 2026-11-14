@@ -17,7 +17,7 @@ struct ProcessPipeCaptureLinuxTests {
         let releaseCallback = DispatchSemaphore(value: 0)
         let closeFinished = DispatchGroup()
         let state = BlockedCallbackCloseState()
-        let pipe = Pipe()
+        let pipe = ProcessLaunchGate.makePipe()
         let capture = ProcessPipeCapture(pipe: pipe, onData: {
             defer { callbackFinished.signal() }
             guard state.beginCallback() else { return }
@@ -68,7 +68,7 @@ struct ProcessPipeCaptureLinuxTests {
         let writerStarted = DispatchSemaphore(value: 0)
         let stopWriter = DispatchSemaphore(value: 0)
         let writerFinished = DispatchGroup()
-        let pipe = Pipe()
+        let pipe = ProcessLaunchGate.makePipe()
         defer {
             stopWriter.signal()
             #expect(writerFinished.wait(timeout: .now() + 60) == .success)
@@ -119,7 +119,7 @@ struct ProcessPipeCaptureLinuxTests {
     @Test
     func `buffered pipe tail is drained before hangup completes`() throws {
         let expected = Data(repeating: 0x5A, count: 256 * 1024)
-        let pipe = Pipe()
+        let pipe = ProcessLaunchGate.makePipe()
         let capture = ProcessPipeCapture(pipe: pipe, maxBytes: expected.count)
         capture.start()
 
@@ -133,7 +133,7 @@ struct ProcessPipeCaptureLinuxTests {
 
     @Test
     func `silent pipe stops while the writer remains open without claiming EOF`() throws {
-        let pipe = Pipe()
+        let pipe = ProcessLaunchGate.makePipe()
         defer { try? pipe.fileHandleForWriting.close() }
         let capture = ProcessPipeCapture(pipe: pipe)
         capture.start()
@@ -144,41 +144,51 @@ struct ProcessPipeCaptureLinuxTests {
 
     @Test
     func `stop before start closes once and prevents a late reader`() throws {
-        let pipe = Pipe()
-        let capture = ProcessPipeCapture(pipe: pipe)
+        // POLLERR below means no process holds the read end. Hold the launch gate from the pipe's creation to the
+        // poll so a concurrently launched child cannot hold a copy of it (see ProcessLaunchGate).
+        let pipe = ProcessLaunchGate.withLock {
+            let pipe = Pipe()
+            let capture = ProcessPipeCapture(pipe: pipe)
 
-        capture.stop()
-        capture.stop()
-        capture.start()
+            capture.stop()
+            capture.stop()
+            capture.start()
 
-        var writerPollDescriptor = pollfd(
-            fd: pipe.fileHandleForWriting.fileDescriptor,
-            events: 0,
-            revents: 0)
-        #expect(Glibc.poll(&writerPollDescriptor, 1, 0) == 1)
-        #expect(writerPollDescriptor.revents & Int16(POLLERR) != 0)
-        #expect(!capture.reachedEOF)
+            var writerPollDescriptor = pollfd(
+                fd: pipe.fileHandleForWriting.fileDescriptor,
+                events: 0,
+                revents: 0)
+            #expect(Glibc.poll(&writerPollDescriptor, 1, 0) == 1)
+            #expect(writerPollDescriptor.revents & Int16(POLLERR) != 0)
+            #expect(!capture.reachedEOF)
+            return pipe
+        }
         try pipe.fileHandleForWriting.close()
     }
 
     @Test
     func `Linux descriptor setup failure closes the read end immediately`() throws {
-        let pipe = Pipe()
-        defer { try? pipe.fileHandleForWriting.close() }
-        let capture = ProcessPipeCapture(pipe: pipe)
-        capture.start(linuxDescriptorSetup: { descriptor in
-            errno = EMFILE
-            return descriptor < 0
-        })
+        // Hold the launch gate from the pipe's creation to the poll so a concurrently launched child cannot hold a
+        // copy of the read end (see ProcessLaunchGate).
+        let (pipe, capture) = ProcessLaunchGate.withLock {
+            let pipe = Pipe()
+            let capture = ProcessPipeCapture(pipe: pipe)
+            capture.start(linuxDescriptorSetup: { descriptor in
+                errno = EMFILE
+                return descriptor < 0
+            })
 
-        // Descriptor numbers can be reused as soon as close returns. POLLERR on this pipe's write end proves
-        // the original pipe has no remaining reader without assuming its former descriptor stays unused.
-        var writerPollDescriptor = pollfd(
-            fd: pipe.fileHandleForWriting.fileDescriptor,
-            events: 0,
-            revents: 0)
-        #expect(Glibc.poll(&writerPollDescriptor, 1, 0) == 1)
-        #expect(writerPollDescriptor.revents & Int16(POLLERR) != 0)
+            // Descriptor numbers can be reused as soon as close returns. POLLERR on this pipe's write end proves
+            // the original pipe has no remaining reader without assuming its former descriptor stays unused.
+            var writerPollDescriptor = pollfd(
+                fd: pipe.fileHandleForWriting.fileDescriptor,
+                events: 0,
+                revents: 0)
+            #expect(Glibc.poll(&writerPollDescriptor, 1, 0) == 1)
+            #expect(writerPollDescriptor.revents & Int16(POLLERR) != 0)
+            return (pipe, capture)
+        }
+        defer { try? pipe.fileHandleForWriting.close() }
 
         try Self.waitForCaptureOperation {
             // The operation's timeout is outside the hang guard: setup failure must resolve it.
@@ -200,7 +210,7 @@ struct ProcessPipeCaptureLinuxTests {
         var environment = ProcessInfo.processInfo.environment
         environment[Self.emfileChildEnvironmentKey] = "1"
         process.environment = environment
-        try process.run()
+        try ProcessLaunchGate.run(process)
         process.waitUntilExit()
 
         #expect(process.terminationReason == .exit)
@@ -214,13 +224,13 @@ struct ProcessPipeCaptureLinuxTests {
             let proc = Process()
             proc.executableURL = URL(fileURLWithPath: "/bin/echo")
             proc.arguments = ["hello"]
-            let out = Pipe()
+            let out = ProcessLaunchGate.makePipe()
             proc.standardOutput = out
             proc.standardError = FileHandle.nullDevice
 
             let capture = ProcessPipeCapture(pipe: out)
             capture.start()
-            try proc.run()
+            try ProcessLaunchGate.run(proc)
             try out.fileHandleForWriting.close()
             proc.waitUntilExit()
             let data = capture.finishSynchronously(timeout: 0.25)
@@ -238,7 +248,7 @@ struct ProcessPipeCaptureLinuxTests {
         let noFileResource = Int32(RLIMIT_NOFILE.rawValue)
         #expect(Glibc.getrlimit(noFileResource, &originalLimit) == 0)
 
-        let pipe = Pipe()
+        let pipe = ProcessLaunchGate.makePipe()
         let capture = ProcessPipeCapture(pipe: pipe)
         let highestOpenFileDescriptor = try FileManager.default.contentsOfDirectory(atPath: "/proc/self/fd")
             .compactMap(Int.init)

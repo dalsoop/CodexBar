@@ -258,7 +258,7 @@ actor CodexCLISession {
         defer { TTYCommandRunner.endActiveProcessLaunchForAppShutdown() }
 
         do {
-            try proc.run()
+            try ProcessLaunchGate.run(proc)
         } catch {
             try? primaryHandle.close()
             try? secondaryHandle.close()
