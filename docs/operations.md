@@ -8,7 +8,7 @@ macOS 개발은 Xcode 27의 Swift 도구와 기존 SwiftPM 의존성이 필요�
 export PATH="/opt/homebrew/opt/python@3.14/libexec/bin:$PATH"
 export PYTHONDONTWRITEBYTECODE=1
 swift build
-make test-fast FILTER='OpenCodexAccess|OpenCodexDashboard|PreferencesSelectionTests|OpenCodexHubCardTests|OpenCodexHubClaudeCardTests|OpenCodexHubCodexNativeStateTests|StatusMenuOpenCodexHubAccountsTests|ClaudeSwapOpenCodexSwitchTests'
+make test-fast FILTER='OpenCodexHubManagement|OpenCodexAccess|OpenCodexDashboard|PreferencesSelectionTests|OpenCodexHubCardTests|OpenCodexHubClaudeCardTests|OpenCodexHubCodexNativeStateTests|StatusMenuOpenCodexHubAccountsTests|ClaudeSwapOpenCodexSwitchTests'
 /bin/bash -c 'source Scripts/test_environment.sh; CODEXBAR_SUPPRESS_TEST_KEYCHAIN_ACCESS=1 swift test --filter CodexBarLinuxTests'
 make check
 node Scripts/check-app-locales.mjs
