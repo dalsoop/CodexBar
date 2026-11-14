@@ -66,6 +66,20 @@ extension UsageStore {
         return state
     }
 
+    /// Shared login dispatch: a hub handoff never falls back to a native login, even on failure.
+    @discardableResult
+    func performProviderAccountAction(
+        _ provider: UsageProvider,
+        openURL: @MainActor (URL) -> Bool,
+        nativeAction: @MainActor () async -> Void) async -> String?
+    {
+        guard self.settings.openCodexHubEnabled(for: provider) else {
+            await nativeAction()
+            return nil
+        }
+        return await self.openHubAccountManagement(provider, openURL: openURL)
+    }
+
     @discardableResult
     func openHubAccountManagement(
         _ provider: UsageProvider,

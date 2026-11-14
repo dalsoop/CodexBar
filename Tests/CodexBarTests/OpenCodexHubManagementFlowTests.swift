@@ -269,9 +269,173 @@ struct OpenCodexHubManagementFlowTests {
         #expect(opened.map(\.absoluteString) == ["https://management.example/#codex-set"])
         #expect(fixture.settings.setOpenCodexHubManagementOrigin("", for: .codex))
         let message = await fixture.store.openHubAccountManagement(.codex, openURL: { opened.append($0); return true })
-        #expect(message == L("Set the hub's HTTPS management address in Settings. " +
-                "The local data tunnel cannot open the account manager."))
+        let addressRequired = L("Set the hub's HTTPS management address in Settings. " +
+            "The local data tunnel cannot open the account manager.")
+        #expect(message == addressRequired)
+        // Without an address the local role picks the guidance, even from a stopped runtime or a failing exit.
+        let unreachable = L("Could not reach the account manager. Check the hub connection and try again.")
+        let cases: [(status: String, exitCode: Int, expected: String)] = [
+            (#"{"schemaVersion":1,"runtimeRole":"hub","proxy":{"running":false}}"#, 0, addressRequired),
+            (#"{"schemaVersion":1,"runtimeRole":"hub","proxy":{"running":false}}"#, 1, addressRequired),
+            (#"{"schemaVersion":1,"runtimeRole":"client","proxy":{"running":true}}"#, 0, addressRequired),
+            (#"{"schemaVersion":1,"runtimeRole":"standalone","proxy":{"running":false}}"#, 0, unreachable),
+            ("not json", 1, unreachable),
+        ]
+        for (status, exitCode, expected) in cases {
+            try "#!/bin/sh\nprintf '%s' '\(status)'\nexit \(exitCode)\n"
+                .write(to: executable, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+            let result = await fixture.store.openHubAccountManagement(.codex, openURL: { _ in true })
+            #expect(result == expected)
+        }
+        fixture.settings.codexOpenCodexHubExecutablePath = fixture.files.root.appendingPathComponent("missing-ocx").path
+        let missing = await fixture.store.openHubAccountManagement(.codex, openURL: { opened.append($0); return true })
+        #expect(missing == addressRequired)
         #expect(opened.count == 1)
+    }
+
+    @Test
+    func `management origin rejects invalid input without changing a valid override`() throws {
+        let fixture = try self.fixture()
+        defer { fixture.cleanup() }
+        let provider = UsageProvider.codex
+        let settings = fixture.settings
+        settings.setOpenCodexHubEnabled(true, for: provider)
+        settings.setOpenCodexHubSnapshotPath("/synthetic/accounts.json", for: provider)
+        #expect(settings.setOpenCodexHubManagementOrigin(" https://management.example/ \n", for: provider))
+        let revision = settings.providerConfigRevision(for: provider)
+        let saved = settings.openCodexHubManagementOrigin(for: provider)
+        // The full URL rejection matrix belongs to Core; here verify settings are not overwritten.
+        for invalid in ["\"https://other.example\"", "''"] {
+            #expect(!settings.setOpenCodexHubManagementOrigin(invalid, for: provider))
+            #expect(settings.openCodexHubManagementOrigin(for: provider) == saved)
+            #expect(settings.providerConfigRevision(for: provider) == revision)
+        }
+        let data = try JSONEncoder().encode(settings.configSnapshot)
+        let roundTrip = try JSONDecoder().decode(CodexBarConfig.self, from: data)
+        let entry = try #require(roundTrip.providerConfig(for: provider.instanceID))
+        #expect(entry.sanitizedOpenCodexHubManagementOrigin == saved)
+        #expect(entry.resolvedOpenCodexHubEnabled)
+        #expect(entry.sanitizedOpenCodexHubSnapshotPath == "/synthetic/accounts.json")
+        #expect(settings.setOpenCodexHubManagementOrigin(" \n\t", for: provider))
+        #expect(settings.configSnapshot.providerConfig(for: provider.instanceID)?.openCodexHubManagementOrigin == nil)
+        #expect(settings.openCodexHubManagementOrigin(for: provider) == (OpenCodexHubDefaults.managementOrigin ?? ""))
+        #expect(settings.openCodexHubEnabled(for: provider))
+        #expect(settings.openCodexHubSnapshotPath(for: provider) == "/synthetic/accounts.json")
+        // Saving the packaged default (compared canonically) clears the override instead of pinning a copy.
+        let packaged = "https://central.example"
+        func stored() -> String? {
+            settings.configSnapshot.providerConfig(for: provider.instanceID)?.openCodexHubManagementOrigin
+        }
+        for variant in [packaged, "HTTPS://Central.Example:443/", " https://central.example/\n"] {
+            #expect(settings.setOpenCodexHubManagementOrigin(
+                "https://other.example", for: provider, packagedDefault: packaged))
+            #expect(stored() == "https://other.example")
+            #expect(settings.setOpenCodexHubManagementOrigin(variant, for: provider, packagedDefault: packaged))
+            #expect(stored() == nil)
+        }
+        #expect(settings.setOpenCodexHubManagementOrigin(
+            "https://central.example:8443", for: provider, packagedDefault: packaged))
+        #expect(stored() == "https://central.example:8443")
+        #expect(!settings.setOpenCodexHubManagementOrigin(
+            "http://central.example", for: provider, packagedDefault: packaged))
+        #expect(stored() == "https://central.example:8443")
+        #expect(settings.setOpenCodexHubManagementOrigin("", for: provider, packagedDefault: packaged))
+        #expect(stored() == nil)
+    }
+
+    @Test
+    func `saved invalid upper origins fail closed without opening a browser`() async throws {
+        let fixture = try self.fixture()
+        defer { fixture.cleanup() }
+        let provider = UsageProvider.codex
+        fixture.settings.setOpenCodexHubEnabled(true, for: provider)
+        fixture.settings.setOpenCodexHubExecutablePath(
+            fixture.files.root.appendingPathComponent("missing-ocx").path, for: provider)
+        for invalid in ["\"https://management.example\"", "''"] {
+            fixture.settings.updateProviderConfig(provider: provider) { $0.openCodexHubManagementOrigin = invalid }
+            var opens = 0
+            var nativeCalls = 0
+            let message = await fixture.store.performProviderAccountAction(
+                provider,
+                openURL: { _ in opens += 1; return true },
+                nativeAction: { nativeCalls += 1 })
+            #expect(opens == 0)
+            #expect(nativeCalls == 0)
+            #expect(message == L("Set the hub's HTTPS management address in Settings. " +
+                    "The local data tunnel cannot open the account manager."))
+            #expect(fixture.store.openCodexHubManagementState(for: provider)?.needsAttention == true)
+        }
+    }
+
+    @Test(arguments: [UsageProvider.codex, .claude, .grok], [false, true])
+    func `provider account dispatch selects exactly one central browser or native action`(
+        provider: UsageProvider, enabled: Bool) async throws
+    {
+        let fixture = try self.fixture()
+        defer { fixture.cleanup() }
+        fixture.settings.setOpenCodexHubEnabled(enabled, for: provider)
+        fixture.settings.setOpenCodexHubExecutablePath(
+            fixture.files.root.appendingPathComponent("missing-ocx").path, for: provider)
+        #expect(fixture.settings.setOpenCodexHubManagementOrigin("https://management.example", for: provider))
+        var opened: [URL] = []
+        var nativeCalls = 0
+        let message = await fixture.store.performProviderAccountAction(
+            provider,
+            openURL: { opened.append($0); return true },
+            nativeAction: { nativeCalls += 1 })
+        let fragment = switch provider {
+        case .codex: "codex-set"
+        case .claude: "providers?provider=anthropic&tab=accounts"
+        default: "providers?provider=xai&tab=accounts"
+        }
+        #expect(message == nil)
+        #expect(opened.map(\.absoluteString) == (enabled ? ["https://management.example/#\(fragment)"] : []))
+        #expect(nativeCalls == (enabled ? 0 : 1))
+        #expect(fixture.store.openCodexHubManagementState(for: provider)?.phase == (enabled ? .awaitingReturn : nil))
+    }
+
+    @Test(arguments: [false, true])
+    func `Codex settings add and re login hand off without invoking native runners`(reauthenticate: Bool) async throws {
+        let fixture = try self.fixture()
+        defer { fixture.cleanup() }
+        #expect(fixture.settings.setOpenCodexHubManagementOrigin("https://management.example", for: .codex))
+        let runner = ManagementFlowNativeRunner()
+        let coordinator = ManagedCodexAccountCoordinator(service: ManagedCodexAccountService(
+            store: FileManagedCodexAccountStore(fileURL: fixture.files.root.appendingPathComponent("accounts.json")),
+            homeFactory: ManagedCodexHomeFactory(root: fixture.files.root.appendingPathComponent("managed")),
+            loginRunner: runner,
+            identityReader: ManagementFlowIdentityReader()))
+        var opened: [URL] = []
+        var nativeCalls = 0
+        let pane = ProvidersPane(
+            settings: fixture.settings,
+            store: fixture.store,
+            managedCodexAccountCoordinator: coordinator,
+            codexAmbientLoginRunner: runner,
+            runProviderLoginFlow: { provider in
+                await fixture.store.performProviderAccountAction(
+                    provider,
+                    openURL: { opened.append($0); return true },
+                    nativeAction: { nativeCalls += 1 })
+            })
+        if reauthenticate {
+            await pane.reauthenticateCodexAccount(CodexVisibleAccount(
+                id: "synthetic",
+                email: "account@example.invalid",
+                storedAccountID: nil,
+                selectionSource: .liveSystem,
+                isActive: true,
+                isLive: true,
+                canReauthenticate: true,
+                canRemove: false))
+        } else {
+            await pane.addManagedCodexAccount()
+        }
+        #expect(opened.map(\.absoluteString) == ["https://management.example/#codex-set"])
+        #expect(nativeCalls == 0)
+        #expect(await runner.calls == 0)
+        #expect(fixture.store.openCodexHubManagementState(for: .codex)?.phase == .awaitingReturn)
     }
 
     private func fixture() throws -> CodexWorkspacesNavigationFixture {
@@ -287,5 +451,26 @@ struct OpenCodexHubManagementFlowTests {
             switchable: false,
             origin: stale ? .snapshot(hubName: "fixture", updatedAt: Date(timeIntervalSince1970: 0)) :
                 .hubLocal)
+    }
+}
+
+private actor ManagementFlowNativeRunner: CodexAmbientLoginRunning, ManagedCodexLoginRunning {
+    private(set) var calls = 0
+
+    func run(timeout _: TimeInterval) async -> CLILoginRunner.Result {
+        self.calls += 1
+        return .init(outcome: .cancelled, output: "")
+    }
+
+    func run(homePath _: String, timeout _: TimeInterval) async -> CLILoginRunner.Result {
+        self.calls += 1
+        return .init(outcome: .cancelled, output: "")
+    }
+}
+
+private struct ManagementFlowIdentityReader: ManagedCodexIdentityReading {
+    func loadAccountIdentity(homePath _: String) throws -> CodexAuthBackedAccount {
+        Issue.record("Hub management must not read a native identity")
+        throw ManagedCodexAccountServiceError.missingEmail
     }
 }

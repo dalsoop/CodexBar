@@ -716,30 +716,29 @@ extension StatusItemController: StatusItemMenuPersistentActionDelegate {
     }
 
     private func startLoginFlow(provider: UsageProvider) {
-        if self.settings.openCodexHubEnabled(for: provider) {
-            self.loginTask = Task { @MainActor [weak self] in
-                guard let self else { return }
-                defer { self.loginTask = nil }
-                await self.openOpenCodexHubManagement(provider)
-            }
-            return
-        }
         self.loginTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            defer {
-                self.activeLoginProvider = nil
-                self.loginTask = nil
-            }
-            self.activeLoginProvider = provider
-            self.loginPhase = .requesting
-            self.loginLogger.info("Starting login task", metadata: ["provider": provider.rawValue])
-
-            let shouldRefresh = await self.runLoginFlow(provider: provider)
-            if shouldRefresh {
-                await ProviderInteractionContext.$current.withValue(.userInitiated) {
-                    await self.store.refresh()
-                }
-                self.loginLogger.info("Triggered refresh after login", metadata: ["provider": provider.rawValue])
+            defer { self.loginTask = nil }
+            let message = await self.store.performProviderAccountAction(
+                provider,
+                openURL: { NSWorkspace.shared.open($0) },
+                nativeAction: {
+                    defer { self.activeLoginProvider = nil }
+                    self.activeLoginProvider = provider
+                    self.loginPhase = .requesting
+                    self.loginLogger.info("Starting login task", metadata: ["provider": provider.rawValue])
+                    let shouldRefresh = await self.runLoginFlow(provider: provider)
+                    if shouldRefresh {
+                        await ProviderInteractionContext.$current.withValue(.userInitiated) {
+                            await self.store.refresh()
+                        }
+                        self.loginLogger.info(
+                            "Triggered refresh after login",
+                            metadata: ["provider": provider.rawValue])
+                    }
+                })
+            if let message {
+                self.presentLoginAlert(title: L("Add account or sign in again..."), message: message)
             }
         }
     }
