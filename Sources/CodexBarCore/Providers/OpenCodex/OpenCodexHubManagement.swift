@@ -137,15 +137,19 @@ public enum OpenCodexHubManagement {
         if host == "localhost" { return true }
         var ipv4 = in_addr()
         if inet_aton(host, &ipv4) == 1 {
-            return UInt32(bigEndian: ipv4.s_addr) >> 24 == 127
+            // 0.0.0.0 (unspecified) also reaches this Mac.
+            let address = UInt32(bigEndian: ipv4.s_addr)
+            return address >> 24 == 127 || address == 0
         }
         var ipv6 = in6_addr()
         guard inet_pton(AF_INET6, host, &ipv6) == 1 else { return false }
         return withUnsafeBytes(of: &ipv6) { bytes in
+            let unspecified = bytes.allSatisfy { $0 == 0 }
             let loopback = bytes.prefix(15).allSatisfy { $0 == 0 } && bytes[15] == 1
             let mappedIPv4 = bytes.prefix(10).allSatisfy { $0 == 0 }
                 && bytes[10] == 0xFF && bytes[11] == 0xFF && bytes[12] == 127
-            return loopback || mappedIPv4
+            let compatibleIPv4 = bytes.prefix(12).allSatisfy { $0 == 0 } && bytes[12] == 127
+            return unspecified || loopback || mappedIPv4 || compatibleIPv4
         }
     }
 

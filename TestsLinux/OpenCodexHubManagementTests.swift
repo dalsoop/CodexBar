@@ -251,6 +251,7 @@ struct OpenCodexHubManagementTests {
     @Test(arguments: [
         "http://management.example", "https://management.example/path", "https://localhost/",
         "https://127.0.0.2/", "https://localhost./", "https://127.1/", "https://[::ffff:127.0.0.1]/",
+        "https://0.0.0.0/", "https://[::]/", "https://[::127.0.0.1]/",
         "https://[::1%25lo0]/", "https://[::ffff:127.0.0.1%25lo0]/", "https://[fe80::1%25en0]/",
         "https://user:secret@management.example", "https://management.example/?", "https://management.example/#",
     ])
