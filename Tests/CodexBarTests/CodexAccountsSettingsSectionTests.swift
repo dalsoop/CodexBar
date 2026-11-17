@@ -58,6 +58,34 @@ struct CodexAccountsSettingsSectionTests {
         #expect(settings.codexVisibleAccounts.first?.displayName == account.displayName)
     }
 
+    /// Fork rule: a custom Codex name is a native-account label. While the Codex card reads the opencodex hub,
+    /// the live card shows the hub's active account, so the local account's custom name must not retitle it.
+    @Test
+    func `custom names title the live Codex card only while it does not read the opencodex hub`() throws {
+        let settings = Self.makeSettingsStore(suite: "CodexAccountsSettingsSectionTests-rename-hub")
+        settings._test_liveSystemCodexAccount = ObservedSystemCodexAccount(
+            email: "user@example.com",
+            workspaceAccountID: "team-a",
+            codexHomePath: "/Users/test/.codex",
+            observedAt: Date(),
+            identity: .providerAccount(id: "team-a"))
+        let account = try #require(settings.codexVisibleAccounts.first)
+        let store = Self.makeUsageStore(settings: settings)
+        settings.renameCodexAccount(account, to: "School")
+        store.lastSourceLabels[.codex] = "oauth"
+        #expect(!store.codexCardReadsOpenCodexHub)
+        #expect(store.menuCardModel(for: .codex).providerName == "School")
+
+        settings.codexOpenCodexHubEnabled = true
+        store.lastSourceLabels[.codex] = OpenCodexHubUsageProjection.sourceLabel
+        #expect(store.codexCardReadsOpenCodexHub)
+        #expect(store.menuCardModel(for: .codex).providerName == "Codex")
+
+        settings.codexOpenCodexHubEnabled = false
+        store.lastSourceLabels[.codex] = "oauth"
+        #expect(store.menuCardModel(for: .codex).providerName == "School")
+    }
+
     @Test
     func `clearing a recovered name removes its unresolved account preference`() {
         let settings = Self.makeSettingsStore(suite: "CodexAccountsSettingsSectionTests-recovered-name")

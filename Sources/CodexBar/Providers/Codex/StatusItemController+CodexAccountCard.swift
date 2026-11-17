@@ -1,8 +1,10 @@
 import CodexBarCore
 
 extension UsageStore {
+    /// Fork: a hub-backed live card shows the hub's active account, not a local one, so local names stay off it.
     func codexMenuAccountName(for provider: UsageProvider, context: UsageMenuCardContext) -> String? {
         guard provider == .codex, !context.isSettings, context.account == nil,
+              !self.codexCardReadsOpenCodexHub,
               !self.settings.hidePersonalInfo, self.settings.codexUsageDataSource != .pat,
               self.lastSourceLabels[.codex] != "pat",
               let account = self.settings.codexVisibleAccountProjectionForMenuDisplay?.visibleAccounts
