@@ -25,6 +25,16 @@ exit, and empty stderr. The production descriptor isolation stays intact.
 
 테스트용 UUID UserDefaults는 기본 설정 검색 영역이나 기존 홈 파일을 격리하지 않는다. 테스트에서는 사전형 defaults·합성 홈·파일 URL·기록용 FileManager를 모두 주입한다. 직접 swift test를 실행하면 저장소의 환경 정리 스크립트가 자동 적용되지 않으므로 먼저 불러온다.
 
+`UserDefaults(suiteName:)` suites are written by `cfprefsd` to the real account's `~/Library/Preferences`, even
+under the runners' temporary `HOME` and `CFFIXED_USER_HOME`. `removePersistentDomain(forName:)` leaves an empty
+plist, and `cfprefsd` writes a change up to about 9 s later, so a plist deleted sooner comes back. Every run
+therefore left one plist per suite, thousands per Mac by November 2026. The test target's
+`TestUserDefaultsSuites.swift` shadows `init?(suiteName:)` for non-optional names, records each suite and, at
+process exit, deletes its plist until 12 s after the process's last defaults change. A test process can therefore
+take up to 12 s longer to exit, and one killed by a signal (a runner timeout) skips the cleanup. Keep creating suites with
+`UserDefaults(suiteName:)`. An explicitly optional name, a designated `super.init(suiteName:)`, or a suite that only
+production code opens is not recorded.
+
 compile_and_run.sh는 기존 CodexBar를 중단하고 새 앱을 띄운다. 운영 앱을 보존하는 검증에서는 이 명령을 사용하지 않는다. 서명이 달라진 ad-hoc 앱은 기존 Keychain 허가를 그대로 얻지 못할 수 있으므로 반복 재시작으로 허가를 해결하려 하지 않는다.
 
 LaunchServices가 제출한 `application.net.ranode.codexbar.*` 작업은 `launchctl list`·`print`·`kickstart -p`가 성공해도 재시작 가능하다는 뜻이 아니다. m5m2의 jetsam 작업에 `kickstart -k -p`를 호출하자 기존 프로세스가 종료된 뒤 종료 코드 102로 실패했다. 기존 설치본과 실행을 복구한 뒤, 최종 배포는 정확한 앱 PID에 SIGTERM을 보내 정상 종료를 기다리고 검증된 서명 실행 파일을 분리 실행했다. 설치 파일과 실제 프로세스의 실행 파일 매핑·지속 실행·리소스 검사를 따로 확인했다. 이 프로세스 검증은 원격 설정 화면의 증거가 아니며, opencodex 프록시나 mac-infra 작업 재시작과도 별개다.
@@ -39,4 +49,4 @@ Codex 대화 제목의 DB 위치를 프로세스 전체에서 캐시하면 사�
 
 문자열 lookup의 한국어 검사가 통과해도 AppKit이 Swift task 밖에서 Form을 늦게 그리면 일부 캡처가 영어로 나올 수 있다. 테스트 기본 언어는 영어이며 TaskLocal을 잡은 호출과 실제 그리기 callback의 범위가 다르기 때문이다. main-loop의 동기 TaskLocal 범위 안에서 실제 뷰를 만들고 촬영하며, MainActor 가짜 소스로 조회를 끝낸 상태를 확인한다. 공용 defaults를 바꾸지 않고 픽셀 OCR·접근성·isRefreshing false를 함께 확인한다. OCR의 공백 생략만 정규화하고 문구 자체를 삭제해 검사를 통과시키지 않는다.
 
-Opencodex 2.88.0의 Remote Link client는 `connection.managementUrl`에 `serverUrl`과 같은 loopback SSH 데이터 터널을 보고한다. m1m1의 65130과 m5m2의 52293에서 확인했으며 m1m1의 `/` GET은 404였다. 계정관리 화면으로 열지 않는다. 별도 HTTPS 관리 origin을 배포 또는 공급자 설정에서 주고, 패키징 시 `CODEXBAR_OPENCODEX_HUB_MANAGEMENT_ORIGIN`을 현재 허브의 검증된 `hub.managementPublicOrigin`으로 제공한다. 주소를 코드에서 호스트명으로 추정하지 않는다. Tailscale 관리 주소는 공개 인터넷 주소가 아니다.
+Opencodex 2.88.0의 Remote Link client는 `connection.managementUrl`에 `serverUrl`과 같은 loopback SSH 데이터 터널을 보고한다. m1m1의 65130과 m5m2의 52293에서 확인했으며 m1m1의 `/` GET은 404였다. 계정 관리 화면으로 열지 않는다. 별도 HTTPS 관리 origin을 배포 또는 공급자 설정에서 주고, 패키징 시 `CODEXBAR_OPENCODEX_HUB_MANAGEMENT_ORIGIN`을 비공개 배포 설정의 검증된 중앙 origin으로 제공한다. 전환 중인 로컬 runtime이 보고하는 `hub.managementPublicOrigin`은 중앙 관리 주소의 정본이 아닐 수 있다. 명시적 주소는 로컬 역할·상태 조회보다 먼저 검증하며, 잘못된 비어 있지 않은 값을 지우거나 하위 기본값으로 바꾸지 않는다. 관리 주소에 공용 문자열 sanitizer를 다시 적용하여 paired quotes를 제거하면 이 실패 정책을 깨뜨릴 수 있다. 주소를 데이터 터널이나 호스트명에서 추정하지 않는다. Tailscale 관리 주소는 공개 인터넷 주소가 아니다.

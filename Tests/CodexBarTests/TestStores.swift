@@ -12,7 +12,9 @@ final class InMemoryUserDefaults: UserDefaults, @unchecked Sendable {
 
     init(values: [String: Any] = [:]) {
         self.values = values
-        super.init(suiteName: "InMemoryUserDefaults-\(UUID().uuidString)")!
+        // A designated initializer: the test target's tracking `init?(suiteName: String)` is a convenience one.
+        // Its accessors are overridden, so this base suite is not written.
+        super.init(suiteName: Optional("InMemoryUserDefaults-\(UUID().uuidString)"))!
     }
 
     override func object(forKey defaultName: String) -> Any? {

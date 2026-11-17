@@ -45,7 +45,7 @@
 - Never run tests/checks or ad-hoc validation that can display macOS Keychain prompts;
   use parser tests, stubs, test stores, or `KeychainNoUIQuery`.
 - API 키 비밀값과 관리 자격을 로그·설정·미러·검증 이미지에 남기지 않는다. 역할이 불명확하면 관리를 허용하지 않는다.
-- 포크 수정은 포크에서만 준비한다. 원본 저장소 쓰기, 운영 앱 교체, 배포는 별도 승인 없이 실행하지 않는다.
+- 포크 수정은 포크에서만 준비하며 원본 저장소에는 쓰지 않는다. 배포·운영 앱 설치는 에이전트에 위임되어 있지만 검토된 PR·필수 검증·기존 M5 발행 절차를 유지한다. 소유자가 특정 배포를 보류한 경우에는 진행하지 않는다.
 
 ## 작업 전 확인
 

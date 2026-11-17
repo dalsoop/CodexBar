@@ -8,6 +8,8 @@ public struct OpenCodexAccessRequest: Sendable {
     public let mutation: Bool
     public let timeout: TimeInterval
     public let maxOutputBytes: Int
+    /// Return stdout of a non-zero exit, for status reads whose document stays meaningful on failure.
+    public let acceptsNonZeroExit: Bool
 
     public init(
         binary: String,
@@ -15,7 +17,8 @@ public struct OpenCodexAccessRequest: Sendable {
         input: Data? = nil,
         mutation: Bool,
         timeout: TimeInterval = 30,
-        maxOutputBytes: Int = 262_144)
+        maxOutputBytes: Int = 262_144,
+        acceptsNonZeroExit: Bool = false)
     {
         self.binary = binary
         self.arguments = arguments
@@ -23,6 +26,7 @@ public struct OpenCodexAccessRequest: Sendable {
         self.mutation = mutation
         self.timeout = timeout
         self.maxOutputBytes = maxOutputBytes
+        self.acceptsNonZeroExit = acceptsNonZeroExit
     }
 }
 
@@ -55,6 +59,7 @@ public struct OpenCodexAccessProcessTransport: OpenCodexAccessTransport {
                     environment: environment,
                     maxOutputBytes: request.maxOutputBytes,
                     standardInput: pipe,
+                    acceptsNonZeroExit: request.acceptsNonZeroExit,
                     label: "opencodex access mutation")
             } else {
                 try await SubprocessRunner.run(
@@ -63,6 +68,7 @@ public struct OpenCodexAccessProcessTransport: OpenCodexAccessTransport {
                     environment: environment,
                     timeout: request.timeout,
                     maxOutputBytes: request.maxOutputBytes,
+                    acceptsNonZeroExit: request.acceptsNonZeroExit,
                     label: "opencodex access read")
             }
             return Data(result.stdout.utf8)

@@ -20,7 +20,8 @@ public enum OpenCodexHubDefaults {
     /// The managing machine's name when the snapshot does not carry one.
     public static let hubName: String? = Self.infoString(Self.hubNameKey)
     /// A fleet-supplied HTTPS browser origin, independent of any client's data tunnel.
-    public static let managementOrigin: String? = Self.infoString(Self.managementOriginKey)
+    public static let managementOrigin: String? = OpenCodexHubManagement.trimmedManagementOrigin(
+        Bundle.main.object(forInfoDictionaryKey: Self.managementOriginKey) as? String)
 
     private static func infoString(_ key: String) -> String? {
         SettingsValue.cleaned(Bundle.main.object(forInfoDictionaryKey: key) as? String)
@@ -34,7 +35,7 @@ extension ProviderConfig {
     }
 
     public var sanitizedOpenCodexHubManagementOrigin: String? {
-        SettingsValue.cleaned(self.openCodexHubManagementOrigin)
+        OpenCodexHubManagement.trimmedManagementOrigin(self.openCodexHubManagementOrigin)
     }
 
     /// Codex and Grok: whether the card reads accounts from the opencodex hub instead of the provider's own

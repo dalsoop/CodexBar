@@ -13,12 +13,22 @@ extension SettingsStore {
             ?? OpenCodexHubDefaults.managementOrigin ?? ""
     }
 
-    /// Invalid or credential-bearing input never enters the persisted settings.
+    /// Invalid or credential-bearing input never enters the persisted settings. A value equal to the packaged
+    /// default clears the override, so a later packaged change is not pinned by a stale copy.
     @discardableResult
-    func setOpenCodexHubManagementOrigin(_ address: String, for provider: UsageProvider) -> Bool {
+    func setOpenCodexHubManagementOrigin(
+        _ address: String,
+        for provider: UsageProvider,
+        packagedDefault: String? = OpenCodexHubDefaults.managementOrigin) -> Bool
+    {
         guard Self.openCodexHubCardProviders.contains(provider) else { return false }
-        let value = self.normalizedConfigValue(address)
+        var value = self.normalizedConfigValue(address)
         guard value.map(OpenCodexHubManagement.isRemoteManagementOrigin) ?? true else { return false }
+        if let canonical = OpenCodexHubManagement.canonicalManagementOrigin(value),
+           canonical == OpenCodexHubManagement.canonicalManagementOrigin(packagedDefault)
+        {
+            value = nil
+        }
         self.updateProviderConfig(provider: provider) { entry in
             entry.openCodexHubManagementOrigin = value
         }

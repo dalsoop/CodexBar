@@ -1,5 +1,15 @@
 # 구현과 검증 상태
 
+## 2026-11-11 중앙 계정 관리 목적지 수정
+
+명시적 공급자 관리 origin, 번들 기본값, 미설정 시 기존 로컬 상태 순으로 관리 화면을 선택하도록 수정했다. 유효한 명시적 주소는 실행기·로컬 역할·연결·프록시 상태와 독립적으로 사용하고, 잘못된 상위 설정은 대체 주소나 네이티브 로그인으로 우회하지 않는다. 공급자별 주소와 기존 설정 저장·비우기·왕복 및 계정 추가·재로그인 분기를 합성 자료로 검사했다. 계정·자격·모델·프록시·로컬 API 관리 권한은 바꾸지 않았다.
+
+중복 검사를 정리한 후보 `e26a048ef`에서 m5m2 대기열의 공통 관리 테스트 11개와 앱 집중 테스트 15개가 각각 종료 0이었다. 첫 공통 검사 작업은 같은 빌드 데이터베이스를 동시에 사용하여 종료 1이었으므로 성공 근거에서 제외했다. 이후 정확한 후보와 깨끗한 작업 사본을 확인하고 공통 검사를 직렬 재실행했다. 전체 변경과 테스트 정리는 독립 검토에서 차단 문제가 없었다. 집중 검사는 모든 실제 UI 콜백을 실행한 증거가 아니다.
+
+앞선 공통 변경의 `make check`와 앱 변경의 집중 포맷·린트도 통과했다. 당시 앱 집중 검증은 Python 3.14 경로를 PATH에 추가했지만 해당 실행 파일이 없어 현재 동일 환경은 Python 3.15.2로 해석된다. 이를 Python 3.14 사용 증거로 세지 않는다. 정확한 통합 Git 후보의 전체 검증은 Python 3.14 사전검사에서 중단되어 환경을 준비한 뒤 재실행해야 한다. 기존 setter는 이미 공백만 정규화하므로 수정하지 않았으며 앱 기존 동작의 실패를 재현했다고 주장하지 않는다.
+
+이 기록은 집중 검사 결과이며 공개 PR 병합·전체 후보 검증·발행·기기 설치·실제 관리 목적지 확인의 완료 기록이 아니다. 비공개 배포 도구가 검증된 중앙 origin을 포장에 전달하고 서명·발행 전 plist 일치를 확인한다. 공개 포크에는 운영 도메인 기본값을 넣지 않았다.
+
 ## 2026-10-21 허브 계정 오류 수정
 
 허브 모드의 로컬 로그인 진입점, 재인증 카드의 복구 경로, 읽기 실패 뒤 끝나지 않는 전환 대기, 처리자가 없는 허브 자신의 전환 요청, 개인정보 숨김 뒤 남는 전환 성공 표시를 수정했다. 계정 관리는 사용자가 현재 연결의 정상 관리 화면에서 수행하며 CodexBar는 인증 성공을 추측하거나 자격을 복사하지 않는다. 기존 로컬 API 키 관리·내장 대시보드의 권한 경계는 유지한다.
@@ -62,3 +72,7 @@ PR #3 merged as `3c27a6920e1722e75cf9412d40abc915b10dd9c6`. Signed, notarized an
 ## 2026-10-21 upstream reuse review
 
 The [upstream reuse audit](upstream-account-reuse-20261021.md) compares the installed OpenCodex personal release with upstream v2.89.0 and CodexBar upstream. Native routing, failover and account reads are reused. The app now accepts a successful native linked membership read as checked instead of waiting for the separate snapshot job; quota freshness and switching authority remain separate. The custom remote switch queue is an additional workflow, with no equivalent write operation on the native read-only link. Replacing it with the existing authenticated management website changes the menu-bar direct-switch interaction and is tracked separately from the confirmed status bug.
+
+## 2026-11-14 management message and save rule
+
+Without an explicit management address, account management now reads the `ocx status --json` document on any exit code and chooses the message by local role: a hub or client Mac, a missing `ocx`, or an invalid explicit address asks for the HTTPS management address in Settings; standalone, unknown or unreadable status keeps the connection message. Saving the packaged default address (compared canonically) clears the provider override. On m5m1: `swift build` exit 0; `make test-fast FILTER='OpenCodexHubManagement|OpenCodexAccess|OpenCodexDashboard|PreferencesSelectionTests|OpenCodexHubCardTests|OpenCodexHubClaudeCardTests|OpenCodexHubCodexNativeStateTests|StatusMenuOpenCodexHubAccountsTests|ClaudeSwapOpenCodexSwitchTests'` exit 0 (87 + 30 Swift Testing, 13 XCTest with 3 skipped); `swift test --filter CodexBarLinuxTests` with the suppressed test environment exit 0 (610 tests); `make check` exit 0; `node Scripts/check-app-locales.mjs` exit 0.
