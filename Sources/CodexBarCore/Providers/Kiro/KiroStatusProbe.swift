@@ -659,8 +659,8 @@ public struct KiroStatusProbe: Sendable {
             throw KiroStatusProbeError.cliNotFound
         }
 
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
+        let stdoutPipe = ProcessLaunchGate.makePipe()
+        let stderrPipe = ProcessLaunchGate.makePipe()
 
         var env = TTYCommandRunner.enrichedEnvironment()
         env["TERM"] = "xterm-256color"

@@ -43,7 +43,7 @@ final class GrokRPCClient: @unchecked Sendable {
         self.process.standardError = self.output.stderr
 
         do {
-            try self.process.run()
+            try ProcessLaunchGate.run(self.process)
             Self.log.debug("Grok RPC started", metadata: ["binary": resolvedExec])
         } catch {
             Self.log.warning("Grok RPC failed to start", metadata: ["error": error.localizedDescription])

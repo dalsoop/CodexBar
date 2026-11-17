@@ -40,7 +40,7 @@ public enum HookRunner {
             environment[key] = value
         }
 
-        let stdin = Pipe()
+        let stdin = ProcessLaunchGate.makePipe()
         let payload = try event.jsonPayload()
         guard payload.count <= Self.maximumPayloadBytes else {
             throw HookRunnerError.payloadTooLarge

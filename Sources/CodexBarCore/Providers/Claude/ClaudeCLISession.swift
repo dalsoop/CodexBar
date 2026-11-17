@@ -365,7 +365,7 @@ actor ClaudeCLISession {
         defer { TTYCommandRunner.endActiveProcessLaunchForAppShutdown() }
 
         do {
-            try proc.run()
+            try ProcessLaunchGate.run(proc)
             Self.log.debug(
                 "Claude CLI session started",
                 metadata: ["binary": resolvedURL.lastPathComponent])

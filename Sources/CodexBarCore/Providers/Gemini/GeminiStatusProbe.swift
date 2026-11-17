@@ -1419,8 +1419,8 @@ extension GeminiStatusProbe {
             loginPATH: LoginShellPathCache.shared.current)
         process.environment = mergedEnvironment
 
-        let stdout = Pipe()
-        let stderr = Pipe()
+        let stdout = ProcessLaunchGate.makePipe()
+        let stderr = ProcessLaunchGate.makePipe()
         process.standardOutput = stdout
         process.standardError = stderr
         process.standardInput = nil
@@ -1429,7 +1429,7 @@ extension GeminiStatusProbe {
         let stderrCapture = ProcessPipeCapture(pipe: stderr)
 
         do {
-            try process.run()
+            try ProcessLaunchGate.run(process)
         } catch {
             stdoutCapture.stop()
             stdout.fileHandleForWriting.closeFile()

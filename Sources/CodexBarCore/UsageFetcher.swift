@@ -1037,7 +1037,7 @@ private final class CodexRPCClient: @unchecked Sendable {
         }
 
         do {
-            try self.process.run()
+            try ProcessLaunchGate.run(self.process)
             Self.log.debug("Codex RPC started", metadata: ["binary": resolvedExec])
         } catch {
             let message = error.localizedDescription
