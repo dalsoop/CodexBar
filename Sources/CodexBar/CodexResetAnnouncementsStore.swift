@@ -94,6 +94,7 @@ final class CodexResetAnnouncementsStore {
 }
 
 extension SettingsStore {
+    /// Provider-specific by design: public reset news exists only for Codex and is stored in the Codex provider config.
     var codexResetAnnouncementsEnabled: Bool {
         get { self.providerConfig(for: .codex)?.codexResetAnnouncementsEnabled ?? false }
         set {

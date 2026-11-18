@@ -98,6 +98,7 @@ extension UsageStore {
             }
             if error == nil { error = card?.lastError }
             lastRefreshAt = Self.latest(lastRefreshAt, card?.lastRefreshAt)
+            // Provider-specific by design: claude-swap, tcr and opencodex adapters serve only the Claude card.
         } else if provider == .claude, self.settings.claudeSwapEnabled {
             accountSource = self.settings.claudeSwapSource.rawValue
             accountError = self.claudeSwapLastError
@@ -115,6 +116,7 @@ extension UsageStore {
                 hubRole = "hub"
             }
             lastRefreshAt = Self.latest(lastRefreshAt, self.claudeSwapLastRefreshAt)
+            // Provider-specific by design: only Codex keeps a local registry of managed and live accounts.
         } else if provider == .codex, !self.codexAccountSnapshots.isEmpty {
             accountSource = "codex-accounts"
             accounts = self.codexAccountSnapshots.map { account in

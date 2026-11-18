@@ -14,6 +14,7 @@ struct OpenCodexHubAccountManagementView: View {
             Text(L("Open the account manager in your browser, then add an account or sign in again. " +
                     "Your sign-in stays on the hub."))
                 .font(.callout)
+            // Provider-specific by design: only the hub's OpenAI account manager offers device-code sign-in.
             if self.provider == .codex {
                 Text(L("For sign-in from another Mac, the account manager also offers device-code sign-in."))
                     .font(.callout).foregroundStyle(.secondary)

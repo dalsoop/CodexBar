@@ -9,6 +9,7 @@ public enum OpenCodexHubProvider: String, CaseIterable, Sendable, Codable {
     /// The CodexBar provider whose card shows this pool.
     public var usageProvider: UsageProvider {
         switch self {
+        // Provider-specific by design: each opencodex pool maps to exactly one CodexBar card.
         case .anthropic: .claude
         case .openai: .codex
         case .xai: .grok

@@ -547,6 +547,7 @@ extension StatusItemController: StatusItemMenuPersistentActionDelegate {
     }
 
     @objc func requestCodexSystemPromotionFromMenu(_ sender: NSMenuItem) {
+        // Provider-specific by design: system promotion applies to local managed Codex accounts, never hub ones.
         guard !self.settings.openCodexHubEnabled(for: .codex) else { return }
         guard let rawManagedAccountID = sender.representedObject as? String,
               let managedAccountID = UUID(uuidString: rawManagedAccountID)
