@@ -16,7 +16,7 @@ struct ProcessOwnershipReaperTests {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
         let pidFile = root.appendingPathComponent("owned.pid")
         let readyFile = pidFile.appendingPathExtension("ready")
-        let input = Pipe()
+        let input = ProcessLaunchGate.makePipe()
         defer { try? input.fileHandleForWriting.close() }
         let timeoutRelease = DispatchSemaphore(value: 0)
         defer { timeoutRelease.signal() }
@@ -28,7 +28,7 @@ struct ProcessOwnershipReaperTests {
         unrelated.environment = [:]
         unrelated.standardOutput = FileHandle.nullDevice
         unrelated.standardError = FileHandle.nullDevice
-        try unrelated.run()
+        try ProcessLaunchGate.run(unrelated)
         defer {
             if unrelated.isRunning { kill(unrelated.processIdentifier, SIGKILL) }
             // Do not spin a Foundation run loop on a cooperative executor during fixture teardown.
@@ -113,7 +113,7 @@ struct ProcessOwnershipReaperTests {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: root) }
         let ready = root.appendingPathComponent("ready")
-        let input = Pipe()
+        let input = ProcessLaunchGate.makePipe()
         defer { try? input.fileHandleForWriting.close() }
         let task = Task {
             try await SubprocessRunner.run(

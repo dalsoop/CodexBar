@@ -128,6 +128,7 @@ public enum OpenCodexHubManagement {
     private static func accountsURL(origin: URLComponents, provider: OpenCodexHubProvider) -> URL? {
         var url = origin
         url.path = "/"
+        // Provider-specific by design: the hub dashboard keeps OpenAI accounts on its own codex-set page.
         url.fragment = provider == .openai ? "codex-set" : "providers?provider=\(provider.rawValue)&tab=accounts"
         return url.url
     }

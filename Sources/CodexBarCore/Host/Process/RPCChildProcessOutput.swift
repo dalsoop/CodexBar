@@ -1,8 +1,8 @@
 import Foundation
 
 package final class RPCChildProcessOutput: @unchecked Sendable {
-    package let stdout = Pipe()
-    package let stderr = Pipe()
+    package let stdout = ProcessLaunchGate.makePipe()
+    package let stderr = ProcessLaunchGate.makePipe()
     package let lines: AsyncStream<Data>
     private let continuation: AsyncStream<Data>.Continuation
 

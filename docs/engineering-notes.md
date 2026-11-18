@@ -35,6 +35,24 @@ take up to 12 s longer to exit, and one killed by a signal (a runner timeout) sk
 `UserDefaults(suiteName:)`. An explicitly optional name, a designated `super.init(suiteName:)`, or a suite that only
 production code opens is not recorded.
 
+On Linux, swift-corelibs-foundation's `Process.run()` (Swift 6.3) closes in the child only the descriptors that
+were open while it built the spawn file actions. A descriptor another thread opens before `posix_spawn` returns
+stays open in the child for its whole life, including the socket through which Foundation notices another
+launch's exit. In the Linux test run, the 30 s `cat` of the cleared-environment fixture inherited such sockets and
+pipes: `ocx status` and the owned-probe fixtures were reported as finished only when that `cat` was killed at 30 s
+(the role probe then failed), and a pipe's read end stayed open so the POLLERR checks of `ProcessPipeCapture` failed.
+Core launches `Process` through `ProcessLaunchGate.run` and creates the pipes it hands to children with
+`ProcessLaunchGate.makePipe`, so gated launches and pipe creations never overlap; a test that proves a descriptor
+has no other holder keeps the gate from the descriptor's creation to its check. Descriptors created outside the
+gate (for example `openpty` in the PTY runners) can still reach a concurrently launched Foundation child, so a new
+launch path uses the gate rather than calling `Process.run()` or `Pipe()` directly. The one ungated Core launch is
+the cost scanner's one-second `git worktree list`: any edit under `Vendored/CostUsage` changes
+`CodexParserHash` and makes every user rescan their cost logs, and that child lives too briefly to hide another
+launch for long. The reverse still happens: a long-running gated child (a Codex or Grok RPC session) launched while
+that `git` starts can hold its exit socket, and the scanner then gives up after its one-second wait and treats the
+project as having no worktree list. Darwin spawns with `POSIX_SPAWN_CLOEXEC_DEFAULT` and is not affected; the gate
+does nothing there.
+
 compile_and_run.sh는 기존 CodexBar를 중단하고 새 앱을 띄운다. 운영 앱을 보존하는 검증에서는 이 명령을 사용하지 않는다. 서명이 달라진 ad-hoc 앱은 기존 Keychain 허가를 그대로 얻지 못할 수 있으므로 반복 재시작으로 허가를 해결하려 하지 않는다.
 
 LaunchServices가 제출한 `application.net.ranode.codexbar.*` 작업은 `launchctl list`·`print`·`kickstart -p`가 성공해도 재시작 가능하다는 뜻이 아니다. m5m2의 jetsam 작업에 `kickstart -k -p`를 호출하자 기존 프로세스가 종료된 뒤 종료 코드 102로 실패했다. 기존 설치본과 실행을 복구한 뒤, 최종 배포는 정확한 앱 PID에 SIGTERM을 보내 정상 종료를 기다리고 검증된 서명 실행 파일을 분리 실행했다. 설치 파일과 실제 프로세스의 실행 파일 매핑·지속 실행·리소스 검사를 따로 확인했다. 이 프로세스 검증은 원격 설정 화면의 증거가 아니며, opencodex 프록시나 mac-infra 작업 재시작과도 별개다.

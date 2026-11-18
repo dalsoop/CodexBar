@@ -45,7 +45,7 @@ struct TTYProcessTreeProcfsReadLinuxTests {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/true")
         process.environment = [:]
-        try process.run()
+        try ProcessLaunchGate.run(process)
         process.waitUntilExit()
 
         #expect(TTYProcessTreeTerminator.currentChildPIDs(of: process.processIdentifier).isEmpty)
@@ -58,7 +58,7 @@ struct TTYProcessTreeProcfsReadLinuxTests {
         process.executableURL = URL(fileURLWithPath: "/bin/sleep")
         process.arguments = ["30"]
         process.environment = [:]
-        try process.run()
+        try ProcessLaunchGate.run(process)
         defer {
             kill(process.processIdentifier, SIGKILL)
             process.waitUntilExit()

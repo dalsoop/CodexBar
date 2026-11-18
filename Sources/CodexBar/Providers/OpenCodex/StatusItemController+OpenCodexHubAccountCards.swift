@@ -199,6 +199,7 @@ extension StatusItemController {
     {
         let hubAccount = OpenCodexHubAccountProjection.hubAccount(for: account, in: pool)
         let needsReauth = hubAccount?.requiresReauthentication == true
+        // Provider-specific by design: plan prices and billing days are configured only for Codex hub accounts.
         let planTitle = provider == .codex ? hubAccount.flatMap {
             OpenCodexHubPlanTitle.title(
                 for: $0,

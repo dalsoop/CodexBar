@@ -4,7 +4,7 @@ import Darwin
 import Foundation
 
 package final class RPCChildProcessInput: @unchecked Sendable {
-    package let pipe = Pipe()
+    package let pipe = ProcessLaunchGate.makePipe()
 
     private let lock = NSLock()
     private var isClosed = false

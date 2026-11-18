@@ -75,15 +75,15 @@ struct ProcessExitReleaseLinuxTests {
         body: (Process, RPCChildProcessInput) -> Void) throws -> LaunchedChild
     {
         let stdin = RPCChildProcessInput()
-        let stdout = Pipe()
-        let stderr = Pipe()
+        let stdout = ProcessLaunchGate.makePipe()
+        let stderr = ProcessLaunchGate.makePipe()
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         process.standardInput = stdin.pipe
         process.standardOutput = stdout
         process.standardError = stderr
-        try process.run()
+        try ProcessLaunchGate.run(process)
 
         let pipes = Set([stdout, stderr].compactMap { self.pipeName(of: $0.fileHandleForReading.fileDescriptor) })
         try #require(pipes.count == 2)

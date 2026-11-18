@@ -51,7 +51,9 @@ def check_memory(binary, root):
             raise AssertionError("server RSS is unavailable")
 
         def get(path):
-            with urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=120) as response:
+            # A hung server must still fail the fixture, but the first cold scan takes about 25 s on an idle
+            # 8-CPU CI job and over 120 s while other jobs share the host's CPUs. Latency is not under test.
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=300) as response:
                 assert response.status == 200
                 return json.load(response)
 

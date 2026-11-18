@@ -290,7 +290,7 @@ public enum ProviderVersionDetector {
         proc.executableURL = URL(fileURLWithPath: path)
         proc.arguments = args
         proc.environment = environment
-        let out = Pipe()
+        let out = ProcessLaunchGate.makePipe()
         proc.standardOutput = out
         proc.standardError = mergeStandardError ? out : FileHandle.nullDevice
         proc.standardInput = nil
@@ -303,7 +303,7 @@ public enum ProviderVersionDetector {
         }
 
         do {
-            try proc.run()
+            try ProcessLaunchGate.run(proc)
         } catch {
             outputCapture.stop()
             return nil

@@ -200,15 +200,15 @@ extension ClaudeOAuthCredentialsStore {
         process.executableURL = URL(fileURLWithPath: self.securityBinaryPath)
         process.arguments = arguments
 
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
+        let stdoutPipe = ProcessLaunchGate.makePipe()
+        let stderrPipe = ProcessLaunchGate.makePipe()
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
         process.standardInput = nil
 
         let startedAt = DispatchTime.now().uptimeNanoseconds
         do {
-            try process.run()
+            try ProcessLaunchGate.run(process)
         } catch {
             throw SecurityCLIReadError.launchFailed
         }

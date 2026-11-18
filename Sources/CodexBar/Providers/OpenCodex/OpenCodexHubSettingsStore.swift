@@ -6,6 +6,7 @@ import Foundation
 extension SettingsStore {
     /// The providers whose card can read an opencodex hub pool through these settings. The hub pool is what the
     /// hub routes to; the provider's own sources behind an opencodex proxy read another login or none.
+    /// Provider-specific by design: the opencodex hub runs only Anthropic, OpenAI and xAI pools, one per card.
     static let openCodexHubCardProviders: [UsageProvider] = [.claude, .codex, .grok]
 
     func openCodexHubManagementOrigin(for provider: UsageProvider) -> String {
@@ -79,6 +80,7 @@ extension SettingsStore {
             value: path.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "cleared" : "set")
     }
 
+    /// Provider-specific by design: Codex pane bindings for the hub and Codex-only plan prices and billing days.
     var codexOpenCodexHubEnabled: Bool {
         get { self.openCodexHubEnabled(for: .codex) }
         set { self.setOpenCodexHubEnabled(newValue, for: .codex) }
@@ -122,6 +124,7 @@ extension SettingsStore {
         set { self.setOpenCodexHubEnabled(newValue, for: .grok) }
     }
 
+    /// Provider-specific by design: the Grok settings pane binds the hub executable and snapshot paths.
     var grokOpenCodexHubExecutablePath: String {
         get { self.openCodexHubExecutablePath(for: .grok) }
         set { self.setOpenCodexHubExecutablePath(newValue, for: .grok) }

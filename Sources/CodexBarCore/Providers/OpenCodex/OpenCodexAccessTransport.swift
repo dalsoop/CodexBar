@@ -39,7 +39,7 @@ public struct OpenCodexAccessProcessTransport: OpenCodexAccessTransport {
 
     public func run(_ request: OpenCodexAccessRequest) async throws -> Data {
         do {
-            let pipe = request.input.map { _ in Pipe() }
+            let pipe = request.input.map { _ in ProcessLaunchGate.makePipe() }
             if let input = request.input, let pipe {
                 // Only the bounded {id,name} helper payload is accepted; never block filling a pipe.
                 guard input.count <= 4096 else { throw OpenCodexAccessError.invalidResponse }

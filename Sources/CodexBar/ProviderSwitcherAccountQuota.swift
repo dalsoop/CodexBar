@@ -41,6 +41,7 @@ extension StatusItemController {
                     active: account.isActive)
             }
         }
+        // Provider-specific by design: only Codex has a visible multi-account projection for per-account quota rows.
         if provider == .codex,
            let projection = self.settings.codexVisibleAccountProjectionForMenuDisplay,
            projection.visibleAccounts.count > 1

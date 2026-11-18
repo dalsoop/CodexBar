@@ -678,7 +678,7 @@ public enum CodexLaunchPreflight {
         process.executableURL = URL(fileURLWithPath: spctlPath)
         process.arguments = ["--assess", "--type", "execute", "--verbose=4", path]
 
-        let output = Pipe()
+        let output = ProcessLaunchGate.makePipe()
         process.standardOutput = output
         process.standardError = output
 
@@ -686,7 +686,7 @@ public enum CodexLaunchPreflight {
         process.terminationHandler = { _ in finished.signal() }
 
         do {
-            try process.run()
+            try ProcessLaunchGate.run(process)
         } catch {
             return nil
         }
