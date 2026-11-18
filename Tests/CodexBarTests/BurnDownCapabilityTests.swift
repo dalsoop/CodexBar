@@ -38,7 +38,18 @@ struct BurnDownCapabilityTests {
     @Test
     func `provider eligibility preserves supported catalog entries`() {
         for provider in UsageProvider.allCases {
-            let expected: [UsageProvider] = [.langdock, .xapi, .tinyapi, .exa, .vercel, .chatbox, .abliteration]
+            let expected: [UsageProvider] = [
+                .langdock,
+                .xapi,
+                .tinyapi,
+                .exa,
+                .vercel,
+                .chatbox,
+                .abliteration,
+                .opendesign,
+                .siliconflow,
+                .tripo,
+            ]
                 .contains(provider) ? [] : [provider]
             for minutes in [90, 300, 1440, 10080, 43200] {
                 let snapshot = Self.snapshot(provider: provider, primary: Self.window(minutes: minutes))

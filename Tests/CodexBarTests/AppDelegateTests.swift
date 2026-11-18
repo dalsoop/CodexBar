@@ -47,7 +47,9 @@ struct AppDelegateTests {
         #expect(appDelegate.applicationShouldHandleReopen(application, hasVisibleWindows: true) == false)
         await self.drainSettingsRequests()
 
-        #expect(created == 1)
+        // Upstream v0.84.0 releases a closed Settings window (keeping its frame), so the reopen after close
+        // builds the window again; the reopen still reveals Settings on the selected pane.
+        #expect(created == 2)
         #expect(presented.count == 2)
         #expect(presented.allSatisfy { $0 === window })
         #expect(selection.pane == .opencodex)
@@ -92,6 +94,7 @@ struct AppDelegateTests {
 
     @Test
     func `builds status controller after launch`() {
+        _ = NSApplication.shared
         let appDelegate = AppDelegate()
         var factoryCalls = 0
         var ttyShutdowns = 0

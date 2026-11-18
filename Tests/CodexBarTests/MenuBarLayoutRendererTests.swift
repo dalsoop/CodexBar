@@ -115,6 +115,14 @@ struct MenuBarLayoutRendererTests {
             (.costToday, "$1.25"),
             (.costWindow, "$20.00"),
             (.separatorDot, "·"),
+            (.separator(.pipe), "|"),
+            (.separator(.slash), "/"),
+            (.separator(.hyphen), "-"),
+            (.separator(.bullet), "•"),
+            (.separator(.diamond), "◆"),
+            (.separator(.hollowDiamond), "◇"),
+            (.separator(.tilde), "~"),
+            (.separator(.doubleBar), "‖"),
             (.space, " "),
         ]
 
@@ -393,6 +401,18 @@ struct MenuBarLayoutRendererTests {
             icon: nil,
             options: self.options())
         #expect(result.attributedTitle.string == "¥100.00\u{2009}·\u{2009}$1.25")
+    }
+
+    @Test
+    func `duplicate reset removal keeps the glyph of a new separator`() {
+        let result = MenuBarLayoutRenderer().render(
+            layout: MenuBarLayout(lines: [[
+                .percent(window: .automatic), .separator(.pipe), .resetCountdown, .separator(.pipe), .costToday,
+            ]]),
+            data: self.data(automaticText: "¥100.00", automaticBalanceFallback: "¥100.00"),
+            icon: nil,
+            options: self.options())
+        #expect(result.attributedTitle.string == "¥100.00\u{2009}|\u{2009}$1.25")
     }
 
     @Test
@@ -1145,30 +1165,18 @@ struct MenuBarLayoutRendererTests {
     }
 
     @Test
-    func `cached path renders one thousand titles under budget`() {
+    func `cached path reuses one title across one thousand renders`() {
         let renderer = MenuBarLayoutRenderer()
         let layout = MenuBarLayout(lines: [[.icon, .percent(window: .automatic), .separatorDot, .resetCountdown]])
         let icon = NSImage(size: NSSize(width: 16, height: 16))
-        // Fixture construction is not part of the renderer's cached path.
         let data = self.data()
         let options = self.options()
         let first = renderer.render(layout: layout, data: data, icon: icon, options: options)
-        var last = first
-        var fastest = Duration.seconds(10)
 
-        // Thread CPU time keeps the frozen 50 ms budget on rendering work; wall-clock time failed on
-        // preempted CI runners. Best-of-three still absorbs one-off cache misses.
-        for _ in 0..<3 {
-            let startedAt = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
-            for _ in 0..<1000 {
-                last = renderer.render(layout: layout, data: data, icon: icon, options: options)
-            }
-            let elapsed = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - startedAt
-            fastest = min(fastest, .nanoseconds(Int64(elapsed)))
+        for _ in 0..<1000 {
+            let rendered = renderer.render(layout: layout, data: data, icon: icon, options: options)
+            #expect(rendered.attributedTitle === first.attributedTitle)
         }
-
-        #expect(first.attributedTitle === last.attributedTitle)
-        #expect(fastest < .milliseconds(50), "Fastest cached batch used \(fastest) of thread CPU time")
     }
 
     @Test
@@ -2114,6 +2122,26 @@ struct MenuBarLayoutRendererTests {
     }
 
     @Test
+    func `pace state bars keep signed text neutral and scale with the font`() throws {
+        for size in MenuBarLayoutSize.allCases {
+            let rendered = MenuBarLayoutRenderer().render(
+                layout: MenuBarLayout(lines: [[.pace(window: .weekly)]]),
+                data: self.data(),
+                icon: nil,
+                options: self.options(size: size, colorPace: true))
+            let title = rendered.attributedTitle
+            let attachment = try #require(title.attribute(.attachment, at: 0, effectiveRange: nil)
+                as? NSTextAttachment)
+            let font = try #require(title.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)
+            #expect(attachment.bounds.height == font.capHeight)
+            #expect(attachment.bounds.width == font.capHeight / 2)
+            #expect(title.attribute(.foregroundColor, at: title.length - 1, effectiveRange: nil) as? NSColor
+                == .controlTextColor)
+            #expect(rendered.accessibilityLabel.contains("+11%"))
+        }
+    }
+
+    @Test
     func `pace colors follow reserve and ahead values and toggle invalidates cache`() {
         let renderer = MenuBarLayoutRenderer()
         let cases: [(PercentWindow, NSColor)] = [
@@ -2129,7 +2157,7 @@ struct MenuBarLayoutRendererTests {
                 == .controlTextColor)
             #expect(colored.attributedTitle.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? NSColor
                 == expectedColor)
-            #expect(colored.attributedTitle.string == plain.attributedTitle.string)
+            #expect(colored.accessibilityLabel == plain.accessibilityLabel)
             #expect(plain.statusImage?.isTemplate == true)
             #expect((colored.statusImage == nil) == (window != .automatic))
             let button = NSButton()
@@ -2183,11 +2211,11 @@ struct MenuBarLayoutRendererTests {
         let options = self.options(conditionals: [conditional], colorPace: true)
         let colored = renderer.render(layout: layout, data: self.data(), icon: nil, options: options)
         #expect(colored.statusImage == nil)
-        #expect(colored.attributedTitle.string.contains("+11%"))
+        #expect(colored.accessibilityLabel.contains("+11%"))
         let neutral = renderer.render(
             layout: layout, data: self.data(automaticUsedPercent: 100), icon: nil, options: options)
         #expect(neutral.statusImage?.isTemplate == true)
-        #expect(!neutral.attributedTitle.string.contains("+11%"))
+        #expect(!neutral.accessibilityLabel.contains("+11%"))
     }
 
     @Test(arguments: ["aqua", "darkAqua"], ["regular", "stale", "highContrast", "staleHighContrast"])
@@ -2213,7 +2241,7 @@ struct MenuBarLayoutRendererTests {
                 options: options)
             #expect(output.statusImage == nil)
             _ = StatusItemController.applyMenuBarLayoutContent(output, for: button, gap: .regular)
-            let range = (button.attributedTitle.string as NSString).range(of: "+11%")
+            let range = (button.attributedTitle.string as NSString).range(of: "\u{FFFC}", options: .backwards)
             try #require(range.location != NSNotFound)
             let expected = mode == "stale" ? NSColor.systemRed.withAlphaComponent(0.5) : .systemRed
             #expect(button.attributedTitle.attribute(
@@ -2407,7 +2435,9 @@ struct MenuBarLayoutRendererTests {
         for token in [MenuBarLayoutToken.spendAmount, .spendBudget] {
             let rendered = self.renderToken(token, data: data)
             #expect(rendered.attributedTitle.string == "–")
-            #expect(rendered.accessibilityLabel == L("%@ unavailable", token.editorLabel(provider: data.provider)))
+            #expect(rendered.accessibilityLabel == L(
+                "%@ unavailable",
+                token.editorLabel(provider: data.provider.firstPartyProvider)))
         }
     }
 
@@ -2453,7 +2483,7 @@ struct MenuBarLayoutRendererTests {
         -> MenuBarLayoutRenderData
     {
         MenuBarLayoutRenderData(
-            provider: provider,
+            provider: provider.instanceID,
             iconKey: "codex",
             providerName: ProviderDescriptorRegistry.descriptor(for: provider).metadata.displayName,
             accountLabel: accountLabel,

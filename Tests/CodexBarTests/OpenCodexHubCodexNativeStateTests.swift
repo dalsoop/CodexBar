@@ -7,9 +7,9 @@ import Testing
 /// bookkeeping (usage owner reconciliation, credits, the OpenAI web dashboard), which only knows native sources.
 @MainActor
 struct OpenCodexHubCodexNativeStateTests {
-    private static var snapshot: String {
+    private static func snapshot(updatedAt: Date = Date()) -> String {
         #"""
-        {"app": "opencodex-hub-accounts", "updatedAt": "\#(ISO8601DateFormatter().string(from: Date()))", "state": {
+        {"app": "opencodex-hub-accounts", "updatedAt": "\#(ISO8601DateFormatter().string(from: updatedAt))", "state": {
           "schemaVersion": 2, "hub": "hub-mac", "fetchedAt": "2026-10-19T03:14:58Z", "accounts": [],
           "providers": {
             "openai": {"switchable": false, "switchReason": "Switched only on hub-mac.", "accounts": [
@@ -26,10 +26,12 @@ struct OpenCodexHubCodexNativeStateTests {
         """#
     }
 
-    private func makeHubBackedCodexCard() async throws -> CodexWorkspacesNavigationFixture {
+    private func makeHubBackedCodexCard(
+        snapshotUpdatedAt: Date = Date()) async throws -> CodexWorkspacesNavigationFixture
+    {
         let fixture = try CodexWorkspacesNavigationFixture(userDefaults: InMemoryUserDefaults())
         let snapshotURL = fixture.files.root.appendingPathComponent("opencodex-hub-accounts.json")
-        try Self.snapshot.write(to: snapshotURL, atomically: true, encoding: .utf8)
+        try Self.snapshot(updatedAt: snapshotUpdatedAt).write(to: snapshotURL, atomically: true, encoding: .utf8)
         let executable = fixture.files.root.appendingPathComponent("ocx")
         try """
         #!/bin/sh
@@ -103,5 +105,42 @@ struct OpenCodexHubCodexNativeStateTests {
         #expect(dashboardLoads == 0)
         #expect(fixture.store.snapshots[UsageProvider.codex.instanceID] != nil)
         #expect(fixture.store.errors[UsageProvider.codex.instanceID] == nil)
+    }
+
+    /// Upstream dims retained bars after a failed refresh. A hub snapshot the hub stopped rewriting is such a
+    /// retained measurement: the Codex card must render it dimmed, never as current.
+    @Test
+    func `a stale hub snapshot renders the Codex card's bars dimmed`() async throws {
+        let fixture = try await self.makeHubBackedCodexCard(snapshotUpdatedAt: Date().addingTimeInterval(-3600))
+        defer { fixture.cleanup() }
+        #expect(fixture.store.errors[UsageProvider.codex.instanceID] ==
+            L("The opencodex hub snapshot is out of date"))
+        let model = fixture.store.menuCardModel(for: .codex)
+        let metric = try #require(model.metrics.first)
+        #expect(model.showsRetainedMeasurement)
+        let row = MetricRow(
+            metric: metric,
+            layoutMetric: metric,
+            title: metric.title,
+            progressColor: model.progressColor,
+            isRetainedMeasurement: model.showsRetainedMeasurement)
+        #expect(row.barTint == UsageMenuCardView.Model.staleProgressColor)
+    }
+
+    @Test
+    func `a current hub snapshot renders the Codex card's bars as current`() async throws {
+        let fixture = try await self.makeHubBackedCodexCard()
+        defer { fixture.cleanup() }
+        #expect(fixture.store.errors[UsageProvider.codex.instanceID] == nil)
+        let model = fixture.store.menuCardModel(for: .codex)
+        let metric = try #require(model.metrics.first)
+        #expect(!model.showsRetainedMeasurement)
+        let row = MetricRow(
+            metric: metric,
+            layoutMetric: metric,
+            title: metric.title,
+            progressColor: model.progressColor,
+            isRetainedMeasurement: model.showsRetainedMeasurement)
+        #expect(row.barTint == model.progressColor)
     }
 }

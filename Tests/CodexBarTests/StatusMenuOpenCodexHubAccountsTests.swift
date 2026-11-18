@@ -31,6 +31,32 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
         XCTAssertNotEqual(controller.menuAdjunctReadinessSignature(), before)
     }
 
+    /// Upstream pauses cached card updates once every menu is closed. While a menu is open, a hub card with a
+    /// pending switch request must keep taking the hub's new numbers (the pending poll re-reads the hub).
+    func test_pendingSwitchCardStillUpdatesWhileAMenuIsOpen() throws {
+        let (controller, store) = self.makeController(provider: .codex, pool: Self.pool(.openai), layout: .stacked)
+        defer { controller.releaseStatusItemsForTesting() }
+        var state = try XCTUnwrap(store.openCodexHubCardStates[.codex])
+        state.switchStatus.begin(OpenCodexHubSwitchRequest(
+            provider: .openai,
+            targetIDSuffix: "in__",
+            targetEmail: "m***n@example.com",
+            requestedAt: Date()), label: "Account")
+        store.openCodexHubCardStates[.codex] = state
+        let menu = controller.makeMenu(for: .codex)
+        controller.menuWillOpen(menu)
+        defer { controller.menuDidClose(menu) }
+        XCTAssertTrue(controller.menuCardRefreshMonitor.isActive)
+        let hosted = try XCTUnwrap(controller.menuCardModel(for: .codex))
+
+        store.applyOpenCodexHubPool(Self.pool(.openai, activeWeeklyUsed: 71), provider: .codex)
+        XCTAssertTrue(store.openCodexHubCardState(for: .codex)?.switchStatus.isPending ?? false)
+        let current = try XCTUnwrap(controller.menuCardModel(for: .codex))
+        XCTAssertNotEqual(current.metrics.map(\.percent), hosted.metrics.map(\.percent))
+        let rendered = controller.menuCardRefreshMonitor.model(for: .codex, fallback: hosted)
+        XCTAssertEqual(rendered.metrics.map(\.percent), current.metrics.map(\.percent))
+    }
+
     private func makeController(
         provider: UsageProvider,
         pool: OpenCodexHubPool,
@@ -70,7 +96,8 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
     private static func pool(
         _ provider: OpenCodexHubProvider,
         switchable: Bool = true,
-        origin: OpenCodexHubPoolOrigin = .hubLocal) -> OpenCodexHubPool
+        origin: OpenCodexHubPoolOrigin = .hubLocal,
+        activeWeeklyUsed: Double = 53) -> OpenCodexHubPool
     {
         let weekly = { (used: Double) in
             OpenCodexHubQuota(weekly: OpenCodexHubQuotaWindow(usedPercent: used, resetsAt: nil))
@@ -89,7 +116,7 @@ final class StatusMenuOpenCodexHubAccountsTests: XCTestCase {
                     label: "pro",
                     email: "a***e@example.com",
                     isActive: true,
-                    quota: weekly(53)),
+                    quota: weekly(activeWeeklyUsed)),
                 OpenCodexHubAccount(
                     idSuffix: "4d1e",
                     label: nil,
