@@ -10,8 +10,9 @@ This is a long-lived, self-managed fork of [steipete/CodexBar](https://github.co
 
 ## Branches
 
-- `gujo` is the only long-lived branch and the release branch. It is an upstream commit (from the first weekly sync on, upstream's newest release tag) plus a small stack of fork commits: the opencodex hub account feature (`feat(…)`, `fix(…)`, `test(…)`, `docs(…)`) and the redistribution settings (`build:` commits that let a redistributor set the bundle ID, feed, Sparkle key and build number).
-- The stack is rebased onto each new upstream release tag; `gujo` is force-pushed with a lease. Keep fork commits small and independent so a rebase conflict stays in one commit.
+- `gujo` is the only long-lived branch and the release branch. It holds upstream's release history plus the fork's own commits: the opencodex hub account feature (`feat(…)`, `fix(…)`, `test(…)`, `docs(…)`) and the redistribution settings (`build:` commits that let a redistributor set the bundle ID, feed, Sparkle key and build number).
+- `gujo` changes only through reviewed pull requests on this fork, merged with merge commits (`gh pr merge --merge`), never squashed, rebased or force-pushed.
+- A new upstream release comes in through its own pull request that merges the release tag (for example `v0.84.0`) into a branch from `gujo`. Conflicts are resolved in that merge commit: the fork's hub features win, and upstream's changes are taken elsewhere. The pull request lists each conflict resolution and any upstream change left out.
 - The former pull request branch `feat/opencodex-hub-accounts` is archived as the tag `archive/opencodex-hub-accounts-pr4630` and deleted. Do not recreate it.
 
 ## Fork-only features
@@ -24,8 +25,10 @@ This is a long-lived, self-managed fork of [steipete/CodexBar](https://github.co
 - opencodex hub accounts for Claude, Codex and Grok (`docs/configuration.md`, "opencodex hub snapshot").
 - The app state mirror `~/.swift-app-state/codexbar.json` and `codexbar app-state [--json]` (`docs/app-state.md`), so scripts and agents can see what the menu shows.
 
-## Weekly sync and release
+## Release
 
-A weekly job rebases `gujo` onto the newest upstream release, runs the build, the fork's focused tests, `make check` and the locale check, and on green signs, notarises, publishes and installs the build. On a rebase conflict or a red gate it stops, leaves the published release as it is and asks the owner. The job lives outside this repository (private `upstream-mono` `tools/codexbar-fork-sync/`), so this branch carries no fleet configuration.
+Releases are built, signed, notarised, published and installed by the fork-sync tool in the private `upstream-mono` repository (`tools/codexbar-fork-sync/`), so this branch carries no fleet configuration. After an upstream-release pull request or another fork change is merged, `sync.sh release <full SHA of origin/gujo>` ships that reviewed head: it gates it on m5m2 (build, the fork's focused tests, `make check` and the locale check), then signs, notarises and publishes on m5m1 and installs on the Macs that pass a preflight. On a red gate it stops and leaves the published release as it is.
+
+The tool's weekly `sync.sh run` still rebases `gujo` onto a new upstream release tag and force-pushes it. That path does not match the merge-commit history above, so new upstream releases are merged by pull request first and then shipped with `sync.sh release`.
 
 The build number is upstream's `BUILD_NUMBER` × 100 + the fork's revision for that upstream build (upstream 171 → 17101, 17102, …), so a fork build always sorts above the upstream build it follows.
