@@ -332,7 +332,6 @@ jobs:
     permissions:
       contents: write
     env:
-      GH_TOKEN: ${{ github.token }}
       MAC_TAG: ${{ needs.validate.outputs.mac_tag }}
       RELEASE_SHA: ${{ needs.validate.outputs.sha }}
       VERSION: ${{ needs.validate.outputs.version }}
@@ -360,6 +359,8 @@ jobs:
 
       - name: Upload missing assets to the prerelease
         working-directory: linux-assets
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           RELEASE_JSON="$RUNNER_TEMP/release.json"
