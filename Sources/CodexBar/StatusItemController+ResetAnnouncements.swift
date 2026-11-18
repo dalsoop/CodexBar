@@ -5,6 +5,7 @@ import SwiftUI
 extension StatusItemController {
     /// Public reports belong to the provider, so account renderers never own or duplicate this section.
     func addCodexResetAnnouncementsSection(to menu: NSMenu, provider: UsageProvider, width: CGFloat) {
+        // Provider-specific by design: public reset reports exist only for Codex.
         guard provider == .codex,
               let presentation = CodexResetAnnouncementsPresentation.make(
                   store: self.store.codexResetAnnouncements,

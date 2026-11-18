@@ -280,6 +280,7 @@ struct ProvidersPane: View {
     }
 
     func selectCodexVisibleAccount(id: String) async {
+        // Provider-specific by design: hub-backed Codex accounts are selected on the hub, not in the local registry.
         guard !self.settings.openCodexHubEnabled(for: .codex) else { return }
         self.codexAccountsNotice = nil
         guard self.settings.selectCodexVisibleAccount(id: id) else { return }
@@ -367,6 +368,7 @@ struct ProvidersPane: View {
     }
 
     func removeManagedCodexAccount(id: UUID) async {
+        // Provider-specific by design: hub-backed Codex accounts are removed on the hub, not in the local registry.
         guard !self.settings.openCodexHubEnabled(for: .codex) else { return }
         self.codexAccountsNotice = nil
         do {

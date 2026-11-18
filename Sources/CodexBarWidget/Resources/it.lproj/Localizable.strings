@@ -8,11 +8,11 @@
 "%@ used" = "%@ utilizzato";
 "%@, selected" = "%@, selezionato";
 "%@-day limit" = "Limite di %@ giorni";
-"%@-day usage" = "%@-day usage";
+"%@-day usage" = "Utilizzo di %@ giorni";
 "%@-hour limit" = "Limite orario %@";
-"%@-hour usage" = "%@-hour usage";
+"%@-hour usage" = "Utilizzo di %@ ore";
 "%@-minute limit" = "Limite di minuti %@";
-"%@-minute usage" = "%@-minute usage";
+"%@-minute usage" = "Utilizzo di %@ minuti";
 "%@: %@" = "%@: %@";
 "%@D" = "%@g";
 "%@H" = "%@h";
@@ -102,7 +102,7 @@
 "Monthly budget" = "Bilancio mensile";
 "Monthly credits" = "Mensile Crediti";
 "Monthly quota" = "Mensile Limite";
-"Monthly usage" = "Monthly usage";
+"Monthly usage" = "Utilizzo mensile";
 "No data" = "Nessun dato";
 "Not reported by %@" = "Non segnalato da %@";
 "On-demand" = "Utilizzo su richiesta";
