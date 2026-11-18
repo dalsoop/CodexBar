@@ -27,8 +27,14 @@ This is a long-lived, self-managed fork of [steipete/CodexBar](https://github.co
 
 ## Release
 
-Releases are built, signed, notarised, published and installed by the fork-sync tool in the private `upstream-mono` repository (`tools/codexbar-fork-sync/`), so this branch carries no fleet configuration. After an upstream-release pull request or another fork change is merged, `sync.sh release <full SHA of origin/gujo>` ships that reviewed head: it gates it on m5m2 (build, the fork's focused tests, `make check` and the locale check), then signs, notarises and publishes on m5m1 and installs on the Macs that pass a preflight. On a red gate it stops and leaves the published release as it is.
+Mac releases and their assets are built, signed, notarised, published and installed by the fork-sync tool in the private `upstream-mono` repository (`tools/codexbar-fork-sync/`), so this branch carries no fleet configuration. After an upstream-release pull request or another fork change is merged, `sync.sh release <full SHA of origin/gujo>` ships that reviewed head: it gates it on m5m2 (build, the fork's focused tests, `make check` and the locale check), then signs, notarises and publishes on m5m1 and installs on the Macs that pass a preflight. On a red gate it stops and leaves the published release as it is.
 
-The tool's weekly `sync.sh run` still rebases `gujo` onto an upstream release tag that `gujo` does not contain yet and force-pushes it. That path does not match the merge-commit history above, so a new upstream release is merged by pull request first; once the tag is in `gujo`, `run` and `release` gate and publish the head without rebasing.
+Linux assets come from this fork's `.github/workflows/release-linux-gujo.yml`, not from the tool. Pushing the tag `gujo-linux-v<version>-<build>` for the same `<version>-<build>` as the Mac prerelease `gujo-v<version>-<build>` builds the glibc CLI and the Qt desktop archives for x86_64 and aarch64 from the commit the Mac tag points at and adds them, with their `.sha256` files, to that prerelease. Put the Linux tag on a commit that contains the workflow (the current `gujo` head); without the Mac prerelease and tag the run fails and uploads nothing. It never replaces an asset: one with the same SHA-256 is skipped, a different one fails the run. After a partial upload, re-run only the failed `upload` job: rebuilt archives are not byte-reproducible, so re-running the whole workflow fails on the assets already uploaded. Every release that a consumer pins for Linux needs its Linux tag pushed:
+
+```sh
+git tag gujo-linux-v0.84.0-17701 origin/gujo && git push origin gujo-linux-v0.84.0-17701
+```
+
+The tool's weekly `sync.sh run` still rebases `gujo` onto an upstream release tag that `gujo` does not contain yet and force-pushes it. That path does not match the merge-commit history above, so a new upstream release is merged by pull request first; once the tag is in `gujo`, `run` and `release` gate and publish the head without rebasing. If `run` does rebase and force-push, the rewritten `gujo` must still contain the Linux release workflow commit; check before pushing a Linux tag.
 
 The build number is upstream's `BUILD_NUMBER` × 100 + the fork's revision for that upstream build (upstream 171 → 17101, 17102, …), so a fork build always sorts above the upstream build it follows.

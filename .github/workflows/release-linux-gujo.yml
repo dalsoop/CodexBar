@@ -1,0 +1,409 @@
+name: Release gujo Linux assets
+run-name: Release gujo Linux assets ${{ github.ref_name }}
+
+# Adds the glibc Linux CLI and the Qt desktop archives to an existing fork
+# prerelease `gujo-v<version>-<build>`. Pushing `gujo-linux-v<version>-<build>`
+# starts it; the assets are built from the commit the Mac release tag points
+# at, not from the commit the Linux tag points at. Release assets are never
+# replaced: an existing asset with the same checksum is skipped, a different
+# one fails the run.
+
+on:
+  push:
+    tags: ['gujo-linux-v*']
+
+permissions: {}
+concurrency:
+  group: release-gujo-linux-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.release.outputs.sha }}
+      version: ${{ steps.version.outputs.version }}
+      cli_tag: ${{ steps.version.outputs.cli_tag }}
+      mac_tag: ${{ steps.tag.outputs.mac_tag }}
+    steps:
+      - name: Parse Linux tag
+        id: tag
+        env:
+          LINUX_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$LINUX_TAG" =~ ^gujo-linux-v([0-9][0-9A-Za-z._-]*)-([0-9]+)$ ]]; then
+            echo "Invalid Linux release tag: $LINUX_TAG" >&2
+            exit 1
+          fi
+          {
+            echo "version=${BASH_REMATCH[1]}"
+            echo "mac_tag=gujo-v${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resolve the Mac prerelease and its commit
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAC_TAG: ${{ steps.tag.outputs.mac_tag }}
+        run: |
+          set -euo pipefail
+          if ! RELEASE_STATE="$(gh release view "$MAC_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft,isPrerelease --jq '"\(.isDraft) \(.isPrerelease)"')"; then
+            echo "Release $MAC_TAG not found." >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_STATE" != "false true" ]]; then
+            echo "Release $MAC_TAG is not a published prerelease (draft, prerelease: $RELEASE_STATE)." >&2
+            exit 1
+          fi
+          if ! REF="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$MAC_TAG" \
+            --jq '"\(.object.type) \(.object.sha)"')"; then
+            echo "Tag $MAC_TAG not found." >&2
+            exit 1
+          fi
+          read -r TYPE SHA <<< "$REF"
+          if [[ "$TYPE" == "tag" ]]; then
+            read -r TYPE SHA <<< "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$SHA" \
+              --jq '"\(.object.type) \(.object.sha)"')"
+          fi
+          if [[ "$TYPE" != "commit" || ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Tag $MAC_TAG does not point at a commit." >&2
+            exit 1
+          fi
+          echo "Building $MAC_TAG at $SHA"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.release.outputs.sha }}
+          persist-credentials: false
+
+      - name: Match the release commit's version
+        id: version
+        env:
+          TAG_VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          MARKETING_VERSION="$(sed -n 's/^MARKETING_VERSION=//p' version.env)"
+          if [[ "$MARKETING_VERSION" != "$TAG_VERSION" ]]; then
+            echo "Tag version $TAG_VERSION does not match MARKETING_VERSION $MARKETING_VERSION at the release commit." >&2
+            exit 1
+          fi
+          {
+            echo "version=$MARKETING_VERSION"
+            echo "cli_tag=v$MARKETING_VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+  # The linux-x64 and linux-arm64 rows of release-cli.yml, inline so that no
+  # musl or macOS row runs. Keep the pinned versions in step with that file.
+  cli:
+    needs: validate
+    permissions:
+      contents: read
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            runs-on: ubuntu-24.04
+            asset-arch: x86_64
+            file-arch-pattern: x86-64
+          - name: linux-arm64
+            runs-on: ubuntu-24.04-arm
+            asset-arch: aarch64
+            file-arch-pattern: aarch64
+    runs-on: ${{ matrix.runs-on }}
+    env:
+      RELEASE_TAG: ${{ needs.validate.outputs.cli_tag }}
+      SWIFT_VERSION: 6.3.3
+      SWIFTLY_VERSION: 1.1.3
+      SWIFTLY_SIGNING_FINGERPRINT: E813C892820A6FA13755B268F167DF1ACF9CE069
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          persist-credentials: false
+
+      - name: Runner info
+        run: |
+          set -euo pipefail
+          uname -a
+          uname -m
+          swift --version
+
+      - name: Validate release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$RELEASE_TAG" ]]; then
+            echo "Missing release tag." >&2
+            exit 1
+          fi
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9A-Za-z._-]+$ ]]; then
+            echo "Invalid release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+      - name: Install Swift ${{ env.SWIFT_VERSION }} via swiftly
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! command -v gpg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates gpg
+          fi
+
+          SWIFTLY_ARCH="$(uname -m)"
+          SWIFTLY_ARCHIVE="$RUNNER_TEMP/swiftly-${SWIFTLY_VERSION}-${SWIFTLY_ARCH}.tar.gz"
+          SWIFTLY_SIGNATURE="${SWIFTLY_ARCHIVE}.sig"
+          SWIFTLY_HOME_DIR="$HOME/.local/share/swiftly"
+          SWIFTLY_BIN_DIR="$HOME/.local/bin"
+          SWIFT_GNUPGHOME="$(mktemp -d)"
+          SWIFT_KEYS="$RUNNER_TEMP/swift-signing-keys.asc"
+          POST_INSTALL_SCRIPT="$(mktemp)"
+
+          mkdir -p "$SWIFTLY_BIN_DIR"
+          chmod 700 "$SWIFT_GNUPGHOME"
+          curl -fsSL "https://download.swift.org/swiftly/linux/swiftly-${SWIFTLY_VERSION}-${SWIFTLY_ARCH}.tar.gz" -o "$SWIFTLY_ARCHIVE"
+          curl -fsSL "https://download.swift.org/swiftly/linux/swiftly-${SWIFTLY_VERSION}-${SWIFTLY_ARCH}.tar.gz.sig" -o "$SWIFTLY_SIGNATURE"
+          curl -fsSL --compressed "https://www.swift.org/keys/all-keys.asc" -o "$SWIFT_KEYS"
+          GNUPGHOME="$SWIFT_GNUPGHOME" gpg --batch --import "$SWIFT_KEYS"
+          SIGNATURE_STATUS="$(GNUPGHOME="$SWIFT_GNUPGHOME" gpg --batch --status-fd=1 \
+            --verify "$SWIFTLY_SIGNATURE" "$SWIFTLY_ARCHIVE" 2>&1)"
+          printf '%s\n' "$SIGNATURE_STATUS"
+          grep -Fq "[GNUPG:] VALIDSIG ${SWIFTLY_SIGNING_FINGERPRINT} " <<< "$SIGNATURE_STATUS"
+          tar -xzf "$SWIFTLY_ARCHIVE" -C /tmp
+          /tmp/swiftly init --assume-yes --skip-install
+
+          . "$SWIFTLY_HOME_DIR/env.sh"
+          echo "$SWIFTLY_BIN_DIR" >> "$GITHUB_PATH"
+          echo "SWIFTLY_HOME_DIR=$SWIFTLY_HOME_DIR" >> "$GITHUB_ENV"
+          echo "SWIFTLY_BIN_DIR=$SWIFTLY_BIN_DIR" >> "$GITHUB_ENV"
+
+          swiftly install "$SWIFT_VERSION" --use --assume-yes --verify --post-install-file "$POST_INSTALL_SCRIPT"
+          if [[ -s "$POST_INSTALL_SCRIPT" ]]; then
+            sudo apt-get update
+            sudo bash "$POST_INSTALL_SCRIPT"
+          fi
+
+          hash -r
+          swift --version
+
+      - name: Build CodexBarCLI (release)
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift build -c release --product CodexBarCLI --static-swift-stdlib
+          echo "bin_dir=$(swift build -c release --product CodexBarCLI --static-swift-stdlib --show-bin-path)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify CodexBarCLI does not link libxml2
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="${{ steps.build.outputs.bin_dir }}/CodexBarCLI"
+          bash Scripts/check-linux-cli-linkage.sh "$BIN"
+
+      - name: Smoke test CodexBarCLI
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BIN_DIR="${{ steps.build.outputs.bin_dir }}"
+          BIN="$BIN_DIR/CodexBarCLI"
+          CLI_COMMAND=("$BIN")
+          run_with_timeout() {
+            local output="$1"
+            shift
+            "$@" > "$output" &
+            local pid=$!
+            local run_status=
+            for _ in {1..20}; do
+              if ! kill -0 "$pid" 2>/dev/null; then
+                set +e
+                wait "$pid"
+                run_status=$?
+                set -e
+                break
+              fi
+              sleep 1
+            done
+            if [[ -z "$run_status" ]]; then
+              kill "$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+              echo "$* timed out." >&2
+              exit 124
+            fi
+            if [[ "$run_status" -ne 0 ]]; then
+              cat "$output" >&2 || true
+              exit "$run_status"
+            fi
+          }
+
+          echo "BIN=$BIN"
+          file "$BIN"
+          run_with_timeout "$RUNNER_TEMP/codexbar-cli-help-${{ matrix.name }}.txt" "${CLI_COMMAND[@]}" --help
+          file "$BIN" | grep -q "${{ matrix.file-arch-pattern }}"
+          printf '%s\n' "${RELEASE_TAG#v}" > "$BIN_DIR/VERSION"
+          VERSION_OUTPUT="$RUNNER_TEMP/codexbar-cli-version-${{ matrix.name }}.txt"
+          run_with_timeout "$VERSION_OUTPUT" "${CLI_COMMAND[@]}" --version
+          grep -Fx "CodexBar ${RELEASE_TAG#v}" "$VERSION_OUTPUT"
+          rm "$BIN_DIR/VERSION"
+
+      - name: Package
+        id: pkg
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REF_NAME="${RELEASE_TAG}"
+          if [[ -z "$REF_NAME" ]]; then
+            echo "Missing release tag." >&2
+            exit 1
+          fi
+          SAFE_REF_NAME="${REF_NAME//\//-}"
+
+          BIN_DIR="${{ steps.build.outputs.bin_dir }}"
+          OUT_DIR="$(mktemp -d)"
+          install -m 0755 "$BIN_DIR/CodexBarCLI" "$OUT_DIR/CodexBarCLI"
+          ln -s "CodexBarCLI" "$OUT_DIR/codexbar"
+          printf '%s\n' "${SAFE_REF_NAME#v}" > "$OUT_DIR/VERSION"
+          python3 Scripts/acknowledgements.py --text-output "$OUT_DIR/THIRD_PARTY_NOTICES"
+
+          CORE_RESOURCE_SOURCE=""
+          for candidate in \
+            "$BIN_DIR/CodexBar_CodexBarCore.bundle" \
+            "$BIN_DIR/CodexBar_CodexBarCore.resources"; do
+            if [[ -d "$candidate" ]]; then
+              CORE_RESOURCE_SOURCE="$candidate"
+              break
+            fi
+          done
+          if [[ -z "$CORE_RESOURCE_SOURCE" ]]; then
+            echo "Missing CodexBarCore resource bundle in $BIN_DIR" >&2
+            exit 1
+          fi
+          cp -R "$CORE_RESOURCE_SOURCE" "$OUT_DIR/CodexBar_CodexBarCore.bundle"
+          CLI_COMMAND=("$OUT_DIR/CodexBarCLI")
+          SYMLINK_COMMAND=("$OUT_DIR/codexbar")
+          DIRECT_RESOURCE_SMOKE_OUTPUT="$RUNNER_TEMP/codexbar-cli-resource-smoke-direct-${{ matrix.name }}.txt"
+          CODEXBAR_RESOURCE_SMOKE=1 "${CLI_COMMAND[@]}" > "$DIRECT_RESOURCE_SMOKE_OUTPUT"
+          grep -Fx "CODEXBAR_RESOURCE_SMOKE_OK" "$DIRECT_RESOURCE_SMOKE_OUTPUT"
+          SYMLINK_RESOURCE_SMOKE_OUTPUT="$RUNNER_TEMP/codexbar-cli-resource-smoke-symlink-${{ matrix.name }}.txt"
+          CODEXBAR_RESOURCE_SMOKE=1 "${SYMLINK_COMMAND[@]}" > "$SYMLINK_RESOURCE_SMOKE_OUTPUT"
+          grep -Fx "CODEXBAR_RESOURCE_SMOKE_OK" "$SYMLINK_RESOURCE_SMOKE_OUTPUT"
+
+          ASSET="CodexBarCLI-${SAFE_REF_NAME}-linux-${{ matrix.asset-arch }}.tar.gz"
+          (cd "$OUT_DIR" && tar czf "$ASSET" \
+            CodexBarCLI codexbar VERSION THIRD_PARTY_NOTICES CodexBar_CodexBarCore.bundle)
+          Scripts/generate_release_checksum.sh "$OUT_DIR/$ASSET"
+
+          echo "out_dir=$OUT_DIR" >> "$GITHUB_OUTPUT"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: payload-cli-${{ matrix.name }}
+          if-no-files-found: error
+          path: |
+            ${{ steps.pkg.outputs.out_dir }}/${{ steps.pkg.outputs.asset }}
+            ${{ steps.pkg.outputs.out_dir }}/${{ steps.pkg.outputs.asset }}.sha256
+
+  desktop:
+    needs: validate
+    permissions:
+      contents: read
+    uses: ./.github/workflows/release-linux-desktop.yml
+    with:
+      ref: ${{ needs.validate.outputs.sha }}
+      version: ${{ needs.validate.outputs.version }}
+
+  upload:
+    needs: [validate, cli, desktop]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      MAC_TAG: ${{ needs.validate.outputs.mac_tag }}
+      RELEASE_SHA: ${{ needs.validate.outputs.sha }}
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: payload-*
+          merge-multiple: true
+          path: linux-assets
+
+      - name: Verify inventory and checksums
+        working-directory: linux-assets
+        run: |
+          set -euo pipefail
+          EXPECTED=()
+          for arch in x86_64 aarch64; do
+            for product in CodexBarCLI CodexBarDesktop; do
+              EXPECTED+=("$product-v$VERSION-linux-$arch.tar.gz" "$product-v$VERSION-linux-$arch.tar.gz.sha256")
+            done
+          done
+          diff <(printf '%s\n' "${EXPECTED[@]}" | sort) <(find . -mindepth 1 -printf '%P\n' | sort)
+          for asset in *.tar.gz; do
+            sha256sum -c "$asset.sha256"
+          done
+
+      - name: Upload missing assets to the prerelease
+        working-directory: linux-assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE_JSON="$RUNNER_TEMP/release.json"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$MAC_TAG" > "$RELEASE_JSON"
+          if [[ "$(jq -r '"\(.draft) \(.prerelease)"' "$RELEASE_JSON")" != "false true" ]]; then
+            echo "Release $MAC_TAG is no longer a published prerelease." >&2
+            exit 1
+          fi
+          CURRENT_SHA="$(gh api "repos/$GITHUB_REPOSITORY/commits/refs/tags/$MAC_TAG" --jq .sha)"
+          if [[ "$CURRENT_SHA" != "$RELEASE_SHA" ]]; then
+            echo "Tag $MAC_TAG moved from $RELEASE_SHA to $CURRENT_SHA during the build." >&2
+            exit 1
+          fi
+
+          TO_UPLOAD=()
+          CONFLICTS=0
+          for file in *; do
+            LOCAL_SHA="$(sha256sum "$file" | cut -d' ' -f1)"
+            if ! jq -e --arg name "$file" 'any(.assets[]; .name == $name)' "$RELEASE_JSON" >/dev/null; then
+              TO_UPLOAD+=("$file")
+              continue
+            fi
+            REMOTE_SHA="$(jq -r --arg name "$file" '.assets[] | select(.name == $name) | .digest // "" | sub("^sha256:"; "")' "$RELEASE_JSON")"
+            if [[ -z "$REMOTE_SHA" ]]; then
+              DOWNLOAD_DIR="$(mktemp -d)"
+              gh release download "$MAC_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$file" --dir "$DOWNLOAD_DIR"
+              REMOTE_SHA="$(sha256sum "$DOWNLOAD_DIR/$file" | cut -d' ' -f1)"
+              rm -rf "$DOWNLOAD_DIR"
+            fi
+            if [[ "$REMOTE_SHA" == "$LOCAL_SHA" ]]; then
+              echo "Skip $file: already on $MAC_TAG with the same SHA-256."
+            else
+              echo "$file is already on $MAC_TAG with a different SHA-256 ($REMOTE_SHA, built $LOCAL_SHA)." >&2
+              CONFLICTS=$((CONFLICTS + 1))
+            fi
+          done
+          if [[ "$CONFLICTS" -ne 0 ]]; then
+            echo "Refusing to upload: $CONFLICTS asset(s) differ from the published ones." >&2
+            exit 1
+          fi
+          if [[ "${#TO_UPLOAD[@]}" -eq 0 ]]; then
+            echo "All Linux assets are already on $MAC_TAG."
+            exit 0
+          fi
+          # No --clobber: an asset that appeared meanwhile makes this fail instead of being replaced.
+          gh release upload "$MAC_TAG" --repo "$GITHUB_REPOSITORY" "${TO_UPLOAD[@]}"
