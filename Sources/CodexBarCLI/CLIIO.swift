@@ -50,6 +50,8 @@ extension CodexBarCLI {
             print(Self.usageHelp(version: version))
         case "codex-accounts":
             print(Self.codexAccountsHelp(version: version))
+        case "hub":
+            print(Self.hubHelp(version: version))
         case "cost":
             print(Self.costHelp(version: version))
         case "sessions", "focus":
