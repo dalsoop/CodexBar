@@ -48,6 +48,8 @@ enum HubCLIProvider: String, Sendable {
     }
 
     var hubProvider: OpenCodexHubProvider {
+        // Provider-specific by design: the hub names its pools by upstream vendor, so the two hub CLI providers map
+        // to opencodex's `openai` and `anthropic` pools.
         switch self {
         case .codex: .openai
         case .claude: .anthropic
@@ -63,6 +65,8 @@ struct HubProviderConfiguration: Equatable, Sendable {
 
     /// Codex: `openCodexHubEnabled`. Claude: only `claudeSwapEnabled` with `claudeSwapSource == "opencodex"`.
     static func resolve(provider: HubCLIProvider, config: CodexBarConfig) -> HubProviderConfiguration {
+        // Provider-specific by design: Codex reads the hub keys, while Claude's hub list is driven by its claude-swap
+        // adapter keys (the keys the fleet's config writer sets), so each provider resolves different fields.
         switch provider {
         case .codex:
             let entry = config.providerConfig(for: .codex)
