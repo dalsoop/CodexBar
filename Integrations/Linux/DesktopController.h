@@ -8,6 +8,7 @@
 #include <QProcess>
 #include <QTimer>
 #include <QVariant>
+#include <functional>
 
 class DesktopController : public QObject {
     Q_OBJECT
@@ -24,6 +25,8 @@ class DesktopController : public QObject {
     Q_PROPERTY(bool costBusy READ costBusy NOTIFY changed)
     Q_PROPERTY(bool stale READ stale NOTIFY changed)
     Q_PROPERTY(QString updated READ updated NOTIFY changed)
+    // Tray popup only: carries masked emails, so it never reaches the IPC snapshot.
+    Q_PROPERTY(QVariantMap hub READ hub NOTIFY changed)
 
 public:
     explicit DesktopController(const QString &cliOverride, QObject *parent = nullptr);
@@ -50,6 +53,12 @@ public:
     Q_INVOKABLE bool saveSettings(const QVariantMap &changes);
     Q_INVOKABLE void copySummary();
     QJsonObject snapshot() const;
+    QVariantMap hub() const { return m_hubView; }
+    // A hub switch moves every machine on the hub: the popup asks for a prompt, shows it, and only its
+    // confirm button calls confirmHubSwitch with the prompt's token. No IPC command reaches these.
+    Q_INVOKABLE QVariantMap prepareHubSwitch(const QString &provider, int index);
+    Q_INVOKABLE bool confirmHubSwitch(const QString &token);
+    Q_INVOKABLE void cancelHubSwitch();
 
 signals:
     void changed();
@@ -58,8 +67,24 @@ signals:
 
 private:
     QJSEngine m_engine;
-    QJSValue m_usageModel, m_noticeModel, m_noticeState;
-    QProcess m_usage, m_cost, m_catalog;
+    QJSValue m_usageModel, m_noticeModel, m_noticeState, m_hubModel, m_hubStates;
+    QProcess m_usage, m_cost, m_catalog, m_hub, m_hubSwitch;
+    QStringList m_hubQueue;
+    bool m_hubPhase = false;
+    QVariantMap m_hubView, m_switchPrompt;
+    QTimer m_hubPendingPoll;
+    int m_hubTimeoutMs = 40000;
+    void nextHub();
+    void runHubAccounts(const QString &provider, bool batch);
+    void startUsage();
+    void finishUsageBatch();
+    void composeEntries();
+    void updateHubView();
+    void pollPendingHub();
+    QStringList hubProviders() const;
+    QJSValue hubState(const QString &provider) const;
+    void runCli(QProcess &process, const QStringList &command, int timeoutMs,
+        const std::function<void(const QByteArray &, int, bool)> &done);
     QVariantList m_providers, m_batchEntries;
     QStringList m_pendingProviders;
     QString m_currentProvider;
