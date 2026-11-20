@@ -162,7 +162,8 @@ struct CLIHubCommandTests {
             (fixture.claudeConfig(swapEnabled: false, source: "opencodex"), false),
         ]
         for (config, configured) in cases {
-            let result = await CodexBarCLI.hubAccounts(provider: .claude, pending: nil, config: config, environment: env)
+            let result = await CodexBarCLI.hubAccounts(
+                provider: .claude, pending: nil, config: config, environment: env)
             #expect(result.payload.configured == configured)
             #expect(result.exitCode == .success)
         }
