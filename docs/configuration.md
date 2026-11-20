@@ -206,8 +206,7 @@ All provider fields are optional unless noted.
 ### opencodex hub snapshot
 
 The Linux desktop and scripts use the same snapshot and request files through `codexbar hub accounts` and
-`codexbar hub switch` ([contracts](contracts.md)); on Linux the Claude list follows the `claudeSwap*` keys only,
-because no packaged default turns `openCodexHubEnabled` on there.
+`codexbar hub switch` ([contracts](contracts.md)); there the Claude list follows the `claudeSwap*` keys only.
 
 CodexBar asks opencodex which role this Mac has (`runtimeRole` in `ocx status --json`, read-only; no other field is
 kept) once per executable and keeps the answer for five minutes (one minute when there is no answer), so a refresh of

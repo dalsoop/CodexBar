@@ -8,4 +8,4 @@ Qt 6 C++·QML 데스크톱의 창·polling·알림·로컬 IPC·사용자 설정
 
 인증 버튼은 사용자의 터미널에서 공급자 CLI를 실행하고 출력을 수집하지 않는다. 테스트는 합성 HOME/XDG·가짜 CLI·offscreen Qt로 polling 순서·오류·알림·설정·소켓 응답을 확인한다. 설치 테스트는 관리 설정 symlink의 대상 보존과 기존 어댑터 백업을 검증하며 실제 사용자 설정을 변경하지 않는다.
 
-The opencodex hub list and switching go only through `codexbar hub accounts` / `hub switch --confirm`; the app must not read or write the hub snapshot or request folder itself. A switch must start only from the confirmation dialog, never from IPC. On macOS, Qt ignores a synthetic `HOME`/`XDG_*` for its standard locations, so running the desktop or its tests there writes into the real `~/Library` (decision context: `docs/engineering-notes.md`); run them on Linux or in CI.
+The opencodex hub list and switching go only through `codexbar hub accounts` / `hub switch --confirm`; the app must not read or write the hub snapshot or request folder itself. A switch must start only from the confirmation dialog, never from IPC. On macOS, Qt's `QStandardPaths` ignores `HOME` and `XDG_*`, so running the desktop or its tests there writes into the real `~/Library`; run them on Linux or in CI.

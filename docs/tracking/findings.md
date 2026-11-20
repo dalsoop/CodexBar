@@ -11,6 +11,10 @@ This file is written in English only.
   `codexBillingDays`).
 - **Claude main entry.** The Linux Claude entry stays the native CLI login, as on the Macs; only the account list
   comes from the hub.
+- **"this Mac" wording.** Core hub error texts (for example "This pool cannot be switched from this Mac.") reach the
+  Linux app unchanged through `codexbar hub`; rewording them in the core would change the Mac app too.
+- **`enabled` selection.** With `linux.json` `provider: "enabled"` the app asks the hub for Codex and Claude even when
+  one is disabled in `config.json`, and the hub Codex entry is listed first; the office Linux server enables both.
 - **Omarchy.** The Omarchy adapter does not show the hub account list, because the local socket never carries it.
 
 Each needs its own change; none blocks the hub Codex card, the Claude list or switching on Linux.

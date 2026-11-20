@@ -8,4 +8,4 @@ usage·cost·serve 출력은 선택한 공급자와 계정 범위를 보존한�
 
 명령 회귀는 가짜 실행 파일·합성 config·contained sessions로 검증한다. 실계정 usage나 브라우저 쿠키 가져오기를 일반 빌드 확인에 사용하지 않는다. CLI 자격 캐시는 기존 실행 파일·서명 검증 경계를 유지하고 외부 symlink 별칭 때문에 신뢰 대상을 넓히지 않는다.
 
-`hub switch` must write nothing without `--confirm`, and `usage --exclude-provider` must change only which providers are fetched, never the output of the rest (`docs/contracts.md`).
+`hub switch` must write nothing without `--confirm`, and `usage --exclude-provider` must change only which providers are fetched, never the output of the rest.
