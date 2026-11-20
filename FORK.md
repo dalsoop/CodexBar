@@ -1,3 +1,5 @@
+This file is written in English only.
+
 # dalsoop/CodexBar fork (`gujo`)
 
 This is a long-lived, self-managed fork of [steipete/CodexBar](https://github.com/steipete/CodexBar). It is built and shipped as `net.ranode.codexbar` with its own Sparkle feed, separately from the official app (`com.steipete.codexbar`). Upstream closed the pull request for the fork's feature (steipete/CodexBar#4630, 2026-10-19), so the fork keeps it on its own and does not wait for upstream acceptance.
@@ -24,6 +26,11 @@ This is a long-lived, self-managed fork of [steipete/CodexBar](https://github.co
   (`docs/reset-announcements.md`).
 - opencodex hub accounts for Claude, Codex and Grok (`docs/configuration.md`, "opencodex hub snapshot").
 - The app state mirror `~/.swift-app-state/codexbar.json` and `codexbar app-state [--json]` (`docs/app-state.md`), so scripts and agents can see what the menu shows.
+
+## Markdown first line
+
+Every Markdown file the fork creates or edits starts with `This file is written in English only.` (after YAML front
+matter), including files that come from upstream. An upstream merge that conflicts on that one line keeps it.
 
 ## Release
 

@@ -1,4 +1,19 @@
+This file is written in English only.
+
 # 미해결 문제
+
+## Linux desktop: hub items left out of the 2026-11-20 change
+
+- **Grok.** The Linux app does not read the hub's `xai` pool; Grok stays on its native source there.
+- **Manage hub accounts.** Linux has no button that opens the hub's account-management page; accounts are added or
+  signed in again on the hub dashboard or a Mac.
+- **Codex plan titles.** Linux hub rows do not show the plan price or next billing date (`codexPlanPrices`,
+  `codexBillingDays`).
+- **Claude main entry.** The Linux Claude entry stays the native CLI login, as on the Macs; only the account list
+  comes from the hub.
+- **Omarchy.** The Omarchy adapter does not show the hub account list, because the local socket never carries it.
+
+Each needs its own change; none blocks the hub Codex card, the Claude list or switching on Linux.
 
 허브 계정 목록 감시 작업의 재가동과 새 계정 추가·재인증 결과의 기기 간 전달은 아직 미검증이다. 2026-10-21 설치 확인 중 현재 허브의 읽기 전용 조회에서도 Claude 계정 둘의 주간 사용률은 모두 100%였다. `net.ranode.mac-infra.hub-accounts`와 `net.ranode.mac-infra.periodic`은 미적재였다. 실제 한도 회복과 정상 apply·check·두 번째 apply 확인 뒤에만 운영을 재개하는 기존 조건을 유지한다. 보고된 리셋 시각은 회복 보장이 아니며, 예정된 전환 시험이 끝난 뒤에만 실제 허브 교체를 연습하는 기존 조건도 유지한다. 이번에는 감시 작업·라우팅·실계정 로그인을 변경하지 않았다.
 

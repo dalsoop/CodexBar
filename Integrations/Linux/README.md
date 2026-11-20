@@ -1,3 +1,5 @@
+This file is written in English only.
+
 # CodexBar for Linux
 
 A Qt 6 desktop app with an opt-in compact Quick View, separate Usage & Spend and Settings
@@ -235,6 +237,18 @@ or use `codexbar-linux --quit`. Launching again opens the existing process.
 Preferences live in `$XDG_CONFIG_HOME/codexbar/linux.json` (normally `~/.config`),
 written atomically with user-only permissions. Invalid files are never overwritten:
 fix or remove the file and restart. Authentication remains in the CLI's stores.
+
+## opencodex hub accounts
+
+When `config.json` points the Codex or Claude provider at an opencodex hub, each poll first runs
+`codexbar hub accounts`. The Codex entry then shows the hub's active account (native Codex is left out of
+`codexbar usage` with `--exclude-provider codex`), and the Codex and Claude details in Quick View list the hub's
+accounts. A Switch button asks for confirmation every time, because every machine that uses the hub moves, then runs
+`codexbar hub switch --confirm`; the result appears after the hub's next snapshot. The account list, emails and
+switch state never leave the app over the local socket, and no socket command can switch. With a CLI that has no
+`hub` command the app keeps its native entries and shows "CodexBar CLI too old for hub accounts".
+`CODEXBAR_HUB_TIMEOUT_SECONDS` (default 40) and `CODEXBAR_HUB_PENDING_POLL_SECONDS` (default 20) tune the hub call
+timeout and the re-check interval while a switch is pending.
 
 ## Adapter interface
 

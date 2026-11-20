@@ -1,4 +1,11 @@
+This file is written in English only.
+
 # 확인된 함정
+
+On macOS, Qt's `QStandardPaths` ignores `HOME` and `XDG_*`: a run of the Linux desktop or `test_desktop.py` on a Mac
+with a synthetic home still wrote `~/Library/Application Support/codexbar-linux`,
+`~/Library/Preferences/codexbar/linux.json` and `~/Library/Preferences/autostart/com.steipete.CodexBar.desktop`
+(2026-11-20; removed the same day, the macOS app's own settings untouched). Run the desktop tests on Linux or in CI.
 
 SwiftPM's generated `Bundle.module` accessor can look only in the app root and the original build
 directory, while packaged resources live in `Contents/Resources`. The OpenCodex rename helper must use
