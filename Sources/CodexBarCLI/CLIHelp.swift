@@ -86,6 +86,7 @@ extension CodexBarCLI {
                        [--account <label>] [--account-index <index>] [--all-accounts]
                        [--no-credits] [--no-color] [--pretty] [--status] [--source <auto|web|cli|oauth|api>]
                        [--web-timeout <seconds>] [--web-debug-dump-html] [--antigravity-plan-debug] [--augment-debug]
+                       [--exclude-provider <name>]...
 
         Description:
           Print usage from enabled providers as text (default), JSON, or TOON. Honors your in-app toggles.
@@ -102,6 +103,8 @@ extension CodexBarCLI {
           Use --account or --account-index to select a specific token account.
           Use --all-accounts to fetch every token account, or every visible Codex account for Codex.
           Account selection requires a single provider.
+          --exclude-provider leaves a provider out of the resolved set before anything is fetched (repeatable).
+          Excluding every provider prints [] for JSON and nothing for text, and exits 0.
 
         Global flags:
           -h, --help      Show help

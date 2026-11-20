@@ -83,7 +83,16 @@ extension CodexBarCLI {
         let output = Self.resolveUsageOutputPreferences(from: values)
         let config = Self.loadConfig(output: output)
         let provider = Self.decodeProvider(from: values, config: config)
-        let providerList = provider.asList
+        let providerList: [UsageProvider]
+        do {
+            providerList = try Self.resolveUsageProviders(selection: provider, values: values)
+        } catch {
+            Self.exit(code: .usage, message: "Error: \(error.localizedDescription)", output: output, kind: .args)
+        }
+        if Self.excludedProviderArguments(from: values) != nil, providerList.isEmpty {
+            if let empty = Self.emptyUsageOutput(output: output) { print(empty) }
+            Self.exit(code: .success, output: output)
+        }
         let setup = Self.usageFetchSetup(values: values, providers: providerList, output: output)
         let command = setup.command.withUsageCacheFallback(config: config)
         let tokenContext = setup.tokenContext(config: config, output: output)
@@ -106,6 +115,33 @@ extension CodexBarCLI {
             pretty: output.pretty)
 
         Self.exit(code: result.exitCode, output: output, kind: result.exitCode == .success ? .runtime : .provider)
+    }
+
+    /// The raw `--exclude-provider` values, or nil when the option was not given.
+    static func excludedProviderArguments(from values: ParsedValues) -> [String]? {
+        guard let raw = values.options["excludeProvider"], !raw.isEmpty else { return nil }
+        return raw
+    }
+
+    /// The provider set `usage` fetches: the resolved selection minus every `--exclude-provider` id, in the
+    /// selection's order. Without the option this is exactly `selection.asList`.
+    static func resolveUsageProviders(selection: ProviderSelection, values: ParsedValues) throws -> [UsageProvider] {
+        let providers = selection.asList
+        guard let raw = Self.excludedProviderArguments(from: values) else { return providers }
+        var excluded: Set<UsageProvider> = []
+        for argument in raw {
+            guard let provider = ProviderDescriptorRegistry.cliNameMap[argument.lowercased()] else {
+                throw CLIArgumentError("--exclude-provider must be one of \(ProviderHelp.concreteList).")
+            }
+            excluded.insert(provider)
+        }
+        return providers.filter { !excluded.contains($0) }
+    }
+
+    /// What `usage` prints when `--exclude-provider` removed every provider: `[]` for JSON, nothing otherwise.
+    static func emptyUsageOutput(output: CLIOutputPreferences) -> String? {
+        guard !output.toonRequested, output.usesJSONOutput else { return nil }
+        return "[]"
     }
 
     /// Bound provider I/O while preserving the sequential command's output and failure precedence.

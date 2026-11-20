@@ -23,6 +23,11 @@ struct UsageOptions: CommanderParsable {
     @Flag(name: .long("pretty"), help: "Pretty-print JSON output")
     var pretty: Bool = false
 
+    @Option(
+        name: .long("exclude-provider"),
+        help: "Provider to leave out of the resolved provider set (repeatable): \(ProviderHelp.concreteList)")
+    var excludeProvider: String?
+
     @Flag(
         name: .long("app-auto-verifier"),
         help: "Exercise the app's Claude Auto route (verification only; requires --provider claude --source auto)")
