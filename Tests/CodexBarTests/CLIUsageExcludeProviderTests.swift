@@ -73,11 +73,11 @@ struct CLIUsageExcludeProviderTests {
 
     @Test
     func `account selection is checked on the set after exclusion`() throws {
-        let values = try self.parse(["--exclude-provider", "claude", "--account", "work"])
-        let resolved = try CodexBarCLI.resolveUsageProviders(selection: .custom([.codex, .claude]), values: values)
-        #expect(resolved == [.codex])
+        let values = try self.parse(["--exclude-provider", "codex", "--account", "work"])
+        let resolved = try CodexBarCLI.resolveUsageProviders(selection: .custom([.codex, .clinepass]), values: values)
+        #expect(resolved == [.clinepass])
         let selection = try CodexBarCLI.decodeTokenAccountSelection(from: values)
         #expect(selection.providerSelectionError(resolved) == nil)
-        #expect(selection.providerSelectionError([.codex, .claude]) != nil)
+        #expect(selection.providerSelectionError([.codex, .clinepass]) != nil)
     }
 }
