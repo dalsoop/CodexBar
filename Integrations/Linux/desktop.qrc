@@ -1,6 +1,7 @@
 <RCC><qresource prefix="/">
   <file>Shared/Usage.js</file>
   <file>Shared/Notifications.js</file>
+  <file>Shared/Hub.js</file>
   <file>qml/Main.qml</file>
   <file>qml/QuickView.qml</file>
   <file>qml/MenuMetric.qml</file>
