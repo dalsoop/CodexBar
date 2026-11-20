@@ -52,10 +52,8 @@ enum CodexBarCLI {
             switch invocation.path {
             case ["cards"], ["usage"]:
                 await self.runUsageDisplay(path: invocation.path, values: invocation.parsedValues)
-            case let path where path.first == "hub":
-                await self.runHub(path: path, values: invocation.parsedValues)
-            case let path where path.first == "codex-accounts":
-                await self.runCodexAccounts(path: path, values: invocation.parsedValues)
+            case let path where path.first == "hub" || path.first == "codex-accounts":
+                await self.runAccountCommand(path: path, values: invocation.parsedValues)
             case ["cost"]:
                 await self.runCost(invocation.parsedValues)
             case ["sessions", "list"]:
@@ -113,6 +111,14 @@ enum CodexBarCLI {
             await self.runCards(values)
         default:
             await self.runUsage(values)
+        }
+    }
+
+    private static func runAccountCommand(path: [String], values: ParsedValues) async {
+        if path.first == "hub" {
+            await self.runHub(path: path, values: values)
+        } else {
+            await self.runCodexAccounts(path: path, values: values)
         }
     }
 

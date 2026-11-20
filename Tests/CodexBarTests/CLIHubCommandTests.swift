@@ -133,16 +133,26 @@ struct CLIHubCommandTests {
         defer { fixture.cleanup() }
         try fixture.writeSnapshot()
         let result = await CodexBarCLI.hubAccounts(
-            provider: .codex, pending: nil, config: fixture.codexConfig(enabled: nil),
+            provider: .codex,
+            pending: nil,
+            config: fixture.codexConfig(enabled: nil),
             environment: HubFixture.environment())
         #expect(result.exitCode == .success)
         let object = try jsonObject(result.payload)
         #expect(object["schemaVersion"] as? Int == 1)
         #expect(object["provider"] as? String == "codex")
         #expect(object["configured"] as? Bool == false)
-        for key in ["origin", "hub", "updatedAt", "stale", "switchable", "switchReason", "activeIdSuffix",
-                    "pending", "error"]
-        {
+        for key in [
+            "origin",
+            "hub",
+            "updatedAt",
+            "stale",
+            "switchable",
+            "switchReason",
+            "activeIdSuffix",
+            "pending",
+            "error",
+        ] {
             #expect(object[key] is NSNull, "\(key) should be null")
         }
         #expect((object["accounts"] as? [Any])?.isEmpty == true)
@@ -279,7 +289,9 @@ struct CLIHubCommandTests {
         // "no source".
         try FileManager.default.removeItem(at: fixture.snapshot)
         let client = await CodexBarCLI.hubAccounts(
-            provider: .codex, pending: nil, config: fixture.codexConfig(),
+            provider: .codex,
+            pending: nil,
+            config: fixture.codexConfig(),
             environment: HubFixture.environment(role: .client))
         #expect(client.exitCode == .failure)
         #expect(client.payload.error?.code == "hubAccountsUnavailable")
@@ -294,7 +306,9 @@ struct CLIHubCommandTestsPending {
         defer { fixture.cleanup() }
         try fixture.writeSnapshot(lastRequests: lastRequests)
         let result = await CodexBarCLI.hubAccounts(
-            provider: .codex, pending: switchRequest, config: fixture.codexConfig(),
+            provider: .codex,
+            pending: switchRequest,
+            config: fixture.codexConfig(),
             environment: HubFixture.environment())
         return result.payload.pending
     }
@@ -308,8 +322,11 @@ struct CLIHubCommandTestsPending {
         let refused = try await self.resolve(pending(), lastRequests: """
         [{"requestId": "req-1", "provider": "openai", "result": "refused", "code": "superseded", "reason": "Newer"}]
         """)
-        #expect(refused == HubPendingPayload(requestId: "req-1", resolution: "refused", code: "superseded",
-                                             reason: "Newer"))
+        #expect(refused == HubPendingPayload(
+            requestId: "req-1",
+            resolution: "refused",
+            code: "superseded",
+            reason: "Newer"))
         let failed = try await self.resolve(pending(), lastRequests: """
         [{"requestId": "req-1", "provider": "openai", "result": "failed", "code": "use_failed"}]
         """)
@@ -366,7 +383,7 @@ struct CLIHubCommandTestsSwitch {
     }
 
     @Test
-    func `switch without confirm is a usage error and writes nothing`() async throws {
+    func `switch without confirm is a usage error and writes nothing`() throws {
         let fixture = try HubFixture()
         defer { fixture.cleanup() }
         try fixture.writeSnapshot()
@@ -427,7 +444,7 @@ struct CLIHubCommandTestsSwitch {
         let object = try jsonObject(result.payload)
         #expect(object["provider"] as? String == "codex")
         #expect(object["error"] is NSNull)
-        #expect(Set(try #require(object["request"] as? [String: Any]).keys) == [
+        #expect(try Set(#require(object["request"] as? [String: Any]).keys) == [
             "requestId", "targetIdSuffix", "targetEmail", "requestedAt",
         ])
     }
@@ -513,7 +530,8 @@ struct CLIHubCommandTestsSwitch {
         let suffix = try #require(accounts.payload.accounts.last?.idSuffix)
         let switched = await CodexBarCLI.hubSwitch(
             HubSwitchCLIRequest(provider: .codex, idSuffix: suffix, email: "b***b@example.invalid"),
-            config: config, environment: env)
+            config: config,
+            environment: env)
         #expect(switched.exitCode == .success)
         #expect(switched.payload.outcome == "switched")
         #expect(switched.payload.request == nil)

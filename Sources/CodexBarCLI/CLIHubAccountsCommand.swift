@@ -53,7 +53,7 @@ extension CodexBarCLI {
 
     static func printHub(_ payload: some Encodable, text: String, output: CLIOutputPreferences) {
         if output.usesJSONOutput {
-            Self.printJSON(payload, pretty: output.pretty)
+            printJSON(payload, pretty: output.pretty)
         } else {
             print(text)
         }
