@@ -29,6 +29,20 @@ args=sys.argv[1:]
 provider=args[args.index('--provider')+1] if '--provider' in args else 'codex'
 if args[0]=='config':
  print(json.dumps([{'provider':'codex','displayName':'Codex'},{'provider':'claude','displayName':'Claude'}])); sys.exit(0)
+if args[0]=='hub':
+ # Speaks the `hub accounts` / `hub switch` JSON contract; logged apart so usage call counts stay as they were.
+ start=time.time(); time.sleep(state.get('hubDelay',0))
+ if state.get('hubOld'):
+  answer=[{'provider':'cli','error':{'code':1,'message':'Unknown command','kind':'args'}}]; code=state['hubOld']
+ elif args[1]=='switch':
+  answer=dict(state.get('switch',{'schemaVersion':1,'provider':provider,'outcome':None,'request':None,
+   'error':{'code':'notConfigured','message':'Not configured'}})); code=answer.pop('exit',0)
+ else:
+  answer=dict(state.get('hub',{}).get(provider,{'schemaVersion':1,'provider':provider,'configured':False,'origin':None,
+   'hub':None,'updatedAt':None,'stale':None,'switchable':None,'switchReason':None,'activeIdSuffix':None,'accounts':[],
+   'lastRequests':[],'error':None})); code=answer.pop('exit',0)
+ with (root/'hub.jsonl').open('a') as log: log.write(json.dumps({'args':args,'start':start,'end':time.time()})+'\\n')
+ print(json.dumps(answer)); sys.exit(code)
 with (root/'calls.jsonl').open('a') as log: log.write(json.dumps({'pid':os.getpid(),'args':args})+'\\n')
 time.sleep(state.get('delay',0))
 if state.get('invalid') or state.get('failProvider')==provider: print('broken'); sys.exit(1)
@@ -39,6 +53,9 @@ else:
  usage=state.get('usage',{'identity':{'accountEmail':'private@example.com'},
  'primary':{'usedPercent':40,'windowMinutes':300,'resetsAt':'2030-01-01T00:00:00Z'}})
  answered=state.get('answerAs',{}).get(provider,provider)
+ if '--exclude-provider' in args:
+  excluded=[args[i+1] for i,arg in enumerate(args) if arg=='--exclude-provider']
+  print(json.dumps([{'provider':name,'usage':usage} for name in ['codex','claude'] if name not in excluded])); sys.exit(0)
  print(json.dumps([{'provider':answered,'usage':usage,'rateWindowLabels':state.get('rateWindowLabels'),'pace':state.get('pace'),'resetCredits':state.get('resetCredits'),'status':state.get('status')}]))
 ''')
         self.fake.chmod(0o755)
@@ -430,6 +447,151 @@ else:
         for error in ['ReferenceError', 'TypeError', 'failed to load', 'Cannot assign', 'Unable to assign', 'Binding loop']:
             self.assertNotIn(error, log)
 
+
+    # opencodex hub: the fake CLI answers the pinned `hub accounts` contract from state.json.
+    @staticmethod
+    def hub_answer(provider='codex', **extra):
+        now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        def account(suffix, active, used):
+            return {'idSuffix': suffix, 'label': 'pro', 'email': f'h***{suffix}@example.invalid', 'active': active,
+                    'paused': False, 'needsReauth': False, 'health': 'Healthy', 'quotaUnavailable': False,
+                    'nearLimit': False, 'canSwitch': not active, 'quotaSummary': [{'label': '5h', 'usedPercent': used}],
+                    'usage': {'identity': {'accountEmail': f'h***{suffix}@example.invalid'},
+                              'primary': {'usedPercent': used, 'windowMinutes': 300}}}
+        answer = {'schemaVersion': 1, 'provider': provider, 'configured': True, 'origin': 'snapshot',
+                  'hub': 'office', 'updatedAt': now, 'stale': False, 'switchable': True, 'switchReason': None,
+                  'activeIdSuffix': '1a2b', 'accounts': [account('1a2b', True, 12), account('3c4d', False, 70)],
+                  'lastRequests': [], 'error': None}
+        answer.update(extra)
+        return answer
+
+    def hub_calls(self):
+        path = self.root / 'hub.jsonl'
+        return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+
+    def usage_calls(self):
+        return [json.loads(line)['args'] for line in (self.root / 'calls.jsonl').read_text().splitlines()
+                if json.loads(line)['args'][0] == 'usage']
+
+    def poll(self, state, settings=None):
+        (self.root / 'state.json').write_text(json.dumps(state))
+        hub_before, usage_before = len(self.hub_calls()), len(self.usage_calls())
+        if settings: self.client('--configure', json.dumps(settings))
+        else: self.client('--refresh')
+        value = self.wait_for(lambda value: not value['busy'] and len(self.hub_calls()) > hub_before and
+                              (len(self.usage_calls()) > usage_before or settings == {'provider': 'codex'} or
+                               state.get('skipUsage')))
+        return value
+
+    def raw_ipc(self, request):
+        import socket
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+            connection.connect(str(self.runtime / 'codexbar-linux' / 'desktop.sock'))
+            connection.sendall(json.dumps(request).encode() + b'\n')
+            data = b''
+            while not data.endswith(b'\n'):
+                chunk = connection.recv(65536)
+                if not chunk: break
+                data += chunk
+        return json.loads(data)
+
+    def test_hub_model_unit_tests(self):
+        result = subprocess.run(['node', '--test', str(Path(__file__).with_name('hub.test.mjs'))],
+                                capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_hub_pool_replaces_native_codex_and_stays_out_of_ipc(self):
+        baseline = set(self.client('--snapshot')['entries'][0])
+        value = self.poll({'hub': {'codex': self.hub_answer(), 'claude': self.hub_answer('claude')}},
+                          {'provider': 'both', 'showIdentity': True})
+        value = self.wait_for(lambda value: [row['provider'] for row in value['entries']] == ['codex', 'claude']
+                              and not value['busy'])
+        self.assertEqual(value['entries'][0]['windows'][0]['remaining'], 88)
+        self.assertEqual(set(value['entries'][0]), baseline)
+        self.assertEqual(value['error'], '')
+        text = json.dumps(value)
+        for private in ['example.invalid', '1a2b', '3c4d', 'office', 'opencodex']:
+            self.assertNotIn(private, text)
+        hub = [call['args'] for call in self.hub_calls()]
+        self.assertEqual(hub[-2:], [['hub', 'accounts', '--provider', 'codex', '--format', 'json'],
+                                    ['hub', 'accounts', '--provider', 'claude', '--format', 'json']])
+        self.assertIn('--exclude-provider', self.usage_calls()[-1])
+        self.assertEqual(self.usage_calls()[-1][self.usage_calls()[-1].index('--exclude-provider') + 1], 'codex')
+        # One `hub accounts` at a time, and each finishes before the usage batch starts.
+        calls = self.hub_calls()
+        for earlier, later in zip(calls, calls[1:]):
+            self.assertLessEqual(earlier['end'], later['start'])
+        # No IPC command can start a switch or read the list.
+        for command in ['switch', 'hub', 'hub-switch', 'hub-accounts']:
+            self.assertFalse(self.raw_ipc({'command': command, 'provider': 'codex', 'index': 1})['ok'])
+        self.assertFalse(any(call['args'][1] == 'switch' for call in self.hub_calls()))
+
+    def test_hub_only_codex_skips_usage_and_no_hub_source_brings_native_back(self):
+        usage_before = len(self.usage_calls())
+        (self.root / 'state.json').write_text(json.dumps({'hub': {'codex': self.hub_answer()}}))
+        self.client('--refresh')
+        value = self.wait_for(lambda value: not value['busy'] and value['entries'][0]['windows'][0]['remaining'] == 88)
+        self.assertEqual(len(self.usage_calls()), usage_before)
+        no_source = self.hub_answer(accounts=[], error={'code': 'noHubSource', 'message': 'No hub source'})
+        (self.root / 'state.json').write_text(json.dumps({'hub': {'codex': no_source}}))
+        self.client('--refresh')
+        value = self.wait_for(lambda value: not value['busy'] and len(self.usage_calls()) > usage_before)
+        self.assertEqual(value['entries'][0]['windows'][0]['remaining'], 60)
+        self.assertNotIn('--exclude-provider', self.usage_calls()[-1])
+
+    def test_hub_stale_no_active_and_read_error_rules(self):
+        stale = self.hub_answer(stale=True)
+        (self.root / 'state.json').write_text(json.dumps({'hub': {'codex': stale}}))
+        self.client('--refresh')
+        value = self.wait_for(lambda value: not value['busy'] and
+                              value['entries'][0]['error'] == 'The opencodex hub snapshot is out of date')
+        self.assertEqual(value['entries'][0]['windows'][0]['remaining'], 88)
+        idle = self.hub_answer(accounts=[dict(self.hub_answer()['accounts'][1])], activeIdSuffix=None)
+        (self.root / 'state.json').write_text(json.dumps({'hub': {'codex': idle}}))
+        self.client('--refresh')
+        value = self.wait_for(lambda value: not value['busy'] and value['entries'][0]['error'] == 'No active account')
+        self.assertEqual(value['entries'][0]['windows'], [])
+        (self.root / 'state.json').write_text(json.dumps({'hub': {'codex': self.hub_answer()}}))
+        self.client('--refresh')
+        self.wait_for(lambda value: not value['busy'] and value['entries'][0]['windows'])
+        usage_before = len(self.usage_calls())
+        failed = self.hub_answer(accounts=[], error={'code': 'readFailed', 'message': 'Hub read failed'}, exit=1)
+        for answer in [failed, {'schemaVersion': 1, 'provider': 'codex', 'configured': True, 'accounts': 'broken'}]:
+            (self.root / 'state.json').write_text(json.dumps({'hub': {'codex': answer}}))
+            hub_before = len(self.hub_calls())
+            self.client('--refresh')
+            value = self.wait_for(lambda value: not value['busy'] and len(self.hub_calls()) > hub_before)
+            self.assertEqual(value['entries'][0]['windows'][0]['remaining'], 88)
+            self.assertTrue(value['entries'][0]['error'])
+        self.assertEqual(len(self.usage_calls()), usage_before)
+
+    def test_old_cli_without_hub_keeps_native_entries_without_banner(self):
+        (self.root / 'state.json').write_text(json.dumps({'hubOld': 64}))
+        hub_before = len(self.hub_calls())
+        self.client('--configure', '{"provider":"both"}')
+        value = self.wait_for(lambda value: not value['busy'] and len(self.hub_calls()) >= hub_before + 2)
+        self.assertEqual(value['error'], '')
+        self.assertNotIn('--exclude-provider', self.usage_calls()[-1])
+
+    def test_hub_is_not_asked_without_codex_or_claude(self):
+        self.client('--configure', '{"provider":"gemini"}')
+        self.wait_for(lambda value: value.get('entries') and value['entries'][0]['provider'] == 'gemini'
+                      and not value['busy'])
+        hub_before = len(self.hub_calls())
+        self.client('--refresh')
+        self.wait_for(lambda value: not value['busy'])
+        time.sleep(0.3)
+        self.assertEqual(len(self.hub_calls()), hub_before)
+
+    def test_hub_answer_from_an_old_selection_is_discarded(self):
+        (self.root / 'state.json').write_text(json.dumps({'hubDelay': 0.6, 'hub': {'codex': self.hub_answer()}}))
+        self.client('--refresh')
+        self.wait_for(lambda value: value['busy'])
+        self.client('--configure', '{"provider":"gemini"}')
+        value = self.wait_for(lambda value: value.get('entries') and not value['busy'])
+        self.assertEqual([row['provider'] for row in value['entries']], ['gemini'])
+        time.sleep(0.8)
+        self.assertEqual([row['provider'] for row in self.client('--snapshot')['entries']], ['gemini'])
 
 if __name__ == '__main__':
     unittest.main()

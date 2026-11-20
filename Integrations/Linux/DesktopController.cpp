@@ -597,8 +597,7 @@ void DesktopController::runHubAccounts(const QString &provider, bool batch) {
             {hubState(provider), parsed, double(QDateTime::currentMSecsSinceEpoch())});
         if (!next.isError()) m_hubStates.setProperty(provider, next);
         // During a poll the usage batch recomposes the entries; a re-poll between polls does it here.
-        if (!batch) composeEntries();
-        else updateHubView();
+        if (batch) { updateHubView(); } else { composeEntries(); }
         emit changed();
         QTimer::singleShot(0, this, &DesktopController::nextHub);
     });
