@@ -44,18 +44,32 @@ DesktopController::DesktopController(const QString &cliOverride, QObject *parent
     m_usageModel = module(m_engine, ":/Shared/Usage.js", "rows:rows, costs:costs, command:command, summary:summary, barSegments:barSegments, resetText:resetText");
     m_noticeModel = module(m_engine, ":/Shared/Notifications.js", "transition:transition, summary:summary");
     m_noticeState = m_engine.newObject();
+    m_hubModel = module(m_engine, ":/Shared/Hub.js", "initial:initial, accountsCommand:accountsCommand, "
+        "switchCommand:switchCommand, parseAccounts:parseAccounts, applyAccounts:applyAccounts, beginSwitch:beginSwitch, "
+        "applySwitch:applySwitch, expire:expire, view:view, confirmation:confirmation, codexEntry:codexEntry, "
+        "excludesNativeCodex:excludesNativeCodex");
+    m_hubStates = m_engine.newObject();
+    for (const auto &provider : {"codex", "claude"}) m_hubStates.setProperty(provider, call(m_hubModel, "initial", {}));
+    // Test hooks; the defaults sit above the core's 30 s hub read timeout and match the Mac's 20 s re-poll.
+    bool ok = false;
+    const int timeout = qEnvironmentVariableIntValue("CODEXBAR_HUB_TIMEOUT_SECONDS", &ok);
+    if (ok && timeout > 0 && timeout <= 600) m_hubTimeoutMs = timeout * 1000;
+    const int pendingPoll = qEnvironmentVariableIntValue("CODEXBAR_HUB_PENDING_POLL_SECONDS", &ok);
+    m_hubPendingPoll.setInterval(ok && pendingPoll > 0 && pendingPoll <= 600 ? pendingPoll * 1000 : 20000);
+    connect(&m_hubPendingPoll, &QTimer::timeout, this, &DesktopController::pollPendingHub);
     loadSettings(cliOverride);
+    updateHubView();
     loadProviders();
     connect(&m_poll, &QTimer::timeout, this, &DesktopController::refresh);
     m_poll.start(m_settings.value("refreshSeconds").toInt() * 1000);
-    connect(&m_clock, &QTimer::timeout, this, &DesktopController::changed);
+    connect(&m_clock, &QTimer::timeout, this, [this] { updateHubView(); emit changed(); });
     m_clock.start(30000);
     QTimer::singleShot(0, this, &DesktopController::refresh);
 }
 
 DesktopController::~DesktopController() {
-    m_usage.disconnect(this); m_cost.disconnect(this);
-    stop(m_usage); stop(m_cost); stop(m_catalog);
+    m_usage.disconnect(this); m_cost.disconnect(this); m_hub.disconnect(this); m_hubSwitch.disconnect(this);
+    stop(m_usage); stop(m_cost); stop(m_catalog); stop(m_hub); stop(m_hubSwitch);
 }
 
 QJSValue DesktopController::call(const QJSValue &model, const QString &function, const QJSValueList &args) const {
@@ -156,10 +170,13 @@ bool DesktopController::saveSettings(const QVariantMap &changes) {
     m_settings = next; m_configError.clear();
     if (queryChanged) {
         ++m_generation;
-        if (m_usage.state() == QProcess::NotRunning) { m_usageBatch = false; m_pendingProviders.clear(); }
+        if (m_usage.state() == QProcess::NotRunning && m_hub.state() == QProcess::NotRunning) {
+            m_usageBatch = false; m_pendingProviders.clear(); m_hubQueue.clear(); m_hubPhase = false;
+        }
         m_entries.clear(); m_spending.clear(); m_updated = 0; m_costUpdated = 0;
     }
     updateLabels();
+    updateHubView();
     m_noticeState = m_engine.newObject();
     m_poll.start(m_settings.value("refreshSeconds").toInt() * 1000);
     emit settingsChanged(); emit changed(); if (queryChanged) refresh();
@@ -175,11 +192,40 @@ QString DesktopController::updated() const {
     return m_updated ? QDateTime::fromMSecsSinceEpoch(m_updated).toLocalTime().toString("HH:mm") : QString();
 }
 
+// A poll asks the hub first, then fetches usage without native Codex while the hub serves Codex.
 void DesktopController::refresh() {
     if (busy()) return;
-    m_usageBatch = true; m_batchFailed = false; m_batchEntries.clear();
-    m_pendingProviders = m_settings.value("provider") == "custom" ? m_settings.value("providerOrder").toStringList() :
-        QStringList{m_settings.value("provider").toString()};
+    m_usageBatch = true; m_batchFailed = false; m_batchEntries.clear(); m_pendingProviders.clear();
+    m_hubQueue = hubProviders();
+    m_hubPhase = true;
+    nextHub();
+}
+
+QStringList DesktopController::hubProviders() const {
+    const auto provider = m_settings.value("provider").toString();
+    const auto selected = provider == "custom" ? m_settings.value("providerOrder").toStringList() :
+        QStringList{"enabled", "all", "both"}.contains(provider) ? QStringList{"codex", "claude"} : QStringList{provider};
+    QStringList result;
+    for (const auto &id : {QString("codex"), QString("claude")}) if (selected.contains(id)) result.append(id);
+    return result;
+}
+
+QJSValue DesktopController::hubState(const QString &provider) const { return m_hubStates.property(provider); }
+
+// One `hub accounts` at a time: a pending re-poll still running makes the batch wait for it.
+void DesktopController::nextHub() {
+    if (m_hub.state() != QProcess::NotRunning || !m_usageBatch || !m_hubPhase) return;
+    if (!m_hubQueue.isEmpty()) { runHubAccounts(m_hubQueue.takeFirst(), true); return; }
+    m_hubPhase = false;
+    startUsage();
+}
+
+void DesktopController::startUsage() {
+    const bool hubCodex = call(m_hubModel, "excludesNativeCodex", {hubState("codex")}).toBool();
+    const auto provider = m_settings.value("provider").toString();
+    m_pendingProviders = provider == "custom" ? m_settings.value("providerOrder").toStringList() : QStringList{provider};
+    if (hubCodex && hubProviders().contains("codex")) m_pendingProviders.removeAll("codex");
+    if (m_pendingProviders.isEmpty()) { finishUsageBatch(); return; }
     nextProvider();
 }
 
@@ -190,6 +236,8 @@ void DesktopController::nextProvider() {
     auto selection = m_settings;
     selection["provider"] = m_currentProvider;
     if (m_settings.value("provider") == "custom") { selection["accountIndex"] = 0; selection["allAccounts"] = false; }
+    selection["excludeCodex"] = hubProviders().contains("codex") &&
+        call(m_hubModel, "excludesNativeCodex", {hubState("codex")}).toBool();
     auto args = call(m_usageModel, "command", {m_engine.toScriptValue(selection)}).toVariant().toStringList();
     // Process deadlines and groups are managed here, without a coreutils dependency.
     args = args.mid(3);
@@ -206,20 +254,22 @@ void DesktopController::probe(QProcess &process, const QStringList &command, boo
     auto output = std::make_shared<QByteArray>();
     auto complete = std::make_shared<bool>(false);
     const int generation = m_generation;
+    // `usage --exclude-provider` answers `[]` when nothing else is selected; that is an empty result.
+    const bool allowEmpty = command.contains("--exclude-provider");
     auto *deadline = new QTimer(&process);
     deadline->setSingleShot(true);
     connect(deadline, &QTimer::timeout, &process, [&process] { stop(process); });
-    auto finish = [this, &process, output, complete, generation, cost, deadline](bool failed) {
+    auto finish = [this, &process, output, complete, generation, cost, deadline, allowEmpty](bool failed) {
         if (*complete) return;
         *complete = true; deadline->stop(); deadline->deleteLater();
         if (generation != m_generation) {
-            if (!cost) { m_usageBatch = false; m_pendingProviders.clear(); }
+            if (!cost) { m_usageBatch = false; m_pendingProviders.clear(); m_hubQueue.clear(); m_hubPhase = false; }
             QTimer::singleShot(0, this, cost ? &DesktopController::refreshCosts : &DesktopController::refresh);
             return;
         }
         output->append(process.readAllStandardOutput());
         QJSValueList arguments{QString::fromUtf8(*output)};
-        if (!cost) arguments.append(m_settings.value("showIdentity").toBool());
+        if (!cost) { arguments.append(m_settings.value("showIdentity").toBool()); arguments.append(allowEmpty); }
         const auto parsed = call(m_usageModel, cost ? "costs" : "rows", arguments);
         const bool invalid = failed || parsed.isError() || !parsed.isArray() || output->size() > 8 * 1024 * 1024;
         if (cost) {
@@ -248,15 +298,8 @@ void DesktopController::probe(QProcess &process, const QStringList &command, boo
                 QTimer::singleShot(0, this, &DesktopController::nextProvider);
                 return;
             }
-            m_usageBatch = false;
-            m_entries = m_batchEntries;
-            updateLabels();
-            if (m_batchFailed) {
-                m_error = "Some usage could not be refreshed. Previous results may be out of date.";
-                m_noticeState = m_engine.newObject();
-            } else {
-                m_error.clear(); m_updated = QDateTime::currentMSecsSinceEpoch(); updateNotifications(m_entries);
-            }
+            finishUsageBatch();
+            return;
         }
         emit changed();
     };
@@ -272,6 +315,19 @@ void DesktopController::probe(QProcess &process, const QStringList &command, boo
     process.setChildProcessModifier([] { ::setsid(); });
     process.start(command.first(), command.mid(1));
     deadline->start(60000);
+    emit changed();
+}
+
+void DesktopController::finishUsageBatch() {
+    m_usageBatch = false;
+    m_entries = m_batchEntries;
+    composeEntries();
+    if (m_batchFailed) {
+        m_error = "Some usage could not be refreshed. Previous results may be out of date.";
+        m_noticeState = m_engine.newObject();
+    } else {
+        m_error.clear(); m_updated = QDateTime::currentMSecsSinceEpoch(); updateNotifications(m_entries);
+    }
     emit changed();
 }
 
@@ -487,4 +543,164 @@ bool DesktopController::accountAction(const QString &provider, const QString &ac
         m_configError = "Could not open the sign-in terminal."; emit settingsChanged(); return false;
     }
     m_configError.clear(); emit settingsChanged(); return true;
+}
+
+// Process runner for the hub commands: stdout only, stderr discarded unread, its own deadline.
+void DesktopController::runCli(QProcess &process, const QStringList &command, int timeoutMs,
+    const std::function<void(const QByteArray &, int, bool)> &done) {
+    process.disconnect(this);
+    auto output = std::make_shared<QByteArray>();
+    auto complete = std::make_shared<bool>(false);
+    auto *deadline = new QTimer(&process);
+    deadline->setSingleShot(true);
+    connect(deadline, &QTimer::timeout, &process, [&process] { stop(process); });
+    auto finish = [&process, output, complete, deadline, done](int code, bool failed) {
+        if (*complete) return;
+        *complete = true; deadline->stop(); deadline->deleteLater();
+        output->append(process.readAllStandardOutput());
+        done(*output, code, failed || output->size() > 4 * 1024 * 1024);
+    };
+    connect(&process, &QProcess::readyReadStandardOutput, this, [&process, output] {
+        output->append(process.readAllStandardOutput());
+        if (output->size() > 4 * 1024 * 1024) stop(process);
+    });
+    connect(&process, &QProcess::readyReadStandardError, this, [&process] { process.readAllStandardError(); });
+    connect(&process, &QProcess::finished, this, [finish](int code, QProcess::ExitStatus status) {
+        finish(code, status != QProcess::NormalExit);
+    });
+    connect(&process, &QProcess::errorOccurred, this, [finish](QProcess::ProcessError error) {
+        if (error == QProcess::FailedToStart) finish(-1, true);
+    });
+    process.setChildProcessModifier([] { ::setsid(); });
+    process.start(command.first(), command.mid(1));
+    deadline->start(timeoutMs);
+}
+
+void DesktopController::runHubAccounts(const QString &provider, bool batch) {
+    const int generation = m_generation;
+    auto args = call(m_hubModel, "accountsCommand", {m_settings.value("executable").toString(), provider,
+        hubState(provider).property("pending"), m_hubTimeoutMs / 1000}).toVariant().toStringList();
+    // The model names the deadline in its `timeout` prefix; this backend enforces it without coreutils.
+    const int timeoutMs = qMax(1, args.value(2).toInt()) * 1000;
+    args = args.mid(3);
+    runCli(m_hub, args, timeoutMs, [this, provider, generation, batch](const QByteArray &output, int code, bool failed) {
+        if (generation != m_generation) {
+            // The selection changed while this ran: drop the answer and start a poll for the new selection.
+            if (m_usageBatch && m_hubPhase && m_usage.state() == QProcess::NotRunning) {
+                m_usageBatch = false; m_hubQueue.clear(); m_hubPhase = false;
+            }
+            QTimer::singleShot(0, this, &DesktopController::refresh);
+            return;
+        }
+        const auto parsed = call(m_hubModel, "parseAccounts", {QString::fromUtf8(output), code, failed, provider});
+        const auto next = call(m_hubModel, "applyAccounts",
+            {hubState(provider), parsed, double(QDateTime::currentMSecsSinceEpoch())});
+        if (!next.isError()) m_hubStates.setProperty(provider, next);
+        // During a poll the usage batch recomposes the entries; a re-poll between polls does it here.
+        if (!batch) composeEntries();
+        else updateHubView();
+        emit changed();
+        QTimer::singleShot(0, this, &DesktopController::nextHub);
+    });
+    emit changed();
+}
+
+void DesktopController::pollPendingHub() {
+    const double now = double(QDateTime::currentMSecsSinceEpoch());
+    for (const auto &provider : {QString("codex"), QString("claude")})
+        if (hubState(provider).property("pending").isObject())
+            m_hubStates.setProperty(provider, call(m_hubModel, "expire", {hubState(provider), now}));
+    composeEntries();
+    emit changed();
+    // A poll in progress asks the hub itself; otherwise re-read one pending provider per tick.
+    if (m_hub.state() != QProcess::NotRunning || (m_usageBatch && m_hubPhase)) return;
+    for (const auto &provider : {QString("codex"), QString("claude")})
+        if (hubState(provider).property("pending").isObject()) { runHubAccounts(provider, false); return; }
+}
+
+// While the hub serves Codex its active account replaces the Codex entry, at Codex's place in the selection.
+void DesktopController::composeEntries() {
+    if (hubProviders().contains("codex")) {
+        const auto entry = call(m_hubModel, "codexEntry", {hubState("codex"), m_settings.value("showIdentity").toBool(),
+            m_usageModel.property("rows"), double(QDateTime::currentMSecsSinceEpoch())});
+        if (entry.isObject() && !entry.isError()) {
+            const auto order = m_settings.value("providerOrder").toStringList();
+            const bool custom = m_settings.value("provider") == "custom";
+            QVariantList next;
+            int position = 0;
+            for (const auto &item : m_entries) {
+                const auto provider = item.toMap().value("provider").toString();
+                if (provider == "codex") continue;
+                if (custom && order.indexOf(provider) < order.indexOf("codex")) ++position;
+                next.append(item);
+            }
+            next.insert(qMin(position, int(next.size())), entry.toVariant());
+            m_entries = next;
+        }
+    }
+    updateLabels();
+    updateHubView();
+}
+
+void DesktopController::updateHubView() {
+    QVariantMap view;
+    bool pending = false;
+    for (const auto &provider : {QString("codex"), QString("claude")}) {
+        view[provider] = call(m_hubModel, "view", {hubState(provider), provider, m_settings.value("showIdentity").toBool(),
+            double(QDateTime::currentMSecsSinceEpoch())}).toVariant();
+        pending = pending || hubState(provider).property("pending").isObject();
+    }
+    m_hubView = view;
+    if (pending && !m_hubPendingPoll.isActive()) m_hubPendingPoll.start();
+    else if (!pending) m_hubPendingPoll.stop();
+}
+
+QVariantMap DesktopController::prepareHubSwitch(const QString &provider, int index) {
+    m_switchPrompt.clear();
+    if (!QStringList{"codex", "claude"}.contains(provider)) return QVariantMap{{"ok", false}};
+    const auto prompt = call(m_hubModel, "confirmation", {hubState(provider), index,
+        m_settings.value("showIdentity").toBool(), double(QDateTime::currentMSecsSinceEpoch())});
+    if (!prompt.isObject() || prompt.isError()) return QVariantMap{{"ok", false}};
+    const auto token = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    m_switchPrompt = QVariantMap{{"provider", provider}, {"index", index}, {"token", token},
+        {"account", prompt.property("account").toVariant()}};
+    return QVariantMap{{"ok", true}, {"token", token}, {"title", prompt.property("title").toString()},
+        {"paragraphs", prompt.property("paragraphs").toVariant()}};
+}
+
+void DesktopController::cancelHubSwitch() { m_switchPrompt.clear(); }
+
+bool DesktopController::confirmHubSwitch(const QString &token) {
+    const auto prompt = m_switchPrompt;
+    m_switchPrompt.clear();
+    if (prompt.isEmpty() || token.isEmpty() || prompt.value("token").toString() != token) return false;
+    if (m_hubSwitch.state() != QProcess::NotRunning) return false;
+    const auto provider = prompt.value("provider").toString();
+    // The list may have changed behind the dialog: switch only to the account it showed, if still allowed.
+    const auto fresh = call(m_hubModel, "confirmation", {hubState(provider), prompt.value("index").toInt(),
+        m_settings.value("showIdentity").toBool(), double(QDateTime::currentMSecsSinceEpoch())});
+    if (!fresh.isObject() || fresh.isError()) return false;
+    const auto target = fresh.property("account");
+    const auto shown = prompt.value("account").toMap();
+    if (target.property("idSuffix").toString() != shown.value("idSuffix").toString() ||
+        target.property("email").toString() != shown.value("email").toString()) return false;
+    auto args = call(m_hubModel, "switchCommand", {m_settings.value("executable").toString(), provider, target,
+        m_hubTimeoutMs / 1000}).toVariant().toStringList();
+    if (args.size() < 5 || !args.contains("--confirm")) return false;
+    const int timeoutMs = qMax(1, args.value(2).toInt()) * 1000;
+    args = args.mid(3);
+    m_hubStates.setProperty(provider, call(m_hubModel, "beginSwitch", {hubState(provider)}));
+    updateHubView();
+    emit changed();
+    runCli(m_hubSwitch, args, timeoutMs, [this, provider, target](const QByteArray &output, int code, bool failed) {
+        const auto next = call(m_hubModel, "applySwitch", {hubState(provider), QString::fromUtf8(output), code, failed,
+            provider, target, double(QDateTime::currentMSecsSinceEpoch())});
+        if (!next.isError()) m_hubStates.setProperty(provider, next);
+        composeEntries();
+        emit changed();
+        // Read the hub again so the list shows the result; a pending request is re-read on its own timer.
+        if (!hubState(provider).property("pending").isObject() && m_hub.state() == QProcess::NotRunning &&
+            !(m_usageBatch && m_hubPhase)) runHubAccounts(provider, false);
+    });
+    return true;
 }
