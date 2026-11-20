@@ -18,6 +18,25 @@ extension CodexBarCLI {
         """
     }
 
+    static func hubHelp(version: String) -> String {
+        """
+        CodexBar \(version)
+
+        Usage:
+          codexbar hub accounts --provider codex|claude [--format text|json] [--pretty]
+                       [--pending-request-id <id> --pending-target-id-suffix <suffix>
+                        --pending-target-email <email> --pending-requested-at <iso8601>]
+          codexbar hub switch --provider codex|claude --id-suffix <suffix> --email <email> --confirm
+                       [--format text|json] [--pretty]
+
+        Description:
+          Read or switch the opencodex hub's account pool through config.json (codex: openCodexHubEnabled;
+          claude: claudeSwapEnabled with claudeSwapSource opencodex). accounts never writes anything.
+          switch moves every machine that uses the hub and requires --confirm; without it nothing is written.
+          Exit codes: 0 success (also not configured and no hub source for accounts), 1 hub error, 64 bad arguments.
+        """
+    }
+
     static func pluginsHelp(version: String) -> String {
         """
         CodexBar \(version)
@@ -535,6 +554,7 @@ extension CodexBarCLI {
           codexbar sessions [--json|--json-v2] [--pretty]
           codexbar sessions focus <id>
           codexbar codex-accounts <list|promote> [--json] [--pretty]
+          codexbar hub <accounts|switch> --provider codex|claude [--format text|json] [--confirm]
           codexbar dashboard [--pretty] [--timeout <seconds>] [--output <path>]
           codexbar serve [--host <host>] [--port <port>] [--refresh-interval <seconds>]
                        [--request-timeout <seconds>]
