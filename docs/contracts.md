@@ -1,4 +1,34 @@
+This file is written in English only.
+
 # 외부 도구 연결 계약
+
+## Hub accounts from the CLI (`codexbar hub`)
+
+`codexbar hub accounts` and `codexbar hub switch` give scripts and the Linux desktop the same opencodex hub pool and
+switch-request protocol the macOS app uses; both go through the shared core and never read credentials.
+
+- **Configured.** Codex: `openCodexHubEnabled` in the Codex provider entry (executable `openCodexHubExecutablePath`,
+  snapshot `openCodexHubSnapshotPath`). Claude: only `claudeSwapEnabled` with `claudeSwapSource: "opencodex"`
+  (executable `claudeSwapExecutablePath`, snapshot the Claude entry's `openCodexHubSnapshotPath`, else the packaged
+  default); `openCodexHubEnabled` is not read for Claude.
+- **`hub accounts --provider codex|claude [--format json]`** reads only. JSON: `schemaVersion` 1, `provider` (CLI
+  name), `configured`, `origin` (`hubLocal|snapshot|linkedCopy`), `hub`, `updatedAt`, `stale`, `switchable`,
+  `switchReason`, `activeIdSuffix`, `accounts[]` (`idSuffix`, `label`, `email` (masked), `active`, `paused`,
+  `needsReauth`, `health`, `quotaUnavailable`, `nearLimit` (>= 80 %), `canSwitch` (switchable target, current
+  snapshot), `quotaSummary[]` of `{label, usedPercent}`, `usage` (the same `UsageSnapshot` encoding as
+  `codexbar usage`)), `lastRequests[]` (`provider` is the hub's raw pool name), `pending`, `error {code, message}`.
+  With all four `--pending-request-id`, `--pending-target-id-suffix`, `--pending-target-email` and
+  `--pending-requested-at` it adds `pending.resolution`: `pending|done|refused|failed|expired` (11 minutes).
+- **`hub switch --provider … --id-suffix … --email … --confirm`** writes at most one request file (dot-prefixed temp
+  file renamed into place, folder 700, file 600, at most 4096 bytes) or runs `ocx account use` on the hub itself.
+  Without `--confirm` it writes nothing: a switch moves every machine that uses the hub. JSON: `outcome`
+  (`switched|alreadyActive|requested`), `request`, `error`. Not configured: error `notConfigured`.
+- **Exit codes.** 0 success, also `configured: false` and `noHubSource` from `accounts`; 1 a hub error
+  (`error.code` is the reader error's case name, else `readFailed` or `requestFailed`); 64 bad arguments, including
+  a missing `--confirm`.
+- **`codexbar usage --exclude-provider <id>`** (repeatable) drops providers from the resolved set before anything is
+  fetched. Output for the remaining providers is unchanged; excluding all prints `[]` for JSON and nothing for
+  text, exit 0; an unknown id exits 64.
 
 ## 허브 공급자 계정 관리
 

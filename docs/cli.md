@@ -5,6 +5,7 @@ read_when:
   - "Adding or modifying Commander-based CLI commands."
   - "Aligning menubar and CLI output/behavior."
 ---
+This file is written in English only.
 
 # CodexBar CLI
 
@@ -173,6 +174,10 @@ a second identifier is an error. For an option value beginning with a dash, use 
     Files are read and validated even for a short window; reducing `--days` does not skip older files.
   - Requires explicit `--provider codex` and JSON. Do not combine with `--summary-only`,
     `--period`, `--group-by` or `--breakdown`; the existing separate-host summary command is unchanged.
+- `codexbar hub accounts --provider codex|claude` lists the opencodex hub pool (masked emails, quota, switch
+  state); `codexbar hub switch --provider … --id-suffix … --email … --confirm` asks the hub to switch. The JSON
+  contract and exit codes are in `docs/contracts.md`. `codexbar usage --exclude-provider <id>` (repeatable) leaves
+  providers out of the fetch.
 - `codexbar cards` prints a one-shot usage snapshot as a responsive terminal card grid.
   - Reuses the same provider, source, account, credits, and status flags as `codexbar usage`.
   - Account lines and plan badges are included in the card grid by default.

@@ -1,4 +1,15 @@
+This file is written in English only.
+
 # 구현과 검증 상태
+
+## 2026-11-20 opencodex hub accounts on the Linux desktop
+
+The CLI gained `codexbar hub accounts`, `codexbar hub switch --confirm` and `codexbar usage --exclude-provider`.
+The Linux Qt app shows the hub's active Codex account instead of native Codex, lists the Codex and Claude hub
+accounts and switches them with a confirmation and the Mac's notices, through the CLI only. On this Mac the focused
+`swift test` filter (hub CLI, OpenCodexHub, claude-swap hub suites) passed, and swiftformat and swiftlint
+`--strict` found nothing; the Qt build and desktop tests run in the CI of PR #11. No real account was read and no switch was
+requested. A release and installation are not part of this record.
 
 ## 2026-11-11 중앙 계정 관리 목적지 수정
 

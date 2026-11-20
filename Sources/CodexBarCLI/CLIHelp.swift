@@ -18,6 +18,25 @@ extension CodexBarCLI {
         """
     }
 
+    static func hubHelp(version: String) -> String {
+        """
+        CodexBar \(version)
+
+        Usage:
+          codexbar hub accounts --provider codex|claude [--format text|json] [--pretty]
+                       [--pending-request-id <id> --pending-target-id-suffix <suffix>
+                        --pending-target-email <email> --pending-requested-at <iso8601>]
+          codexbar hub switch --provider codex|claude --id-suffix <suffix> --email <email> --confirm
+                       [--format text|json] [--pretty]
+
+        Description:
+          Read or switch the opencodex hub's account pool through config.json (codex: openCodexHubEnabled;
+          claude: claudeSwapEnabled with claudeSwapSource opencodex). accounts never writes anything.
+          switch moves every machine that uses the hub and requires --confirm; without it nothing is written.
+          Exit codes: 0 success (also not configured and no hub source for accounts), 1 hub error, 64 bad arguments.
+        """
+    }
+
     static func pluginsHelp(version: String) -> String {
         """
         CodexBar \(version)
@@ -86,6 +105,7 @@ extension CodexBarCLI {
                        [--account <label>] [--account-index <index>] [--all-accounts]
                        [--no-credits] [--no-color] [--pretty] [--status] [--source <auto|web|cli|oauth|api>]
                        [--web-timeout <seconds>] [--web-debug-dump-html] [--antigravity-plan-debug] [--augment-debug]
+                       [--exclude-provider <name>]...
 
         Description:
           Print usage from enabled providers as text (default), JSON, or TOON. Honors your in-app toggles.
@@ -102,6 +122,8 @@ extension CodexBarCLI {
           Use --account or --account-index to select a specific token account.
           Use --all-accounts to fetch every token account, or every visible Codex account for Codex.
           Account selection requires a single provider.
+          --exclude-provider leaves a provider out of the resolved set before anything is fetched (repeatable).
+          Excluding every provider prints [] for JSON and nothing for text, and exits 0.
 
         Global flags:
           -h, --help      Show help
@@ -532,6 +554,7 @@ extension CodexBarCLI {
           codexbar sessions [--json|--json-v2] [--pretty]
           codexbar sessions focus <id>
           codexbar codex-accounts <list|promote> [--json] [--pretty]
+          codexbar hub <accounts|switch> --provider codex|claude [--format text|json] [--confirm]
           codexbar dashboard [--pretty] [--timeout <seconds>] [--output <path>]
           codexbar serve [--host <host>] [--port <port>] [--refresh-interval <seconds>]
                        [--request-timeout <seconds>]

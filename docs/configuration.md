@@ -5,6 +5,7 @@ read_when:
   - "Adding new provider settings fields or defaults."
   - "Explaining CLI/app configuration and security."
 ---
+This file is written in English only.
 
 # Configuration
 
@@ -203,6 +204,9 @@ All provider fields are optional unless noted.
   `false`; multiple claude-swap accounts retain their existing precedence.
 
 ### opencodex hub snapshot
+
+The Linux desktop and scripts use the same snapshot and request files through `codexbar hub accounts` and
+`codexbar hub switch` ([contracts](contracts.md)); there the Claude list follows the `claudeSwap*` keys only.
 
 CodexBar asks opencodex which role this Mac has (`runtimeRole` in `ocx status --json`, read-only; no other field is
 kept) once per executable and keeps the answer for five minutes (one minute when there is no answer), so a refresh of

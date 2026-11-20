@@ -20,9 +20,21 @@ TestCase {
         property string error: ""
         property bool costBusy: false
         property string costError: ""
+        property var hub: ({})
+        property var prepared: []
+        property var confirmed: []
+        property int cancelled: 0
         signal changed()
         function refresh() {}
         function showWindow(page) {}
+        function prepareHubSwitch(provider, index) {
+            prepared = prepared.concat([provider + ":" + index]);
+            return {ok: true, token: "synthetic-token", title: "Switch the opencodex hub to Account 2?",
+                paragraphs: ["Every machine that uses this hub moves to this account on its next request.",
+                    "Quota: 5h: 12% used · Weekly: 51% used"]};
+        }
+        function confirmHubSwitch(token) { confirmed = confirmed.concat([token]); return true; }
+        function cancelHubSwitch() { cancelled += 1; }
     }
     property var view: null
     Component { id: viewComponent; Desktop.QuickView {} }
@@ -36,6 +48,16 @@ TestCase {
         return null;
     }
     function shown(text) { return textItem(view.contentItem, text) !== null; }
+    // Popups render in the window overlay, outside the application content item.
+    function topItem() { var item = view.contentItem; while (item.parent) item = item.parent; return item; }
+    function hubView(switchable) {
+        return {provider: "codex", note: "", message: "", error: "", hasPool: true, busy: false,
+            header: ["Accounts: 2 · Hub list updated 1 min ago.", "Accounts are managed on the hub office."],
+            notices: [], accounts: [
+                {index: 0, title: "Account 1", quota: "5h: 40% used", active: true, canSwitch: false},
+                {index: 1, title: "Account 2", quota: "5h: 12% used · Weekly: 51% used", active: false,
+                    canSwitch: switchable}]};
+    }
     function init() {
         desktop.settings = {showCosts: true, quotaDisplay: "remaining", resetDisplay: "countdown",
             showPace: true, warningColors: true, notifyThreshold: 10};
@@ -43,6 +65,8 @@ TestCase {
             coverage: "History may be incomplete", error: "Synthetic provider cost error"}];
         desktop.costError = "Local spending could not be refreshed. Previous data may be stale.";
         desktop.costBusy = false;
+        desktop.hub = {};
+        desktop.prepared = []; desktop.confirmed = []; desktop.cancelled = 0;
         view = createTemporaryObject(viewComponent, testCase, {visible: true});
         verify(view);
     }
@@ -68,6 +92,43 @@ TestCase {
             showPace: true, warningColors: true, notifyThreshold: 10};
         tryVerify(function() { return !shown("Cost across accounts"); });
         verify(!shown(desktop.costError));
+    }
+    function test_hubListShowsRowsAndHeader() {
+        desktop.hub = {codex: hubView(true)};
+        tryVerify(function() { return shown("opencodex hub accounts"); });
+        verify(shown("Accounts are managed on the hub office."));
+        verify(shown("Active"));
+        verify(shown("5h: 12% used · Weekly: 51% used"));
+    }
+    function test_noHubKeepsDetailUnchanged() {
+        tryVerify(function() { return shown("Cost across accounts"); });
+        verify(!shown("opencodex hub accounts"));
+        desktop.hub = {codex: {provider: "codex", note: "CodexBar CLI too old for hub accounts", message: "",
+            error: "", hasPool: false, busy: false, header: [], notices: [], accounts: []}};
+        tryVerify(function() { return shown("CodexBar CLI too old for hub accounts"); });
+        verify(!shown("Switch"));
+    }
+    function test_switchNeedsTheConfirmationDialog() {
+        desktop.hub = {codex: hubView(true)};
+        tryVerify(function() { return shown("Switch"); });
+        textItem(view.contentItem, "Switch").clicked();
+        compare(desktop.prepared, ["codex:1"]);
+        compare(desktop.confirmed, []);
+        tryVerify(function() { return textItem(topItem(), "Switch the opencodex hub to Account 2?") !== null; });
+        verify(textItem(topItem(), "Every machine that uses this hub moves to this account on its next request.") !== null);
+        textItem(topItem(), "Cancel").clicked();
+        tryVerify(function() { return desktop.cancelled === 1; });
+        compare(desktop.confirmed, []);
+        textItem(view.contentItem, "Switch").clicked();
+        tryVerify(function() { return textItem(topItem(), "Switch Account…") !== null; });
+        textItem(topItem(), "Switch Account…").clicked();
+        tryVerify(function() { return desktop.confirmed.length === 1; });
+        compare(desktop.confirmed, ["synthetic-token"]);
+    }
+    function test_disabledSwitchCannotPrepare() {
+        desktop.hub = {codex: hubView(false)};
+        tryVerify(function() { return shown("Switch"); });
+        verify(!textItem(view.contentItem, "Switch").enabled);
     }
     function test_syntheticRender() {
         tryVerify(function() { return shown("Cost across accounts"); });

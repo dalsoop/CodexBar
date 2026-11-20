@@ -28,6 +28,13 @@ ApplicationWindow {
         return null;
     }
     function openPage(page) { hide(); desktop.showWindow(page); }
+    // Every hub switch is confirmed here first; only the dialog's accept button passes the token on.
+    function requestHubSwitch(provider, index) {
+        var prompt = desktop.prepareHubSwitch(provider, index);
+        if (!prompt || !prompt.ok) return;
+        hubSwitchDialog.prompt = prompt;
+        hubSwitchDialog.open();
+    }
 
     onClosing: function(event) { event.accepted = false; hide(); }
     Shortcut { sequence: "Ctrl+R"; onActivated: desktop.refresh() }
@@ -340,6 +347,15 @@ ApplicationWindow {
                             trackColor: window.trackColor
                         }
                     }
+                    HubAccounts {
+                        width: parent.width
+                        view: window.selectedEntry && desktop.hub ? desktop.hub[window.selectedEntry.provider] || null : null
+                        primaryText: window.primaryText
+                        secondaryText: window.secondaryText
+                        dividerColor: window.dividerColor
+                        hoverColor: window.hoverColor
+                        onSwitchRequested: function(index) { window.requestHubSwitch(window.selectedEntry.provider, index) }
+                    }
                     ColumnLayout {
                         visible: window.selectedEntry && window.selectedEntry.credits !== null &&
                             window.selectedEntry.credits !== undefined
@@ -441,6 +457,37 @@ ApplicationWindow {
         title: "About CodexBar"
         standardButtons: Dialog.Ok
         Label { text: "CodexBar Linux " + Qt.application.version; padding: 14 }
+    }
+    Dialog {
+        id: hubSwitchDialog
+        property var prompt: null
+        anchors.centerIn: parent
+        width: Math.min(window.width - 32, 380)
+        modal: true
+        closePolicy: Popup.CloseOnEscape
+        header: Label {
+            text: hubSwitchDialog.prompt ? hubSwitchDialog.prompt.title : ""
+            padding: 14; wrapMode: Text.Wrap; textFormat: Text.PlainText
+            font.pixelSize: 15; font.weight: Font.DemiBold
+        }
+        contentItem: Column {
+            spacing: 10
+            Repeater {
+                model: hubSwitchDialog.prompt ? hubSwitchDialog.prompt.paragraphs : []
+                Label {
+                    required property var modelData
+                    text: modelData
+                    width: hubSwitchDialog.availableWidth
+                    wrapMode: Text.Wrap; textFormat: Text.PlainText
+                }
+            }
+        }
+        footer: DialogButtonBox {
+            Button { text: "Switch Account…"; DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole }
+            Button { text: "Cancel"; DialogButtonBox.buttonRole: DialogButtonBox.RejectRole }
+        }
+        onAccepted: { if (prompt) desktop.confirmHubSwitch(prompt.token); prompt = null; }
+        onRejected: { desktop.cancelHubSwitch(); prompt = null; }
     }
     component ActionRow: Button {
         Layout.fillWidth: true

@@ -52,8 +52,8 @@ enum CodexBarCLI {
             switch invocation.path {
             case ["cards"], ["usage"]:
                 await self.runUsageDisplay(path: invocation.path, values: invocation.parsedValues)
-            case let path where path.first == "codex-accounts":
-                await self.runCodexAccounts(path: path, values: invocation.parsedValues)
+            case let path where path.first == "hub" || path.first == "codex-accounts":
+                await self.runAccountCommand(path: path, values: invocation.parsedValues)
             case ["cost"]:
                 await self.runCost(invocation.parsedValues)
             case ["sessions", "list"]:
@@ -90,7 +90,7 @@ enum CodexBarCLI {
                     kind: .args)
             }
         } catch let error as CommanderProgramError {
-            let exitCode: ExitCode = argv.first == "guard" ? .usage : .failure
+            let exitCode: ExitCode = argv.first == "guard" || argv.first == "hub" ? .usage : .failure
             Self.exit(code: exitCode, message: error.description, output: errorOutputPreferences, kind: .args)
         } catch {
             Self.exit(
@@ -111,6 +111,14 @@ enum CodexBarCLI {
             await self.runCards(values)
         default:
             await self.runUsage(values)
+        }
+    }
+
+    private static func runAccountCommand(path: [String], values: ParsedValues) async {
+        if path.first == "hub" {
+            await self.runHub(path: path, values: values)
+        } else {
+            await self.runCodexAccounts(path: path, values: values)
         }
     }
 
@@ -165,6 +173,7 @@ enum CodexBarCLI {
     static func commandDescriptors(for command: String? = nil) -> [CommandDescriptor] {
         let factories: [(name: String, make: () -> CommandDescriptor)] = [
             ("codex-accounts", Self.codexAccountsCommandDescriptor),
+            ("hub", Self.hubCommandDescriptor),
             ("cards", {
                 CommandDescriptor(
                     name: "cards",

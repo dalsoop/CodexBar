@@ -36,9 +36,11 @@ function cadenceLabel(minutes) {
     return minutes > 0 ? (minutes / 60) + " hour" : "";
 }
 
-function rows(text, showIdentity) {
+// `allowEmpty` is for a `usage --exclude-provider` call, where `[]` is a valid empty result.
+function rows(text, showIdentity, allowEmpty) {
     var decoded = JSON.parse(text);
     var entries = Array.isArray(decoded) ? decoded : [decoded];
+    if (allowEmpty === true && Array.isArray(decoded) && !decoded.length) return [];
     if (!entries.length || entries.some(function(e) { return !e || typeof e.provider !== "string"; }))
         throw new Error("Invalid usage response");
     return entries.map(function(entry, entryIndex) {
@@ -122,6 +124,9 @@ function command(settings) {
     var args = ["timeout", "--kill-after=5", "60", String(settings.executable || "codexbar"),
         "usage", "--format", "json", "--json-only"];
     if (provider !== "enabled") args.push("--provider", provider);
+    // While the opencodex hub serves Codex its card replaces native Codex, which is then not fetched.
+    if (settings.excludeCodex === true && ["enabled", "all", "both"].indexOf(provider) !== -1)
+        args.push("--exclude-provider", "codex");
     var source = String(settings.source || "auto");
     if (source !== "auto") args.push("--source", source);
     if (settings.showStatus !== false) args.push("--status");
